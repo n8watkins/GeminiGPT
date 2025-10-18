@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { Message } from '@/types/chat';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import AttachmentDisplay from '@/components/AttachmentDisplay';
@@ -82,12 +83,12 @@ export default function SharedChatPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Chat Not Found</h1>
           <p className="text-gray-600 mb-4">{error}</p>
-          <a
+          <Link
             href="/"
             className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -109,12 +110,12 @@ export default function SharedChatPage() {
               <div className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                 Read-only
               </div>
-              <a
+              <Link
                 href="/"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
                 Start New Chat
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -161,9 +162,9 @@ export default function SharedChatPage() {
         <div className="mt-12 text-center text-sm text-gray-500">
           <p>This is a shared conversation. You can view it but not interact with it.</p>
           <p className="mt-2">
-            <a href="/" className="text-blue-600 hover:text-blue-800 underline">
+            <Link href="/" className="text-blue-600 hover:text-blue-800 underline">
               Create your own chat
-            </a>
+            </Link>
           </p>
         </div>
       </div>

@@ -46,7 +46,7 @@ export default function ChatInterface() {
       // Chat with messages - focus bottom input
       setTimeout(() => inputRefBottom.current?.focus(), 100);
     }
-  }, [activeChat?.id, activeChat?.messages.length]);
+  }, [activeChat?.id, activeChat?.messages.length, activeChat]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -195,7 +195,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                                 </div>
                                 <div>
                                     <p className="text-sm font-medium text-white">Gemini AI</p>
-                                    <p className="text-xs text-gray-400">Google's AI model</p>
+                                    <p className="text-xs text-gray-400">Google&apos;s AI model</p>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-3">

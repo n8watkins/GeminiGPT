@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { Socket } from 'socket.io-client';
 import { Chat, Message, ChatState, Attachment } from '@/types/chat';
 import { saveChatState, loadChatState, generateChatTitle, clearStorageIfNeeded } from '@/lib/storage';
 import { useWebSocket, WebSocketMessage } from '@/hooks/useWebSocket';
@@ -42,7 +43,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
     }
 
     case 'CREATE_CHAT_WITH_MESSAGE': {
-      const { id, title, content, attachments } = action.payload;
+      const { id, content, attachments } = action.payload;
       const newMessage: Message = {
         id: uuidv4(),
         content,
@@ -209,7 +210,7 @@ interface ChatContextType {
   regenerateMessage: () => Promise<void>;
   deleteChat: (chatId: string) => void;
   getActiveChat: () => Chat | null;
-  socket: any; // Expose socket for debug panel
+  socket: Socket | null; // Expose socket for debug panel
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -423,7 +424,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         timestamp: msg.timestamp.toISOString(), // Convert Date to ISO string
         createdAt: undefined, // Remove if exists
         updatedAt: undefined  // Remove if exists
-      }));
+      })) as unknown as Message[];
 
       // Send chat history BEFORE the current message
       // The current message will be sent separately by the WebSocket server

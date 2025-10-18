@@ -16,7 +16,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps) {
   const router = useRouter();
-  const { state, createChat, selectChat, deleteChat } = useChat();
+  const { state, createChat, deleteChat } = useChat();
   const { socket, isConnected, rateLimitInfo } = useWebSocket();
   const [showResetModal, setShowResetModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -403,26 +403,24 @@ interface ChatItemProps {
   searchQuery?: string;
 }
 
-const ChatItem = React.memo(function ChatItem({ chat, isActive, onSelect, onDelete, searchQuery = '' }: ChatItemProps) {
-  const highlightText = useMemo(() => {
-    return (text: string) => {
-      if (!searchQuery.trim()) return text;
+const ChatItem = React.memo(function ChatItemComponent({ chat, isActive, onSelect, onDelete, searchQuery = '' }: ChatItemProps) {
+  const highlightText = useCallback((text: string) => {
+    if (!searchQuery.trim()) return text;
 
-      const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
-      return (
-        <span>
-          {parts.map((part, index) =>
-            part.toLowerCase() === searchQuery.toLowerCase() ? (
-              <mark key={index} className="bg-yellow-400 text-gray-900 rounded px-0.5">
-                {part}
-              </mark>
-            ) : (
-              <span key={index}>{part}</span>
-            )
-          )}
-        </span>
-      );
-    };
+    const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
+    return (
+      <span>
+        {parts.map((part, index) =>
+          part.toLowerCase() === searchQuery.toLowerCase() ? (
+            <mark key={index} className="bg-yellow-400 text-gray-900 rounded px-0.5">
+              {part}
+            </mark>
+          ) : (
+            <span key={index}>{part}</span>
+          )
+        )}
+      </span>
+    );
   }, [searchQuery]);
 
   return (
