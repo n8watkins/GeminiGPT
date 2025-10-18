@@ -211,7 +211,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNewChat, isOpen, onToggle, searchQuery, isCollapsed]);
 
-  // Connection status indicator
+  // Connection status indicator with text label
   const connectionIndicator = (() => {
     const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
     const isRailwayConfigured = railwayUrl && !railwayUrl.includes('your-app-name');
@@ -222,20 +222,26 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
 
     if (isProduction) {
       if (isRailwayConfigured) {
-        return (
-          <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`} title={isConnected ? 'Railway Connected' : 'Railway Disconnected'}></div>
-        );
+        return {
+          dot: <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}></div>,
+          label: isConnected ? 'Railway' : 'Disconnected',
+          color: isConnected ? 'text-green-400' : 'text-red-400'
+        };
       } else {
-        return (
-          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50" title="Railway Not Configured"></div>
-        );
+        return {
+          dot: <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50 animate-pulse"></div>,
+          label: 'Not Configured',
+          color: 'text-yellow-400'
+        };
       }
     }
 
     // Local development
-    return (
-      <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`} title={isConnected ? 'Local Server Connected' : 'Local Server Disconnected'}></div>
-    );
+    return {
+      dot: <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}></div>,
+      label: isConnected ? 'Local Server' : 'Disconnected',
+      color: isConnected ? 'text-green-400' : 'text-red-400'
+    };
   })();
 
   return (
@@ -251,9 +257,14 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
             {!isCollapsed ? (
               <>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <h1 className="text-xl font-bold">GeminiGPT</h1>
-                    {connectionIndicator}
+                    <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-800/30 rounded-lg border border-blue-700/40">
+                      {connectionIndicator.dot}
+                      <span className={`text-xs font-medium ${connectionIndicator.color} transition-colors duration-300`}>
+                        {connectionIndicator.label}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -287,12 +298,12 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                   </svg>
                 </button>
-                {connectionIndicator}
+                {connectionIndicator.dot}
               </div>
             )}
 
             {!isCollapsed && (
-              <>
+              <div className="animate-in fade-in slide-in-from-left-2 duration-300">
                 {/* User ID Display with New User Button */}
                 <div className="flex items-center gap-2 mb-3">
                   <div className="flex items-center gap-2 px-3 py-2 bg-blue-800/50 rounded-lg flex-1 min-w-0">
@@ -347,13 +358,13 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                     </button>
                   )}
                 </div>
-              </>
+              </div>
             )}
           </div>
 
           {/* Chat List */}
           {!isCollapsed && (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-300">
             {state.chats.length === 0 ? (
               <div className="p-4 text-center text-gray-400">
                 <p>No chats yet. Create your first chat!</p>
@@ -391,7 +402,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
             {!isCollapsed ? (
               <button
                 onClick={handleNewChat}
-                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-between group shadow-lg"
+                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-between group shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300"
                 title="Start new chat (Alt+N)"
               >
                 <div className="flex items-center">
@@ -418,7 +429,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
           {/* Settings Section */}
           <div className="border-t border-blue-800 p-3 bg-blue-950/30 space-y-2">
             {!isCollapsed ? (
-              <>
+              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* About Button */}
             {onOpenAbout && (
               <button
@@ -449,7 +460,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                   </div>
                   <kbd className="text-xs bg-red-800/40 text-red-200 px-2 py-0.5 rounded opacity-60 group-hover:opacity-100 font-mono transition-opacity">Alt+R</kbd>
                 </button>
-              </>
+              </div>
             ) : (
               <button
                 onClick={() => setShowResetModal(true)}
