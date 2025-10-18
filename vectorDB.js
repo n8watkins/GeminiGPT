@@ -20,8 +20,52 @@ if (!fs.existsSync(path.dirname(DB_PATH))) {
 let db = null;
 let table = null;
 
-// Cache for embeddings to avoid redundant API calls
-const embeddingCache = new Map();
+/**
+ * LRU Cache implementation to prevent unbounded memory growth
+ */
+class LRUCache {
+  constructor(maxSize = 1000) {
+    this.cache = new Map();
+    this.maxSize = maxSize;
+  }
+
+  get(key) {
+    if (!this.cache.has(key)) return undefined;
+
+    // Move to end (most recently used)
+    const value = this.cache.get(key);
+    this.cache.delete(key);
+    this.cache.set(key, value);
+    return value;
+  }
+
+  set(key, value) {
+    // Remove if already exists (to re-add at end)
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    }
+
+    // Check size limit and remove oldest (first) entry
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+      console.log(`🧹 LRU Cache: Evicted oldest entry. Cache size: ${this.cache.size}/${this.maxSize}`);
+    }
+
+    this.cache.set(key, value);
+  }
+
+  has(key) {
+    return this.cache.has(key);
+  }
+
+  get size() {
+    return this.cache.size;
+  }
+}
+
+// Cache for embeddings to avoid redundant API calls (max 1000 entries)
+const embeddingCache = new LRUCache(1000);
 
 /**
  * Generate embedding for a single text using Gemini's embedding model

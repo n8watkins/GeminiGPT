@@ -16,7 +16,7 @@ import { validateFile } from '@/lib/fileValidation';
 export default function ChatInterface() {
   const router = useRouter();
   const { getActiveChat, sendMessage, regenerateMessage, state } = useChat();
-  const { typingStates, isConnected } = useWebSocket();
+  const { typingStates } = useWebSocket();
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);

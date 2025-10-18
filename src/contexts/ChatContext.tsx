@@ -8,6 +8,7 @@ import { saveChatState, loadChatState, generateChatTitle, clearStorageIfNeeded }
 import { useWebSocket, WebSocketMessage } from '@/hooks/useWebSocket';
 import { getSessionUserId } from '@/lib/userId';
 import { useNotification } from '@/contexts/NotificationContext';
+import { chatLogger } from '@/lib/logger';
 
 type ChatAction =
   | { type: 'CREATE_CHAT'; payload: { title: string; id: string } }

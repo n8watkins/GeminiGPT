@@ -1,7 +1,7 @@
 // Load environment variables from .env.local (if it exists)
 try {
   require('dotenv').config({ path: '.env.local' });
-} catch (error) {
+} catch {
   console.log('No .env.local file found, using system environment variables');
 }
 

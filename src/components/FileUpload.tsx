@@ -28,7 +28,7 @@ export default function FileUpload({ onFilesSelected, disabled = false }: FileUp
       const validation = validateFile(file);
       if (!validation.isValid) {
         fileLogger.warn(`File validation failed for ${file.name}: ${validation.error}`);
-        showError(validation.error);
+        showError(validation.error || 'File validation failed');
         return false;
       }
       return true;

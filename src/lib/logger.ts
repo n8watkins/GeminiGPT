@@ -4,7 +4,6 @@
  */
 
 const isDev = process.env.NODE_ENV === 'development';
-const isClient = typeof window !== 'undefined';
 
 /**
  * Log levels
@@ -37,12 +36,12 @@ class Logger {
     this.config = { ...defaultConfig, ...config };
   }
 
-  private shouldLog(level: LogLevel): boolean {
+  private shouldLog(_level: LogLevel): boolean {
     if (isDev) return true;
     return this.config.enabledInProduction;
   }
 
-  private formatMessage(message: string, data?: any): [string, any?] {
+  private formatMessage(message: string, data?: unknown): [string, unknown?] {
     const prefix = this.config.prefix ? `[${this.config.prefix}]` : '';
     const timestamp = new Date().toISOString();
     const formattedMessage = `${prefix}[${timestamp}] ${message}`;
@@ -50,25 +49,25 @@ class Logger {
     return data !== undefined ? [formattedMessage, data] : [formattedMessage];
   }
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: unknown): void {
     if (this.shouldLog(LogLevel.DEBUG)) {
       console.log(...this.formatMessage(message, data));
     }
   }
 
-  info(message: string, data?: any): void {
+  info(message: string, data?: unknown): void {
     if (this.shouldLog(LogLevel.INFO)) {
       console.info(...this.formatMessage(message, data));
     }
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: unknown): void {
     if (this.shouldLog(LogLevel.WARN)) {
       console.warn(...this.formatMessage(message, data));
     }
   }
 
-  error(message: string, error?: Error | any): void {
+  error(message: string, error?: Error | unknown): void {
     if (this.shouldLog(LogLevel.ERROR)) {
       const [formattedMessage] = this.formatMessage(message);
       if (error instanceof Error) {
