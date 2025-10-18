@@ -29,6 +29,8 @@ const historyProcessor = new HistoryProcessor();
 const { AttachmentHandler } = require('./lib/websocket/services/AttachmentHandler');
 const attachmentHandler = new AttachmentHandler(processDocumentAttachment);
 
+const { GeminiService } = require('./lib/websocket/services/GeminiService');
+
 /**
  * Create message objects for indexing
  */
@@ -102,6 +104,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // To edit function descriptions, edit that file instead of this one!
 const tools = buildToolsArray();
 console.log(`✅ Loaded ${tools[0].function_declarations.length} function tools from prompts module`);
+
+// Initialize GeminiService with function handlers
+const geminiService = new GeminiService(genAI, tools, {
+  get_stock_price: async (args) => await getStockPrice(args.symbol),
+  get_weather: async (args) => await getWeather(args.location),
+  get_time: async (args) => await getTime(args.location),
+  search_web: async (args) => await getGeneralSearch(args.query),
+  search_chat_history: async (args, context) => await searchChatHistory(context.userId, args.query)
+});
 
 function setupWebSocketServer(server) {
   console.log('🚀 Setting up WebSocket server...');
@@ -218,250 +229,29 @@ function setupWebSocketServer(server) {
         // Emit typing indicator
         socket.emit('typing', { chatId, isTyping: true });
 
-        // Real Gemini 2.5 Flash integration with function calling
-        const model = genAI.getGenerativeModel({ 
-          model: 'gemini-2.5-flash',
-          tools: tools
-        });
-        
         // 🆕 V3 Architecture: History processing now handled by HistoryProcessor service
         // This converts chat history to Gemini format and adds system prompts
         const finalHistory = historyProcessor.processHistory(chatHistory);
-        
-        // Start chat with history and system prompt
-        const chat = model.startChat({
-          history: finalHistory
-        });
 
         // 🆕 V3 Architecture: Attachment processing now handled by AttachmentHandler service
         const { messageParts, enhancedMessage } = await attachmentHandler.processAttachments(attachments, message);
 
-        // Send message and get response
-        console.log('🚀 Calling Gemini API...');
-
-        // Emit debug info for request
-        socket.emit('debug-info', {
-          type: 'request',
-          timestamp: new Date().toISOString(),
+        // 🆕 V3 Architecture: Gemini API interaction now handled by GeminiService
+        const result = await geminiService.sendMessage(
+          socket,
           chatId,
-          message: enhancedMessage,
-          historyLength: finalHistory.length,
-          parts: messageParts.map(part => part.text ? 'text' : part.inlineData ? part.inlineData.mimeType : 'unknown')
-        });
+          finalHistory,
+          messageParts,
+          message,
+          chatHistory,
+          { userId }
+        );
 
-        // Use streaming API for better UX
-        const result = await chat.sendMessageStream(messageParts);
-
-        let fullResponse = '';
-        let hasFunctionCalls = false;
-        let functionCalls = [];
-
-        console.log('✅ Streaming response from Gemini...');
-
-        // Stream the response chunks
-        for await (const chunk of result.stream) {
-          // Check for prompt feedback (safety/content filtering issues)
-          if (chunk.promptFeedback) {
-            console.log('📋 Prompt Feedback:', JSON.stringify(chunk.promptFeedback, null, 2));
-            if (chunk.promptFeedback.blockReason) {
-              console.error('🚫 Content blocked by safety filter:', chunk.promptFeedback.blockReason);
-              socket.emit('message-response', {
-                chatId,
-                message: `Sorry, I cannot respond to this request due to content safety filters. Block reason: ${chunk.promptFeedback.blockReason}`,
-                isComplete: true
-              });
-              socket.emit('typing', { chatId, isTyping: false });
-              return;
-            }
-          }
-
-          // Check for safety ratings in candidates
-          if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].safetyRatings) {
-            console.log('🛡️ Safety Ratings:', chunk.candidates[0].safetyRatings);
-          }
-
-          // Check if response was blocked
-          if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].finishReason === 'SAFETY') {
-            console.error('🚫 Response blocked due to safety concerns');
-            socket.emit('message-response', {
-              chatId,
-              message: 'Sorry, I cannot provide a response due to content safety filters.',
-              isComplete: true
-            });
-            socket.emit('typing', { chatId, isTyping: false });
-            return;
-          }
-
-          const chunkText = chunk.text();
-          console.log('📨 Chunk received, length:', chunkText?.length || 0);
-
-          // Check for function calls in this chunk
-          if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-            hasFunctionCalls = true;
-            functionCalls = chunk.functionCalls;
-            console.log('Function calls detected:', functionCalls);
-            break; // Stop streaming if function calls are needed
-          }
-
-          if (chunkText) {
-            fullResponse += chunkText;
-
-            // Send streaming chunk to client
-            socket.emit('message-response', {
-              chatId,
-              message: chunkText,
-              isComplete: false
-            });
-          }
+        // Handle result - index messages if response was successful
+        if (result && result.response && !result.blocked && !result.error) {
+          await indexMessagePair(userId, chatId, message, result.response, chatHistory);
         }
 
-        // Check if the response contains function calls
-        if (hasFunctionCalls && functionCalls.length > 0) {
-          let functionResponse = '';
-
-          // Process each function call
-          for (const functionCall of functionCalls) {
-            const functionName = functionCall.name;
-            const functionArgs = functionCall.args;
-
-            console.log(`Calling function: ${functionName} with args:`, functionArgs);
-
-            let functionResult = '';
-
-            try {
-              switch (functionName) {
-                case 'get_stock_price':
-                  functionResult = await getStockPrice(functionArgs.symbol);
-                  break;
-                case 'get_weather':
-                  functionResult = await getWeather(functionArgs.location);
-                  break;
-                case 'get_time':
-                  functionResult = await getTime(functionArgs.location);
-                  break;
-                case 'search_web':
-                  functionResult = await getGeneralSearch(functionArgs.query);
-                  break;
-                case 'search_chat_history':
-                  functionResult = await searchChatHistory(userId, functionArgs.query);
-                  break;
-                default:
-                  functionResult = `Unknown function: ${functionName}`;
-              }
-
-              // Send function result back to Gemini with streaming
-              const followUpResult = await chat.sendMessageStream([
-                {
-                  functionResponse: {
-                    name: functionName,
-                    response: { result: functionResult }
-                  }
-                }
-              ]);
-
-              // Stream the follow-up response
-              for await (const chunk of followUpResult.stream) {
-                const chunkText = chunk.text();
-                if (chunkText) {
-                  functionResponse += chunkText;
-
-                  // Send streaming chunk to client
-                  socket.emit('message-response', {
-                    chatId,
-                    message: chunkText,
-                    isComplete: false
-                  });
-                }
-              }
-
-            } catch (error) {
-              console.error(`Error executing function ${functionName}:`, error);
-              const errorMsg = `Error executing ${functionName}: ${error.message}`;
-              functionResponse += errorMsg;
-
-              socket.emit('message-response', {
-                chatId,
-                message: errorMsg,
-                isComplete: false
-              });
-            }
-          }
-
-          // Emit debug info for response
-          socket.emit('debug-info', {
-            type: 'response',
-            timestamp: new Date().toISOString(),
-            chatId,
-            response: functionResponse,
-            hadFunctionCalls: true,
-            functionNames: functionCalls.map(fc => fc.name)
-          });
-
-          // Send completion signal
-          socket.emit('message-response', {
-            chatId,
-            message: '',
-            isComplete: true
-          });
-
-          // Index the messages
-          await indexMessagePair(userId, chatId, message, functionResponse, chatHistory);
-          
-        } else {
-          // No function calls - streaming already completed
-          // fullResponse contains the complete streamed text
-
-          console.log('Gemini streamed response complete');
-          console.log('Response text length:', fullResponse.length);
-
-          // Check if response is empty (potential issue)
-          if (fullResponse.length === 0) {
-            console.error('🚨 CRITICAL: Gemini returned empty response!');
-            console.error('This could be due to:');
-            console.error('  1. Content safety filters blocking the response');
-            console.error('  2. API quota/rate limits');
-            console.error('  3. Model refusing to generate content for this prompt');
-            console.error('Original message:', message);
-            console.error('Chat history length:', chatHistory?.length || 0);
-
-            // Send helpful error message to user
-            socket.emit('message-response', {
-              chatId,
-              message: 'I apologize, but I was unable to generate a response. This could be due to content safety filters or the nature of the request. Could you please rephrase your question?',
-              isComplete: true
-            });
-
-            socket.emit('typing', { chatId, isTyping: false });
-            return;
-          }
-
-          // CRITICAL: Check if response contains [object Object] placeholder
-          if (fullResponse.includes('[object Object]')) {
-            console.error('🚨 CRITICAL: Gemini response contains [object Object] placeholder!');
-            console.error('Full response:', fullResponse);
-          }
-
-          // Emit debug info for response
-          socket.emit('debug-info', {
-            type: 'response',
-            timestamp: new Date().toISOString(),
-            chatId,
-            response: fullResponse,
-            hadFunctionCalls: false,
-            wasStreamed: true
-          });
-
-          // Send completion signal
-          socket.emit('message-response', {
-            chatId,
-            message: '',
-            isComplete: true
-          });
-
-          // Index the messages
-          await indexMessagePair(userId, chatId, message, fullResponse, chatHistory);
-        }
-        
         socket.emit('typing', { chatId, isTyping: false });
         
       } catch (error) {
