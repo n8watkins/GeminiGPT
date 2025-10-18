@@ -11,10 +11,14 @@ const { processDocumentAttachment } = require('./documentProcessor');
  * ============================================
  * Prevents abuse while allowing legitimate bursts
  *
- * Rate Limits:
- * - 20 messages per minute (allows quick conversations)
- * - 100 messages per hour (prevents sustained abuse)
+ * Rate Limits (VERY GENEROUS for development/portfolio use):
+ * - 60 messages per minute (allows rapid testing and demos)
+ * - 500 messages per hour (very generous for extended use)
  * - Tokens refill automatically over time
+ *
+ * Can be configured via environment variables:
+ * - RATE_LIMIT_PER_MINUTE (default: 60)
+ * - RATE_LIMIT_PER_HOUR (default: 500)
  */
 
 class RateLimiter {
@@ -23,17 +27,24 @@ class RateLimiter {
     // Structure: { userId: { minute: {...}, hour: {...} } }
     this.userLimits = new Map();
 
-    // Configuration
+    // Configuration from environment or defaults (VERY GENEROUS)
+    const perMinute = parseInt(process.env.RATE_LIMIT_PER_MINUTE) || 60;
+    const perHour = parseInt(process.env.RATE_LIMIT_PER_HOUR) || 500;
+
+    console.log(`⚙️  Rate Limiter Configuration:`);
+    console.log(`   - ${perMinute} messages per minute`);
+    console.log(`   - ${perHour} messages per hour`);
+
     this.limits = {
       minute: {
-        maxTokens: 20,      // Max messages per minute
-        refillRate: 20,     // Tokens refilled per minute
+        maxTokens: perMinute,      // Max messages per minute
+        refillRate: perMinute,     // Tokens refilled per minute
         refillInterval: 60000, // 1 minute in ms
         windowName: 'minute'
       },
       hour: {
-        maxTokens: 100,     // Max messages per hour
-        refillRate: 100,    // Tokens refilled per hour
+        maxTokens: perHour,     // Max messages per hour
+        refillRate: perHour,    // Tokens refilled per hour
         refillInterval: 3600000, // 1 hour in ms
         windowName: 'hour'
       }
