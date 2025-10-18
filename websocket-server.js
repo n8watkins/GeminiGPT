@@ -31,66 +31,8 @@ const attachmentHandler = new AttachmentHandler(processDocumentAttachment);
 
 const { GeminiService } = require('./lib/websocket/services/GeminiService');
 
-/**
- * Create message objects for indexing
- */
-function createMessageObjects(message, responseText) {
-  const userMessage = {
-    id: `user-${Date.now()}`,
-    content: message,
-    role: 'user',
-    timestamp: new Date()
-  };
-
-  const assistantMessage = {
-    id: `assistant-${Date.now()}`,
-    content: responseText,
-    role: 'assistant',
-    timestamp: new Date()
-  };
-
-  return { userMessage, assistantMessage };
-}
-
-/**
- * Get chat title from history or generate default
- */
-function getChatTitle(chatHistory) {
-  return chatHistory.length > 0 ?
-    (chatHistory[0].role === 'user' && chatHistory[0].parts && chatHistory[0].parts[0] ?
-      chatHistory[0].parts[0].text.substring(0, 50) + '...' : 'Chat') :
-    'New Chat';
-}
-
-/**
- * Index messages to vector database
- */
-async function indexMessages(userId, chatId, userMessage, assistantMessage, chatTitle) {
-  if (!userId) return;
-
-  try {
-    // Index both messages asynchronously
-    await Promise.all([
-      addMessage(userId, chatId, userMessage, chatTitle).catch(err =>
-        console.error('Error indexing user message:', err)
-      ),
-      addMessage(userId, chatId, assistantMessage, chatTitle).catch(err =>
-        console.error('Error indexing assistant message:', err)
-      )
-    ]);
-  } catch (error) {
-    console.error('Error in background indexing:', error);
-  }
-}
-
-/**
- * Handle message indexing with chat title extraction
- */
-async function indexMessagePair(userId, chatId, message, responseText, chatHistory) {
-  const chatTitle = getChatTitle(chatHistory);
-  const { userMessage, assistantMessage } = createMessageObjects(message, responseText);
-  await indexMessages(userId, chatId, userMessage, assistantMessage, chatTitle);
-}
+const { VectorIndexer } = require('./lib/websocket/services/VectorIndexer');
+const vectorIndexer = new VectorIndexer(addMessage);
 
 // REMOVED: Pre-emptive pattern matching
 // Now letting Gemini decide when to search chat history via function calling
@@ -249,7 +191,7 @@ function setupWebSocketServer(server) {
 
         // Handle result - index messages if response was successful
         if (result && result.response && !result.blocked && !result.error) {
-          await indexMessagePair(userId, chatId, message, result.response, chatHistory);
+          await vectorIndexer.indexMessagePair(userId, chatId, message, result.response, chatHistory);
         }
 
         socket.emit('typing', { chatId, isTyping: false });
