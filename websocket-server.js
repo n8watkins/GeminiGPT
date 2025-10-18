@@ -730,7 +730,40 @@ function setupWebSocketServer(server) {
 
         // Stream the response chunks
         for await (const chunk of result.stream) {
+          // Check for prompt feedback (safety/content filtering issues)
+          if (chunk.promptFeedback) {
+            console.log('📋 Prompt Feedback:', JSON.stringify(chunk.promptFeedback, null, 2));
+            if (chunk.promptFeedback.blockReason) {
+              console.error('🚫 Content blocked by safety filter:', chunk.promptFeedback.blockReason);
+              socket.emit('message-response', {
+                chatId,
+                message: `Sorry, I cannot respond to this request due to content safety filters. Block reason: ${chunk.promptFeedback.blockReason}`,
+                isComplete: true
+              });
+              socket.emit('typing', { chatId, isTyping: false });
+              return;
+            }
+          }
+
+          // Check for safety ratings in candidates
+          if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].safetyRatings) {
+            console.log('🛡️ Safety Ratings:', chunk.candidates[0].safetyRatings);
+          }
+
+          // Check if response was blocked
+          if (chunk.candidates && chunk.candidates[0] && chunk.candidates[0].finishReason === 'SAFETY') {
+            console.error('🚫 Response blocked due to safety concerns');
+            socket.emit('message-response', {
+              chatId,
+              message: 'Sorry, I cannot provide a response due to content safety filters.',
+              isComplete: true
+            });
+            socket.emit('typing', { chatId, isTyping: false });
+            return;
+          }
+
           const chunkText = chunk.text();
+          console.log('📨 Chunk received, length:', chunkText?.length || 0);
 
           // Check for function calls in this chunk
           if (chunk.functionCalls && chunk.functionCalls.length > 0) {
@@ -850,6 +883,27 @@ function setupWebSocketServer(server) {
 
           console.log('Gemini streamed response complete');
           console.log('Response text length:', fullResponse.length);
+
+          // Check if response is empty (potential issue)
+          if (fullResponse.length === 0) {
+            console.error('🚨 CRITICAL: Gemini returned empty response!');
+            console.error('This could be due to:');
+            console.error('  1. Content safety filters blocking the response');
+            console.error('  2. API quota/rate limits');
+            console.error('  3. Model refusing to generate content for this prompt');
+            console.error('Original message:', message);
+            console.error('Chat history length:', chatHistory?.length || 0);
+
+            // Send helpful error message to user
+            socket.emit('message-response', {
+              chatId,
+              message: 'I apologize, but I was unable to generate a response. This could be due to content safety filters or the nature of the request. Could you please rephrase your question?',
+              isComplete: true
+            });
+
+            socket.emit('typing', { chatId, isTyping: false });
+            return;
+          }
 
           // CRITICAL: Check if response contains [object Object] placeholder
           if (fullResponse.includes('[object Object]')) {
