@@ -43,7 +43,7 @@ Railway will automatically:
 
 ### **1.4 Get Your Railway URL**
 After deployment, Railway gives you a URL like:
-`https://gemini-chat-app-production.up.railway.app`
+`https://geminigpt-production.up.railway.app`
 
 ## 🌐 **Step 2: Deploy Frontend to Vercel**
 
@@ -59,8 +59,8 @@ In Vercel dashboard → Settings → Environment Variables, add:
 # Gemini API
 NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
 
-# Railway Backend URL (replace with your actual Railway URL)
-NEXT_PUBLIC_RAILWAY_URL=https://your-app-name-production.up.railway.app
+# Railway Backend URL
+NEXT_PUBLIC_RAILWAY_URL=https://geminigpt-production.up.railway.app
 ```
 
 ### **2.3 Deploy**
