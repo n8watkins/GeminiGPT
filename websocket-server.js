@@ -5,6 +5,9 @@ const { getStockPrice, getWeather, getTime, getGeneralSearch, searchChatHistory 
 const { addMessage, searchChats } = require('./vectorDB');
 const { processDocumentAttachment } = require('./documentProcessor');
 
+// 🆕 Import prompts module (V3 Architecture)
+const { getFullPrompt, buildToolsArray } = require('./lib/websocket/prompts');
+
 /**
  * ============================================
  * RATE LIMITING - Token Bucket Algorithm
@@ -290,83 +293,10 @@ console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Define function calling tools for Gemini
-const tools = [
-  {
-    function_declarations: [
-      {
-        name: "get_stock_price",
-        description: "Get current stock price information for a given stock symbol",
-        parameters: {
-          type: "object",
-          properties: {
-            symbol: {
-              type: "string",
-              description: "The stock symbol (e.g., AAPL, GOOGL, MSFT)"
-            }
-          },
-          required: ["symbol"]
-        }
-      },
-      {
-        name: "get_weather",
-        description: "Get current weather information for a specific location",
-        parameters: {
-          type: "object",
-          properties: {
-            location: {
-              type: "string",
-              description: "The location to get weather for (e.g., 'New York', 'London', 'Tokyo')"
-            }
-          },
-          required: ["location"]
-        }
-      },
-      {
-        name: "get_time",
-        description: "Get current time for a specific location or city",
-        parameters: {
-          type: "object",
-          properties: {
-            location: {
-              type: "string",
-              description: "The location to get time for (e.g., 'New York', 'London', 'Tokyo', 'NY', 'LA')"
-            }
-          },
-          required: ["location"]
-        }
-      },
-      {
-        name: "search_web",
-        description: "Search the web for general information about any topic",
-        parameters: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "The search query to look up on the web"
-            }
-          },
-          required: ["query"]
-        }
-      },
-      {
-        name: "search_chat_history",
-        description: "Search through ALL of the user's past conversations (across different chat sessions) to find relevant information. IMPORTANT: You can already see the current chat session's full history - use this function ONLY to search OTHER chat sessions. Use this when:\n\n1. User asks about people/entities not mentioned in THIS conversation (e.g., 'who is Nathan Watkins' when no Nathan was mentioned in current chat)\n2. User references documents uploaded in previous chats (e.g., 'what was in my resume' when no resume in current chat)\n3. User asks about their preferences, favorites, or past statements (e.g., 'what's my favorite X', 'what did I say about Y')\n4. User asks 'do you remember when I told you about X' and X isn't in current chat\n5. Questions starting with 'my' that reference context not in current chat (e.g., 'my document', 'my resume', 'my favorite')\n\nDO NOT use this if the information is already visible in the current conversation history.",
-        parameters: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "What to search for in past conversations. Be specific - include names, topics, or keywords that would help find the relevant information."
-            }
-          },
-          required: ["query"]
-        }
-      }
-    ]
-  }
-];
+// 🆕 V3 Architecture: Function tools now defined in lib/websocket/prompts/functionTools.js
+// To edit function descriptions, edit that file instead of this one!
+const tools = buildToolsArray();
+console.log(`✅ Loaded ${tools[0].function_declarations.length} function tools from prompts module`);
 
 function setupWebSocketServer(server) {
   console.log('🚀 Setting up WebSocket server...');
@@ -582,18 +512,10 @@ function setupWebSocketServer(server) {
           });
         }
 
-        // Prepare final history for Gemini with improved system prompt
-        const finalHistory = [
-          {
-            role: 'user',
-            parts: [{ text: 'You are a helpful AI assistant with access to the user\'s full conversation history across multiple chat sessions.\n\nCRITICAL: When a user asks about someone or something NOT in the current conversation (like "who is X" or "what\'s in my resume"), you MUST call the search_chat_history function to search their previous conversations in OTHER chat sessions.\n\nExamples of when to use search_chat_history:\n- "who is Nathan Watkins?" → Search for "Nathan Watkins" in past conversations\n- "what\'s in my resume?" → Search for "resume" in past conversations  \n- "what did I tell you about my preferences?" → Search for "preferences" in past conversations\n- "do you remember when I mentioned X?" → Search for "X" in past conversations\n\nDO NOT use search_chat_history if the information is already visible in THIS conversation.\n\nYou also have access to:\n- search_web: For current events and general knowledge\n- get_stock_price, get_weather, get_time: For real-time data\n\nWhen writing code, ALWAYS use actual values - NEVER use placeholders like [object Object].' }]
-          },
-          {
-            role: 'model',
-            parts: [{ text: 'Understood! I will:\n1. Check if information is in the current conversation first\n2. Call search_chat_history when users ask about things from OTHER chat sessions\n3. Use search_web for current information\n4. Provide accurate, helpful responses with real code (no placeholders)' }]
-          },
-          ...history
-        ];
+        // 🆕 V3 Architecture: System prompts now defined in lib/websocket/prompts/systemPrompts.js
+        // To edit AI behavior, edit that file instead of this one!
+        const systemPrompts = getFullPrompt();
+        const finalHistory = [...systemPrompts, ...history];
 
         // Debug: Log final history being sent to Gemini
         console.log('🎯 Final History for Gemini:');
