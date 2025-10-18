@@ -422,14 +422,34 @@ function setupWebSocketServer(server) {
         // If rate limited, reject the request
         if (!rateLimit.allowed) {
           const retryInSeconds = Math.ceil(rateLimit.retryAfter / 1000);
-          const limitTypeText = rateLimit.limitType === 'minute' ? 'per minute' : 'per hour';
+          const retryInMinutes = Math.ceil(retryInSeconds / 60);
+          const limitTypeText = rateLimit.limitType === 'minute' ? 'minute' : 'hour';
 
           console.log(`🚫 Rate limit exceeded for user ${userId}. Retry after ${retryInSeconds}s`);
 
-          // Send rate limit error to client
+          // Calculate the exact time when they can send again (in their timezone)
+          const resetTime = new Date(rateLimit.resetAt[rateLimit.limitType]);
+          const resetTimeString = resetTime.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          // Create a friendly message without mentioning "rate limit"
+          let waitMessage;
+          if (retryInSeconds < 60) {
+            waitMessage = `${retryInSeconds} seconds`;
+          } else if (retryInMinutes < 60) {
+            waitMessage = `${retryInMinutes} minute${retryInMinutes > 1 ? 's' : ''}`;
+          } else {
+            const hours = Math.ceil(retryInMinutes / 60);
+            waitMessage = `${hours} hour${hours > 1 ? 's' : ''}`;
+          }
+
+          // Send friendly message to client
           socket.emit('message-response', {
             chatId,
-            message: `⚠️ **Rate Limit Exceeded**\n\nYou've sent too many messages (${rateLimit.limit[rateLimit.limitType]} ${limitTypeText}).\n\nPlease wait ${retryInSeconds} seconds before sending another message.\n\n**Remaining:**\n- ${rateLimit.remaining.minute} messages this minute\n- ${rateLimit.remaining.hour} messages this hour`,
+            message: `### You've reached your message limit\n\nTo prevent abuse, there's a limit on how many messages you can send per ${limitTypeText}.\n\n**You can send more messages in ${waitMessage}** (at ${resetTimeString}).\n\n**Current usage:**\n- ${rateLimit.remaining.minute} of ${rateLimit.limit.minute} messages remaining this minute\n- ${rateLimit.remaining.hour} of ${rateLimit.limit.hour} messages remaining this hour\n\nThank you for your patience! 🙏`,
             isComplete: true,
             rateLimited: true
           });
