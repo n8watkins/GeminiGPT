@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useChat } from '@/contexts/ChatContext';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { chatLogger } from '@/lib/logger';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface ChatUtilsProps {
   chatId: string;
@@ -18,6 +19,7 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { showError } = useNotification();
 
   // Focus trap for modals
   const shareModalRef = useFocusTrap(showShareModal);
@@ -114,8 +116,7 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
       setShareUrl(data.shareUrl);
     } catch (error) {
       chatLogger.error('Error creating share link', error);
-      // TODO: Replace with notification system when implemented
-      alert('Failed to create share link. Please try again.');
+      showError('Failed to create share link. Please try again.');
       setShowShareModal(false);
     } finally {
       setIsGeneratingLink(false);

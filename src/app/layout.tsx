@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import DebugPanel from "@/components/DebugPanel";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,10 +31,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ChatProvider>
-          {children}
-          <DebugPanel />
-        </ChatProvider>
+        <ErrorBoundary>
+          <NotificationProvider>
+            <ChatProvider>
+              {children}
+              <DebugPanel />
+            </ChatProvider>
+          </NotificationProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

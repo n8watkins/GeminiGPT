@@ -7,6 +7,7 @@ import { Chat, Message, ChatState, Attachment } from '@/types/chat';
 import { saveChatState, loadChatState, generateChatTitle, clearStorageIfNeeded } from '@/lib/storage';
 import { useWebSocket, WebSocketMessage } from '@/hooks/useWebSocket';
 import { getSessionUserId } from '@/lib/userId';
+import { useNotification } from '@/contexts/NotificationContext';
 
 type ChatAction =
   | { type: 'CREATE_CHAT'; payload: { title: string; id: string } }
@@ -218,6 +219,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const { socket, isConnected, sendMessage: sendWebSocketMessage, onMessage, onTyping, removeMessageHandler, removeTypingHandler } = useWebSocket();
+  const { showError } = useNotification();
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -234,8 +236,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     // This ensures deletions are persisted
     saveChatState(state).catch(error => {
       chatLogger.error('Error saving chat state', error);
+      showError('Failed to save chat. Changes may not persist.');
     });
-  }, [state]);
+  }, [state, showError]);
 
   // Setup WebSocket message handlers
   useEffect(() => {

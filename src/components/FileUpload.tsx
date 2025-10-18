@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { Attachment } from '@/types/chat';
 import { validateFile } from '@/lib/fileValidation';
 import { fileLogger } from '@/lib/logger';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface FileUploadProps {
   onFilesSelected: (attachments: Attachment[]) => void;
@@ -13,6 +14,7 @@ interface FileUploadProps {
 export default function FileUpload({ onFilesSelected, disabled = false }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const { showError } = useNotification();
 
   const handleFileSelect = (files: FileList | null) => {
     fileLogger.debug('Files selected:', files ? files.length : 0);
@@ -26,14 +28,14 @@ export default function FileUpload({ onFilesSelected, disabled = false }: FileUp
       const validation = validateFile(file);
       if (!validation.isValid) {
         fileLogger.warn(`File validation failed for ${file.name}: ${validation.error}`);
-        alert(validation.error);
+        showError(validation.error);
         return false;
       }
       return true;
     });
 
     if (validFiles.length === 0) {
-      alert('No valid files selected. Please upload images, PDFs, or text files under 10MB.');
+      showError('No valid files selected. Please upload images, PDFs, or text files under 10MB.');
       return;
     }
 
