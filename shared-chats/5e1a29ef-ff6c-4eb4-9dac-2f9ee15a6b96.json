@@ -1,0 +1,16 @@
+{
+  "shareId": "5e1a29ef-ff6c-4eb4-9dac-2f9ee15a6b96",
+  "originalChatId": "bdb73d2a-0641-4aed-bcf8-ac7d323e5608",
+  "title": "Explain quantum computing in simple terms",
+  "messages": [
+    {
+      "id": "5b1d9a6d-be44-4d86-b181-849fa0dc36ff",
+      "content": "Explain quantum computing in simple terms",
+      "role": "user",
+      "timestamp": "2025-10-18T05:40:40.169Z",
+      "attachments": []
+    }
+  ],
+  "createdAt": "2025-10-18T06:31:53.228Z",
+  "sharedAt": "2025-10-18T06:31:53.228Z"
+}
