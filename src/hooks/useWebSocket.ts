@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Attachment, Message } from '@/types/chat';
+import { wsLogger } from '@/lib/logger';
 
 export interface WebSocketMessage {
   chatId: string;
@@ -51,17 +52,17 @@ export function useWebSocket() {
       if (railwayUrl && !railwayUrl.includes('your-app-name')) {
         // Railway URL is configured - use it
         wsUrl = railwayUrl;
-        console.log('🚀 Connecting to Railway WebSocket server:', wsUrl);
+        wsLogger.info('Connecting to Railway WebSocket server', { wsUrl });
       } else {
         // Railway not configured - fall back to localhost
         wsUrl = 'http://localhost:1337';
-        console.log('🏠 Railway not configured, connecting to localhost:1337');
+        wsLogger.info('Railway not configured, connecting to localhost:1337');
       }
     } else {
       wsUrl = 'http://localhost:1337';
     }
 
-    console.log('🔌 Initializing WebSocket connection to', wsUrl);
+    wsLogger.debug('Initializing WebSocket connection', { wsUrl });
 
     const newSocket = io(wsUrl, {
       timeout: 20000, // 20 second connection timeout
@@ -71,18 +72,20 @@ export function useWebSocket() {
     });
 
     newSocket.on('connect', () => {
-      console.log('✅ Connected to WebSocket server, Socket ID:', newSocket.id);
-      console.log('Transport:', newSocket.io.engine.transport.name);
+      wsLogger.info('Connected to WebSocket server', {
+        socketId: newSocket.id,
+        transport: newSocket.io.engine.transport.name
+      });
       setIsConnected(true);
     });
 
     newSocket.on('disconnect', (reason) => {
-      console.log('🔌 Disconnected from WebSocket server, Reason:', reason);
+      wsLogger.warn('Disconnected from WebSocket server', { reason });
       setIsConnected(false);
     });
 
     newSocket.on('message-response', (data: WebSocketMessage) => {
-      console.log('📨 Received message response for chat:', data.chatId);
+      wsLogger.debug('Received message response', { chatId: data.chatId });
       const handler = messageHandlers.current.get(data.chatId);
       if (handler) {
         handler(data);
@@ -90,7 +93,7 @@ export function useWebSocket() {
     });
 
     newSocket.on('typing', (data: TypingIndicator) => {
-      console.log('⌨️  Typing indicator for chat:', data.chatId, 'isTyping:', data.isTyping);
+      wsLogger.debug('Typing indicator', { chatId: data.chatId, isTyping: data.isTyping });
       setTypingStates(prev => ({
         ...prev,
         [data.chatId]: data.isTyping
@@ -103,44 +106,42 @@ export function useWebSocket() {
     });
 
     newSocket.on('error', (error) => {
-      console.error('❌ WebSocket error:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error keys:', error ? Object.keys(error) : 'no keys');
+      wsLogger.error('WebSocket error', error);
 
-      // Don't show empty error objects to user
-      if (error && Object.keys(error).length > 0) {
-        console.error('Detailed WebSocket error:', JSON.stringify(error, null, 2));
+      // Log additional details if error object has properties
+      if (error && typeof error === 'object' && Object.keys(error).length > 0) {
+        wsLogger.error('Detailed WebSocket error', error);
       } else {
-        console.error('Empty WebSocket error - likely connection issue');
-        console.error('Check if server is running on port 5000');
+        wsLogger.error('Empty WebSocket error - likely connection issue. Check if server is running');
       }
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('❌ WebSocket connection error:', error);
-      console.error('Connection error message:', error.message);
-      console.error('Connection error type:', (error as Error & { type?: string }).type);
+      wsLogger.error('WebSocket connection error', {
+        message: error.message,
+        type: (error as Error & { type?: string }).type
+      });
     });
 
     newSocket.on('connect_timeout', () => {
-      console.error('⏱️  WebSocket connection timeout');
+      wsLogger.error('WebSocket connection timeout');
     });
 
     newSocket.on('reconnect_attempt', (attempt) => {
-      console.log(`🔄 Reconnection attempt ${attempt}...`);
+      wsLogger.info(`Reconnection attempt ${attempt}`);
     });
 
     newSocket.on('reconnect_failed', () => {
-      console.error('❌ Reconnection failed after all attempts');
+      wsLogger.error('Reconnection failed after all attempts');
     });
 
     newSocket.on('rate-limit-info', (data: RateLimitInfo) => {
-      console.log('📊 Rate limit info:', data);
+      wsLogger.debug('Rate limit info received', data);
       setRateLimitInfo(data);
     });
 
     setSocket(newSocket);
-    console.log('📡 WebSocket client setup complete');
+    wsLogger.debug('WebSocket client setup complete');
 
     return () => {
       newSocket.close();

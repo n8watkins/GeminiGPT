@@ -233,7 +233,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     // Always save state to localStorage, even if chats are empty
     // This ensures deletions are persisted
     saveChatState(state).catch(error => {
-      console.error('Error saving chat state:', error);
+      chatLogger.error('Error saving chat state', error);
     });
   }, [state]);
 
@@ -370,8 +370,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
     if (isProduction && !isRailwayConfigured) {
       // In production without Railway configured, simulate a response
-      console.log('🚫 Production mode: Railway not configured, simulating AI response');
-      
+      chatLogger.info('Production mode: Railway not configured, simulating AI response');
+
       // Simulate AI response after a delay
       setTimeout(() => {
         if (chatId) {
@@ -385,37 +385,34 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }, 1000);
-      
+
       return;
     }
 
     if (!isConnected) {
-      console.error('Cannot send message: Not connected to server');
+      chatLogger.error('Cannot send message: Not connected to server');
       throw new Error('Not connected to server. Please check your connection.');
     }
 
     try {
       // Get user ID and send message via WebSocket
       const userId = getSessionUserId();
-      
+
       // Debug: Log what we're sending to WebSocket
-      console.log('📤 Sending to WebSocket:');
-      console.log('  - Chat ID:', chatId);
-      console.log('  - Current Message:', content.substring(0, 50) + '...');
-      console.log('  - Chat History Length (BEFORE current message):', chatHistoryBeforeCurrentMessage.length);
-      console.log('  - User ID:', userId);
-      if (chatHistoryBeforeCurrentMessage.length > 0) {
-        console.log('  - First message in history:', {
+      chatLogger.debug('Sending to WebSocket', {
+        chatId,
+        messagePreview: content.substring(0, 50),
+        historyLength: chatHistoryBeforeCurrentMessage.length,
+        userId,
+        firstMessage: chatHistoryBeforeCurrentMessage.length > 0 ? {
           role: chatHistoryBeforeCurrentMessage[0].role,
-          content: chatHistoryBeforeCurrentMessage[0].content.substring(0, 30) + '...'
-        });
-        console.log('  - Last message in history:', {
+          preview: chatHistoryBeforeCurrentMessage[0].content.substring(0, 30)
+        } : null,
+        lastMessage: chatHistoryBeforeCurrentMessage.length > 0 ? {
           role: chatHistoryBeforeCurrentMessage[chatHistoryBeforeCurrentMessage.length - 1].role,
-          content: chatHistoryBeforeCurrentMessage[chatHistoryBeforeCurrentMessage.length - 1].content.substring(0, 30) + '...'
-        });
-      } else {
-        console.log('  - No previous chat history (first message in chat)');
-      }
+          preview: chatHistoryBeforeCurrentMessage[chatHistoryBeforeCurrentMessage.length - 1].content.substring(0, 30)
+        } : null
+      });
 
       // CRITICAL FIX: Serialize chat history to ensure Date objects are converted to strings
       // Socket.io can serialize Dates, but something in the chain corrupts them to [object Object]
@@ -430,7 +427,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       // The current message will be sent separately by the WebSocket server
       sendWebSocketMessage(chatId, content, serializedChatHistory, attachments, userId);
     } catch (error) {
-      console.error('Error sending message:', error);
+      chatLogger.error('Error sending message', error);
       // Re-throw the error so the UI can handle it
       throw error;
     }
@@ -469,10 +466,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       // Send delete request to server via WebSocket
       if (socket && isConnected) {
         socket.emit('delete-chat', { chatId, userId });
-        console.log(`Requested deletion of chat ${chatId} from vector database`);
+        chatLogger.debug('Requested deletion of chat from vector database', { chatId });
       }
     } catch (error) {
-      console.error('Error requesting chat deletion from vector database:', error);
+      chatLogger.error('Error requesting chat deletion from vector database', error);
       // Continue with local deletion even if vector DB deletion fails
     }
 
