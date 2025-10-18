@@ -10,13 +10,12 @@ describe('WebSocket Server Tests', () => {
   beforeAll((done) => {
     // Set up test environment
     process.env.GEMINI_API_KEY = 'test_gemini_key';
-    process.env.ECHO_MODE = 'true'; // Use echo mode for testing
     process.env.GOOGLE_SEARCH_API_KEY = 'test_search_key';
     process.env.GOOGLE_SEARCH_ENGINE_ID = 'test_engine_id';
 
     server = createServer();
     io = setupWebSocketServer(server);
-    
+
     server.listen(5001, () => {
       done();
     });
@@ -40,54 +39,6 @@ describe('WebSocket Server Tests', () => {
     if (clientSocket.connected) {
       clientSocket.disconnect();
     }
-  });
-
-  describe('Echo Mode', () => {
-    test('should echo back messages in echo mode', (done) => {
-      const testMessage = 'Hello, this is a test message';
-      const testData = {
-        message: testMessage,
-        chatHistory: [],
-        chatId: 'test-chat-1'
-      };
-
-      clientSocket.emit('send-message', testData);
-
-      clientSocket.on('message-response', (data) => {
-        expect(data.chatId).toBe('test-chat-1');
-        expect(data.message).toContain('Echo:');
-        expect(data.message).toContain(testMessage);
-        expect(data.isComplete).toBe(true);
-        done();
-      });
-    });
-
-    test('should emit typing indicators', (done) => {
-      const testData = {
-        message: 'Test message',
-        chatHistory: [],
-        chatId: 'test-chat-2'
-      };
-
-      let typingReceived = false;
-      let messageReceived = false;
-
-      clientSocket.on('typing', (data) => {
-        if (data.isTyping) {
-          typingReceived = true;
-        } else if (typingReceived && !data.isTyping) {
-          // Typing stopped
-          expect(messageReceived).toBe(true);
-          done();
-        }
-      });
-
-      clientSocket.on('message-response', (data) => {
-        messageReceived = true;
-      });
-
-      clientSocket.emit('send-message', testData);
-    });
   });
 
   describe('Function Detection', () => {

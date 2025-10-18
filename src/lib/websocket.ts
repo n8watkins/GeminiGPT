@@ -18,29 +18,9 @@ export function setupWebSocketServer(server: HTTPServer) {
     socket.on('send-message', async (data) => {
       try {
         const { message, chatHistory, chatId } = data;
-        
+
         // Emit typing indicator
         socket.emit('typing', { chatId, isTyping: true });
-        
-        // Echo mode for testing
-        if (process.env.ECHO_MODE === 'true') {
-          // Simulate streaming response
-          const echoMessage = `Echo: ${message}`;
-          const words = echoMessage.split(' ');
-          
-          for (let i = 0; i < words.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            
-            socket.emit('message-response', {
-              chatId,
-              message: words[i] + (i < words.length - 1 ? ' ' : ''),
-              isComplete: i === words.length - 1
-            });
-          }
-          
-          socket.emit('typing', { chatId, isTyping: false });
-          return;
-        }
 
         // Real Gemini 2.5 Flash integration
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });

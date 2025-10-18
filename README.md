@@ -106,7 +106,6 @@ GOOGLE_SEARCH_API_KEY=your_google_search_api_key_here
 GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id_here
 
 # Development Settings
-ECHO_MODE=false
 NODE_ENV=development
 ```
 

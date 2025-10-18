@@ -276,7 +276,6 @@ async function indexMessagePair(userId, chatId, message, responseText, chatHisto
 
 console.log('Environment check:');
 console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
-console.log('ECHO_MODE:', process.env.ECHO_MODE);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -452,26 +451,6 @@ function setupWebSocketServer(server) {
         
         // Emit typing indicator
         socket.emit('typing', { chatId, isTyping: true });
-        
-        // Echo mode for testing
-        if (process.env.ECHO_MODE === 'true') {
-          // Simulate streaming response
-          const echoMessage = `Echo: ${message}`;
-          const words = echoMessage.split(' ');
-          
-          for (let i = 0; i < words.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 200));
-            
-            socket.emit('message-response', {
-              chatId,
-              message: words[i] + (i < words.length - 1 ? ' ' : ''),
-              isComplete: i === words.length - 1
-            });
-          }
-          
-          socket.emit('typing', { chatId, isTyping: false });
-          return;
-        }
 
         // Real Gemini 2.5 Flash integration with function calling
         const model = genAI.getGenerativeModel({ 

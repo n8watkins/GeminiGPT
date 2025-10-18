@@ -20,7 +20,6 @@ In Railway dashboard, go to your project → Variables tab and add:
 NEXT_PUBLIC_GEMINI_API_KEY=your_actual_gemini_api_key
 GOOGLE_SEARCH_API_KEY=your_google_search_api_key (optional)
 GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id (optional)
-ECHO_MODE=false
 NODE_ENV=production
 ```
 

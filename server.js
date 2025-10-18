@@ -7,7 +7,6 @@ try {
 
 console.log('Server environment check:');
 console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
-console.log('ECHO_MODE:', process.env.ECHO_MODE);
 console.log('GOOGLE_SEARCH_API_KEY exists:', !!process.env.GOOGLE_SEARCH_API_KEY);
 console.log('GOOGLE_SEARCH_ENGINE_ID exists:', !!process.env.GOOGLE_SEARCH_ENGINE_ID);
 

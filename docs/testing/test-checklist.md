@@ -67,9 +67,6 @@ Try these messages:
 
 **Expected**: Should trigger search function and return formatted search results
 
-### 5. Test Echo Mode (if enabled)
-- Send any message
-- **Expected**: Should echo back your message with "Echo:" prefix
 
 ### 6. Test Multiple Chats
 - Create multiple chats
@@ -98,9 +95,6 @@ Look for these debug messages in the terminal:
 model: 'gemini-2.0-flash-exp'  // Should be correct
 ```
 
-### Issue: Function calls not working
-**Solution**: Check if `ECHO_MODE=false` in environment variables
-
 ### Issue: Search results not appearing
 **Solution**: 
 1. Verify Google Search API key is set
@@ -116,7 +110,6 @@ model: 'gemini-2.0-flash-exp'  // Should be correct
 ## 📊 Performance Tests
 
 ### Response Time
-- **Echo Mode**: Should respond within 1-2 seconds
 - **Function Calls**: Should respond within 3-5 seconds
 - **Gemini API**: Should respond within 5-10 seconds
 
@@ -138,16 +131,15 @@ model: 'gemini-2.0-flash-exp'  // Should be correct
 
 ### 📈 Expected Behavior:
 - **Stock queries** → Formatted stock information
-- **Weather queries** → Formatted weather information  
+- **Weather queries** → Formatted weather information
 - **Search queries** → Formatted search results
 - **Other queries** → Gemini AI response
-- **Echo mode** → Message echoed back
 
 ## 🔄 Next Steps After Testing
 
 1. **If all tests pass**: The app is ready for production use
 2. **If some tests fail**: Check the debugging section above
-3. **For production**: Set up real API keys and disable echo mode
+3. **For production**: Set up real API keys for all services
 4. **For scaling**: Consider adding rate limiting and error handling
 
 ---

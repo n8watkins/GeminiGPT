@@ -33,7 +33,6 @@ GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id_here
 
 # Production Settings
 NODE_ENV=production
-ECHO_MODE=false
 ```
 
 ### **1.3 Deploy**
