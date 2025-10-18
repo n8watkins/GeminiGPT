@@ -2,6 +2,8 @@
 
 import React, { useRef, useState } from 'react';
 import { Attachment } from '@/types/chat';
+import { validateFile } from '@/lib/fileValidation';
+import { fileLogger } from '@/lib/logger';
 
 interface FileUploadProps {
   onFilesSelected: (attachments: Attachment[]) => void;
@@ -13,49 +15,32 @@ export default function FileUpload({ onFilesSelected, disabled = false }: FileUp
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleFileSelect = (files: FileList | null) => {
-    console.log('Files selected:', files ? files.length : 0);
+    fileLogger.debug('Files selected:', files ? files.length : 0);
     if (!files || files.length === 0) return;
 
     const attachments: Attachment[] = [];
     let processedCount = 0;
-    const totalFiles = Array.from(files).filter(f => {
-      const isImg = f.type.startsWith('image/');
-      const isSupported = isImg || 
-        f.type === 'application/pdf' ||
-        f.type === 'text/plain' ||
-        f.type.startsWith('text/') ||
-        f.type === 'application/msword' ||
-        f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        f.type === 'application/rtf';
-      return isSupported && f.size <= 10 * 1024 * 1024;
-    }).length;
-    
-    if (totalFiles === 0) {
-      alert('No supported files selected. Please upload images, PDFs, or text files.');
+
+    // Validate all files first
+    const validFiles = Array.from(files).filter(file => {
+      const validation = validateFile(file);
+      if (!validation.isValid) {
+        fileLogger.warn(`File validation failed for ${file.name}: ${validation.error}`);
+        alert(validation.error);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) {
+      alert('No valid files selected. Please upload images, PDFs, or text files under 10MB.');
       return;
     }
-    
-    Array.from(files).forEach((file) => {
-      // Check file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 10MB.`);
-        return;
-      }
 
-      // Check file type
+    const totalFiles = validFiles.length;
+
+    validFiles.forEach((file) => {
       const isImage = file.type.startsWith('image/');
-      const isSupportedFile = isImage || 
-        file.type === 'application/pdf' ||
-        file.type === 'text/plain' ||
-        file.type.startsWith('text/') ||
-        file.type === 'application/msword' ||
-        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        file.type === 'application/rtf';
-
-      if (!isSupportedFile) {
-        alert(`File type ${file.type} is not supported. Please upload images, PDFs, or text files.`);
-        return;
-      }
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -98,7 +83,7 @@ export default function FileUpload({ onFilesSelected, disabled = false }: FileUp
   };
 
   const handleClick = () => {
-    console.log('FileUpload button clicked', { disabled });
+    fileLogger.debug('FileUpload button clicked', { disabled });
     if (!disabled) {
       fileInputRef.current?.click();
     }

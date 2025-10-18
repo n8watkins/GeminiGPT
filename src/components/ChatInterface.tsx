@@ -11,6 +11,7 @@ import FileUpload from './FileUpload';
 import ChatUtils from './ChatUtils';
 import MarkdownRenderer from './MarkdownRenderer';
 import { chatLogger, fileLogger } from '@/lib/logger';
+import { validateFile } from '@/lib/fileValidation';
 
 export default function ChatInterface() {
   const router = useRouter();
@@ -242,16 +243,14 @@ export default function ChatInterface() {
     const newAttachments: Attachment[] = [];
 
     for (const file of files) {
-      // Check file type
-      const isImage = file.type.startsWith('image/');
-      const isPdf = file.type === 'application/pdf';
-      const isDoc = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                     file.type === 'application/msword';
-
-      if (!isImage && !isPdf && !isDoc) {
-        fileLogger.warn(`Unsupported file type: ${file.type}`);
+      // Validate file using shared validation logic
+      const validation = validateFile(file);
+      if (!validation.isValid) {
+        fileLogger.warn(`File validation failed: ${validation.error}`);
         continue;
       }
+
+      const isImage = file.type.startsWith('image/');
 
       // Read file as base64
       const reader = new FileReader();

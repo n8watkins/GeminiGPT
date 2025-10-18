@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useChat } from '@/contexts/ChatContext';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
+import { chatLogger } from '@/lib/logger';
 
 interface ChatUtilsProps {
   chatId: string;
@@ -16,6 +18,10 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Focus trap for modals
+  const shareModalRef = useFocusTrap(showShareModal);
+  const downloadModalRef = useFocusTrap(showDownloadModal);
 
   useEffect(() => {
     setMounted(true);
@@ -107,7 +113,8 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
       const data = await response.json();
       setShareUrl(data.shareUrl);
     } catch (error) {
-      console.error('Error creating share link:', error);
+      chatLogger.error('Error creating share link', error);
+      // TODO: Replace with notification system when implemented
       alert('Failed to create share link. Please try again.');
       setShowShareModal(false);
     } finally {
@@ -167,6 +174,8 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
           }}
         >
           <div
+            ref={shareModalRef}
+            tabIndex={-1}
             className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
@@ -175,6 +184,8 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
               <button
                 onClick={() => setShowShareModal(false)}
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Close share dialog"
+                title="Close"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -258,6 +269,8 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
           }}
         >
           <div
+            ref={downloadModalRef}
+            tabIndex={-1}
             className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
@@ -266,6 +279,8 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
               <button
                 onClick={() => setShowDownloadModal(false)}
                 className="text-gray-500 hover:text-gray-700"
+                aria-label="Close download dialog"
+                title="Close"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
