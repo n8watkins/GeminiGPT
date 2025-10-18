@@ -317,51 +317,8 @@ export default function ChatInterface() {
                 {activeChat.messages.length} messages
               </p>
             </div>
-          <div className="flex items-center space-x-2">
             {/* Quick Action Pills */}
             <ChatUtils chatId={activeChat.id} />
-
-            <div className="flex items-center space-x-2">
-              {(() => {
-                const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
-                const isRailwayConfigured = railwayUrl && !railwayUrl.includes('your-app-name');
-                const isProduction = typeof window !== 'undefined' &&
-                  window.location.hostname !== 'localhost' &&
-                  window.location.hostname !== '127.0.0.1' &&
-                  window.location.hostname !== '[::1]';
-
-                if (isProduction) {
-                  if (isRailwayConfigured) {
-                    return (
-                      <>
-                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                        <span className="text-xs font-medium text-gray-700">
-                          {isConnected ? 'Railway' : 'Railway (Disconnected)'}
-                        </span>
-                      </>
-                    );
-                  } else {
-                    return (
-                      <>
-                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                        <span className="text-xs font-medium text-gray-700">Railway Not Configured</span>
-                      </>
-                    );
-                  }
-                }
-
-                // Local development
-                return (
-                  <>
-                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-xs font-medium text-gray-700">
-                      {isConnected ? 'Local Server' : 'Local Server (Disconnected)'}
-                    </span>
-                  </>
-                );
-              })()}
-              </div>
-            </div>
           </div>
         </div>
       )}

@@ -24,6 +24,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
   const [searchQuery, setSearchQuery] = useState('');
   const [userId, setUserId] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Set userId after mount to avoid hydration mismatch
@@ -175,10 +176,18 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
         handleNewChat();
       }
 
+      // Alt+B for toggle sidebar collapse
+      if (event.altKey && event.key === 'b' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+        event.preventDefault();
+        setIsCollapsed(prev => !prev);
+      }
+
       // Alt+F for search focus
       if (event.altKey && event.key === 'f' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
         event.preventDefault();
-        searchInputRef.current?.focus();
+        if (!isCollapsed) {
+          searchInputRef.current?.focus();
+        }
       }
 
       // Alt+R for reset everything
@@ -200,87 +209,151 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNewChat, isOpen, onToggle, searchQuery]);
+  }, [handleNewChat, isOpen, onToggle, searchQuery, isCollapsed]);
+
+  // Connection status indicator
+  const connectionIndicator = (() => {
+    const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
+    const isRailwayConfigured = railwayUrl && !railwayUrl.includes('your-app-name');
+    const isProduction = typeof window !== 'undefined' &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1' &&
+      window.location.hostname !== '[::1]';
+
+    if (isProduction) {
+      if (isRailwayConfigured) {
+        return (
+          <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`} title={isConnected ? 'Railway Connected' : 'Railway Disconnected'}></div>
+        );
+      } else {
+        return (
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50" title="Railway Not Configured"></div>
+        );
+      }
+    }
+
+    // Local development
+    return (
+      <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`} title={isConnected ? 'Local Server Connected' : 'Local Server Disconnected'}></div>
+    );
+  })();
 
   return (
     <>
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-blue-900 to-blue-950 text-white transform transition-transform duration-300 ease-in-out z-50 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 text-white transform transition-all duration-300 ease-in-out z-50 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${isCollapsed ? 'w-20' : 'w-96'}`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 border-b border-blue-800">
-            <div className="flex items-center justify-between mb-3">
-              <h1 className="text-xl font-bold">GeminiGPT</h1>
-              <button
-                onClick={onToggle}
-                className="lg:hidden p-2 hover:bg-gray-800 rounded"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            {/* User ID Display with New User Button */}
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex items-center gap-2 px-3 py-2 bg-blue-800/50 rounded-lg flex-1 min-w-0">
-                <svg className="w-4 h-4 text-blue-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-                <span className="text-xs text-blue-200 font-mono truncate" suppressHydrationWarning>
-                  {mounted ? userId : ''}
-                </span>
-              </div>
-              <button
-                onClick={handleNewUser}
-                className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex-shrink-0 group"
-                title="Generate new user (starts fresh session)"
-              >
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Rate Limit Display - Memoized */}
-            {rateLimitDisplay}
-
-            {/* Search Input */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search chats... (Alt+F)"
-                className="w-full pl-10 pr-10 py-2 bg-blue-800/50 text-blue-100 placeholder-blue-300/50 rounded-lg border border-blue-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors"
-              />
-              {searchQuery && (
+            {!isCollapsed ? (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-xl font-bold">GeminiGPT</h1>
+                    {connectionIndicator}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsCollapsed(true)}
+                      className="p-2 hover:bg-blue-800 rounded transition-colors"
+                      title="Collapse sidebar (Alt+B)"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={onToggle}
+                      className="lg:hidden p-2 hover:bg-blue-800 rounded transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
                 <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    searchInputRef.current?.focus();
-                  }}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-300 hover:text-blue-200"
-                  title="Clear search (Esc)"
+                  onClick={() => setIsCollapsed(false)}
+                  className="p-2 hover:bg-blue-800 rounded transition-colors"
+                  title="Expand sidebar (Alt+B)"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                   </svg>
                 </button>
-              )}
-            </div>
+                {connectionIndicator}
+              </div>
+            )}
+
+            {!isCollapsed && (
+              <>
+                {/* User ID Display with New User Button */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-800/50 rounded-lg flex-1 min-w-0">
+                    <svg className="w-4 h-4 text-blue-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-xs text-blue-200 font-mono truncate" suppressHydrationWarning>
+                      {mounted ? userId : ''}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleNewUser}
+                    className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex-shrink-0 group"
+                    title="Generate new user (starts fresh session)"
+                  >
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Rate Limit Display - Memoized */}
+                {rateLimitDisplay}
+
+                {/* Search Input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search chats... (Alt+F)"
+                    className="w-full pl-10 pr-10 py-2 bg-blue-800/50 text-blue-100 placeholder-blue-300/50 rounded-lg border border-blue-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-colors"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        searchInputRef.current?.focus();
+                      }}
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-300 hover:text-blue-200"
+                      title="Clear search (Esc)"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Chat List */}
-          <div className="flex-1 overflow-y-auto">
+          {!isCollapsed && (
+            <div className="flex-1 overflow-y-auto">
             {state.chats.length === 0 ? (
               <div className="p-4 text-center text-gray-400">
                 <p>No chats yet. Create your first chat!</p>
@@ -311,26 +384,41 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
               </div>
             )}
           </div>
+          )}
 
           {/* New Chat Button - Moved to Bottom */}
           <div className="border-t border-blue-800 p-3">
-            <button
-              onClick={handleNewChat}
-              className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-between group shadow-lg"
-              title="Start new chat (Alt+N)"
-            >
-              <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {!isCollapsed ? (
+              <button
+                onClick={handleNewChat}
+                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-between group shadow-lg"
+                title="Start new chat (Alt+N)"
+              >
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>New Chat</span>
+                </div>
+                <kbd className="text-xs bg-blue-400 px-2 py-0.5 rounded opacity-70 group-hover:opacity-100 font-mono">Alt+N</kbd>
+              </button>
+            ) : (
+              <button
+                onClick={handleNewChat}
+                className="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center shadow-lg"
+                title="New chat (Alt+N)"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span>New Chat</span>
-              </div>
-              <kbd className="text-xs bg-blue-400 px-2 py-0.5 rounded opacity-70 group-hover:opacity-100 font-mono">Alt+N</kbd>
-            </button>
+              </button>
+            )}
           </div>
 
           {/* Settings Section */}
           <div className="border-t border-blue-800 p-3 bg-blue-950/30 space-y-2">
+            {!isCollapsed ? (
+              <>
             {/* About Button */}
             {onOpenAbout && (
               <button
@@ -347,20 +435,32 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
               </button>
             )}
 
-            {/* Reset Everything Button */}
-            <button
-              onClick={() => setShowResetModal(true)}
-              className="w-full px-3 py-2.5 text-sm font-medium text-red-100 bg-red-900/20 hover:bg-red-900/40 rounded-lg border border-red-800/40 hover:border-red-700/60 transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
-              title="Reset everything - chats, vector DB, and local data (Alt+R)"
-            >
-              <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2 text-red-300 group-hover:text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {/* Reset Everything Button */}
+                <button
+                  onClick={() => setShowResetModal(true)}
+                  className="w-full px-3 py-2.5 text-sm font-medium text-red-100 bg-red-900/20 hover:bg-red-900/40 rounded-lg border border-red-800/40 hover:border-red-700/60 transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
+                  title="Reset everything - chats, vector DB, and local data (Alt+R)"
+                >
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 mr-2 text-red-300 group-hover:text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="group-hover:text-white transition-colors">Reset Everything</span>
+                  </div>
+                  <kbd className="text-xs bg-red-800/40 text-red-200 px-2 py-0.5 rounded opacity-60 group-hover:opacity-100 font-mono transition-opacity">Alt+R</kbd>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="w-full p-3 text-red-100 bg-red-900/20 hover:bg-red-900/40 rounded-lg border border-red-800/40 hover:border-red-700/60 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
+                title="Reset everything (Alt+R)"
+              >
+                <svg className="w-5 h-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span className="group-hover:text-white transition-colors">Reset Everything</span>
-              </div>
-              <kbd className="text-xs bg-red-800/40 text-red-200 px-2 py-0.5 rounded opacity-60 group-hover:opacity-100 font-mono transition-opacity">Alt+R</kbd>
-            </button>
+              </button>
+            )}
           </div>
         </div>
       </div>
