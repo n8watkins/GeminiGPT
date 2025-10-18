@@ -10,6 +10,7 @@ import AttachmentDisplay from './AttachmentDisplay';
 import FileUpload from './FileUpload';
 import ChatUtils from './ChatUtils';
 import MarkdownRenderer from './MarkdownRenderer';
+import { chatLogger, fileLogger } from '@/lib/logger';
 
 export default function ChatInterface() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function ChatInterface() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted!', {
+    chatLogger.debug('Form submitted', {
       inputValue: inputValue.trim(),
       pendingAttachments: pendingAttachments.length,
       isLoading,
@@ -60,13 +61,13 @@ export default function ChatInterface() {
 
     // Prevent double submission
     if (isLoading) {
-      console.log('Already loading, ignoring submission');
+      chatLogger.debug('Already loading, ignoring submission');
       return;
     }
 
     // Allow submission if there's text OR attachments
     if (!inputValue.trim() && pendingAttachments.length === 0) {
-      console.log('Form submission blocked: no text or attachments');
+      chatLogger.debug('Form submission blocked: no text or attachments');
       return;
     }
 
@@ -74,7 +75,7 @@ export default function ChatInterface() {
     const attachmentsToSend = [...pendingAttachments]; // Copy attachments before clearing
     const wasNoActiveChat = !activeChat;
 
-    console.log('Submitting message:', { message, attachmentsCount: attachmentsToSend.length });
+    chatLogger.debug('Submitting message', { message, attachmentsCount: attachmentsToSend.length });
 
     // Clear form immediately
     setInputValue('');
@@ -84,14 +85,14 @@ export default function ChatInterface() {
 
     try {
       await sendMessage(message, attachmentsToSend);
-      console.log('Message sent successfully');
+      chatLogger.debug('Message sent successfully');
 
       // If there was no active chat before, navigate to the newly created chat
       if (wasNoActiveChat && state.activeChatId) {
         router.push(`/chat/${state.activeChatId}`);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      chatLogger.error('Error sending message', error);
 
       // Show user-friendly error message
       const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
@@ -115,7 +116,7 @@ export default function ChatInterface() {
     try {
       await regenerateMessage();
     } catch (error) {
-      console.error('Error regenerating message:', error);
+      chatLogger.error('Error regenerating message', error);
       setErrorMessage(error instanceof Error ? error.message : 'Failed to regenerate message');
       setTimeout(() => setErrorMessage(null), 5000);
     } finally {
@@ -137,7 +138,7 @@ export default function ChatInterface() {
 
     const wasNoActiveChat = !activeChat;
 
-    console.log('Suggestion clicked:', suggestion);
+    chatLogger.debug('Suggestion clicked', { suggestion });
 
     // Clear form and set loading state
     setInputValue('');
@@ -147,14 +148,14 @@ export default function ChatInterface() {
 
     try {
       await sendMessage(suggestion, []);
-      console.log('Suggestion message sent successfully');
+      chatLogger.debug('Suggestion message sent successfully');
 
       // If there was no active chat before, navigate to the newly created chat
       if (wasNoActiveChat && state.activeChatId) {
         router.push(`/chat/${state.activeChatId}`);
       }
     } catch (error) {
-      console.error('Error sending suggestion message:', error);
+      chatLogger.error('Error sending suggestion message', error);
 
       // Show user-friendly error message
       const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
@@ -248,7 +249,7 @@ export default function ChatInterface() {
                      file.type === 'application/msword';
 
       if (!isImage && !isPdf && !isDoc) {
-        console.warn(`Unsupported file type: ${file.type}`);
+        fileLogger.warn(`Unsupported file type: ${file.type}`);
         continue;
       }
 
@@ -274,7 +275,7 @@ export default function ChatInterface() {
           url: isImage ? URL.createObjectURL(file) : '',
         });
       } catch (error) {
-        console.error(`Error reading file ${file.name}:`, error);
+        fileLogger.error(`Error reading file ${file.name}`, error);
       }
     }
 

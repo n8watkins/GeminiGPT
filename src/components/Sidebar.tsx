@@ -7,6 +7,9 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { getSessionUserId, generateUserId } from '@/lib/userId';
 import { Chat } from '@/types/chat';
 import ConfirmationModal from './ConfirmationModal';
+import { RATE_LIMIT_THRESHOLDS, DEBOUNCE_DELAY } from '@/lib/constants';
+import { useDebounce } from '@/lib/hooks/useDebounce';
+import { devLog } from '@/lib/logger';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -22,6 +25,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, DEBOUNCE_DELAY.SEARCH);
   const [userId, setUserId] = useState('');
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -46,7 +50,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
     // Clear vector database first
     if (socket && isConnected && userId) {
       socket.emit('reset-vector-db', { userId });
-      console.log('Reset vector database request sent');
+      devLog('Reset vector database request sent');
     }
 
     // Clear all local data
@@ -89,9 +93,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
 
   // Memoize filtered chats to prevent unnecessary recalculations
   const filteredChats = useMemo(() => {
-    if (!searchQuery.trim()) return state.chats;
+    if (!debouncedSearchQuery.trim()) return state.chats;
 
-    const lowerQuery = searchQuery.toLowerCase();
+    const lowerQuery = debouncedSearchQuery.toLowerCase();
     return state.chats.filter(chat => {
       // Search in chat title
       if (chat.title.toLowerCase().includes(lowerQuery)) return true;
@@ -101,7 +105,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
         msg.content.toLowerCase().includes(lowerQuery)
       );
     });
-  }, [state.chats, searchQuery]);
+  }, [state.chats, debouncedSearchQuery]);
 
   // Memoize rate limit display to prevent flicker on updates
   const rateLimitDisplay = useMemo(() => {
@@ -121,8 +125,8 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-blue-300">Per Minute</span>
             <span className={`font-mono font-medium ${
-              rateLimitInfo.remaining.minute <= 5 ? 'text-yellow-300' :
-              rateLimitInfo.remaining.minute <= 2 ? 'text-red-300' :
+              rateLimitInfo.remaining.minute <= RATE_LIMIT_THRESHOLDS.MINUTE_CRITICAL ? 'text-red-300' :
+              rateLimitInfo.remaining.minute <= RATE_LIMIT_THRESHOLDS.MINUTE_WARNING ? 'text-yellow-300' :
               'text-blue-100'
             }`}>
               {rateLimitInfo.remaining.minute}/{rateLimitInfo.limit.minute}
@@ -131,8 +135,8 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
           <div className="w-full bg-blue-900/50 rounded-full h-1.5 overflow-hidden">
             <div
               className={`h-full transition-all duration-300 ${
-                rateLimitInfo.remaining.minute <= 5 ? 'bg-yellow-400' :
-                rateLimitInfo.remaining.minute <= 2 ? 'bg-red-400' :
+                rateLimitInfo.remaining.minute <= RATE_LIMIT_THRESHOLDS.MINUTE_CRITICAL ? 'bg-red-400' :
+                rateLimitInfo.remaining.minute <= RATE_LIMIT_THRESHOLDS.MINUTE_WARNING ? 'bg-yellow-400' :
                 'bg-blue-400'
               }`}
               style={{ width: `${(rateLimitInfo.remaining.minute / rateLimitInfo.limit.minute) * 100}%` }}
@@ -145,8 +149,8 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-blue-300">Per Hour</span>
             <span className={`font-mono font-medium ${
-              rateLimitInfo.remaining.hour <= 20 ? 'text-yellow-300' :
-              rateLimitInfo.remaining.hour <= 10 ? 'text-red-300' :
+              rateLimitInfo.remaining.hour <= RATE_LIMIT_THRESHOLDS.HOUR_CRITICAL ? 'text-red-300' :
+              rateLimitInfo.remaining.hour <= RATE_LIMIT_THRESHOLDS.HOUR_WARNING ? 'text-yellow-300' :
               'text-blue-100'
             }`}>
               {rateLimitInfo.remaining.hour}/{rateLimitInfo.limit.hour}
@@ -155,8 +159,8 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
           <div className="w-full bg-blue-900/50 rounded-full h-1.5 overflow-hidden">
             <div
               className={`h-full transition-all duration-300 ${
-                rateLimitInfo.remaining.hour <= 20 ? 'bg-yellow-400' :
-                rateLimitInfo.remaining.hour <= 10 ? 'bg-red-400' :
+                rateLimitInfo.remaining.hour <= RATE_LIMIT_THRESHOLDS.HOUR_CRITICAL ? 'bg-red-400' :
+                rateLimitInfo.remaining.hour <= RATE_LIMIT_THRESHOLDS.HOUR_WARNING ? 'bg-yellow-400' :
                 'bg-blue-400'
               }`}
               style={{ width: `${(rateLimitInfo.remaining.hour / rateLimitInfo.limit.hour) * 100}%` }}
@@ -211,8 +215,8 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNewChat, isOpen, onToggle, searchQuery, isCollapsed]);
 
-  // Connection status indicator with text label
-  const connectionIndicator = (() => {
+  // Connection status indicator with text label - memoized to prevent re-renders
+  const connectionIndicator = useMemo(() => {
     const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
     const isRailwayConfigured = railwayUrl && !railwayUrl.includes('your-app-name');
     const isProduction = typeof window !== 'undefined' &&
@@ -242,7 +246,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
       label: isConnected ? 'Local Server' : 'Disconnected',
       color: isConnected ? 'text-green-400' : 'text-red-400'
     };
-  })();
+  }, [isConnected]);
 
   return (
     <>
@@ -270,6 +274,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                     <button
                       onClick={() => setIsCollapsed(true)}
                       className="p-2 hover:bg-blue-800 rounded transition-colors"
+                      aria-label="Collapse sidebar (Alt+B)"
                       title="Collapse sidebar (Alt+B)"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,6 +284,8 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                     <button
                       onClick={onToggle}
                       className="lg:hidden p-2 hover:bg-blue-800 rounded transition-colors"
+                      aria-label="Close sidebar"
+                      title="Close sidebar"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -292,6 +299,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                 <button
                   onClick={() => setIsCollapsed(false)}
                   className="p-2 hover:bg-blue-800 rounded transition-colors"
+                  aria-label="Expand sidebar (Alt+B)"
                   title="Expand sidebar (Alt+B)"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,6 +325,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                   <button
                     onClick={handleNewUser}
                     className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex-shrink-0 group"
+                    aria-label="Generate new user (starts fresh session)"
                     title="Generate new user (starts fresh session)"
                   >
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -350,6 +359,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
                         searchInputRef.current?.focus();
                       }}
                       className="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-300 hover:text-blue-200"
+                      aria-label="Clear search (Esc)"
                       title="Clear search (Esc)"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -554,6 +564,8 @@ const ChatItem = React.memo(function ChatItemComponent({ chat, isActive, onSelec
             onDelete();
           }}
           className="ml-2 p-1 hover:bg-red-600 rounded opacity-75 hover:opacity-100"
+          aria-label="Delete chat"
+          title="Delete chat"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
