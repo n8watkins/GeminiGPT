@@ -26,6 +26,9 @@ console.log('✅ Rate limiter initialized:', rateLimiter.getStats());
 const { HistoryProcessor } = require('./lib/websocket/services/HistoryProcessor');
 const historyProcessor = new HistoryProcessor();
 
+const { AttachmentHandler } = require('./lib/websocket/services/AttachmentHandler');
+const attachmentHandler = new AttachmentHandler(processDocumentAttachment);
+
 /**
  * Create message objects for indexing
  */
@@ -230,136 +233,8 @@ function setupWebSocketServer(server) {
           history: finalHistory
         });
 
-        // Prepare message parts (text + images + PDFs)
-        let enhancedMessage = message;
-        const messageParts = [];
-        
-        // Process attachments
-        if (attachments && attachments.length > 0) {
-          console.log(`📎 Processing ${attachments.length} attachments`);
-          for (const attachment of attachments) {
-            try {
-              console.log(`📎 Attachment details:`, {
-                name: attachment.name,
-                type: attachment.type,
-                mimeType: attachment.mimeType,
-                hasUrl: !!attachment.url,
-                urlLength: attachment.url?.length
-              });
-
-              if (attachment.type === 'image' && attachment.url) {
-                // Handle images
-                const base64Data = attachment.url.split(',')[1];
-                if (base64Data) {
-                  const sizeInMB = (base64Data.length / (1024 * 1024)).toFixed(2);
-                  console.log(`🖼️  Processing image: ${attachment.name}, size: ${sizeInMB}MB (${base64Data.length} chars)`);
-
-                  // Check image size (limit to 10MB base64 to match document limit)
-                  if (base64Data.length > 10 * 1024 * 1024) {
-                    console.warn(`❌ Image too large: ${attachment.name} (${sizeInMB}MB), skipping`);
-                    enhancedMessage += `\n\n**Image: ${attachment.name}**\n[Image too large to process - please use an image under 10MB]`;
-                  } else {
-                    console.log(`✅ Image accepted: ${attachment.name} (${sizeInMB}MB)`);
-                    console.log(`📤 Adding image to message parts with mimeType: ${attachment.mimeType || 'image/jpeg'}`);
-                    messageParts.push({
-                      inlineData: {
-                        mimeType: attachment.mimeType || 'image/jpeg',
-                        data: base64Data
-                      }
-                    });
-                    console.log(`✓ Image successfully added to messageParts. Total parts so far: ${messageParts.length}`);
-                  }
-                } else {
-                  console.warn(`⚠️  No base64 data found for image: ${attachment.name}`);
-                }
-              } else if ((attachment.mimeType === 'application/pdf' || 
-                         attachment.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-                         attachment.mimeType === 'application/msword' ||
-                         attachment.name?.toLowerCase().endsWith('.pdf') ||
-                         attachment.name?.toLowerCase().endsWith('.docx') ||
-                         attachment.name?.toLowerCase().endsWith('.doc')) && attachment.url) {
-              // Handle PDFs and DOCX files - extract text content with timeout
-              try {
-                const base64Data = attachment.url.split(',')[1];
-                console.log(`Document attachment details:`, {
-                  name: attachment.name,
-                  mimeType: attachment.mimeType,
-                  urlPrefix: attachment.url?.substring(0, 50),
-                  base64Length: base64Data?.length
-                });
-                
-                if (base64Data) {
-                  console.log(`Processing document: ${attachment.name}`);
-                  
-                  // Add timeout to document processing to prevent hanging
-                  const documentProcessingPromise = processDocumentAttachment(base64Data, attachment.name, attachment.mimeType);
-                  const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Document processing timeout after 30 seconds')), 30000)
-                  );
-                  
-                  const documentResult = await Promise.race([documentProcessingPromise, timeoutPromise]);
-                  
-                  if (documentResult.success) {
-                    // Limit document text to prevent token overflow
-                    const maxTextLength = 8000; // Reasonable limit for Gemini
-                    const truncatedText = documentResult.extractedText.length > maxTextLength 
-                      ? documentResult.extractedText.substring(0, maxTextLength) + '\n\n[Text truncated due to length]'
-                      : documentResult.extractedText;
-                    
-                    // Add document text content to the message
-                    const docType = attachment.mimeType === 'application/pdf' ? 'PDF' : 'DOCX';
-                    enhancedMessage += `\n\n**${docType} Document: ${attachment.name}**\n${truncatedText}`;
-                    console.log(`Document processed successfully: ${documentResult.textLength} characters extracted (${truncatedText.length} sent)`);
-                  } else {
-                    const docType = attachment.mimeType === 'application/pdf' ? 'PDF' : 'DOCX';
-                    enhancedMessage += `\n\n**${docType} Document: ${attachment.name}**\n[Error processing document: ${documentResult.error}]`;
-                    console.log(`Document processing failed: ${documentResult.error}`);
-                  }
-                }
-              } catch (error) {
-                console.error('Error processing document:', error);
-                console.error('Document error details:', {
-                  fileName: attachment.name,
-                  mimeType: attachment.mimeType,
-                  urlLength: attachment.url?.length,
-                  errorMessage: error.message,
-                  errorStack: error.stack
-                });
-                const docType = attachment.mimeType === 'application/pdf' ? 'PDF' : 'DOCX';
-                enhancedMessage += `\n\n**${docType} Document: ${attachment.name}**\n[Error processing document: ${error.message}]`;
-              }
-            } else if (attachment.type === 'file' && attachment.url) {
-              // Handle other text files
-              try {
-                const base64Data = attachment.url.split(',')[1];
-                if (base64Data) {
-                  const textContent = Buffer.from(base64Data, 'base64').toString('utf-8');
-                  enhancedMessage += `\n\n**File: ${attachment.name}**\n${textContent}`;
-                  console.log(`Text file processed: ${attachment.name}`);
-                }
-              } catch (error) {
-                console.error('Error processing text file:', error);
-                enhancedMessage += `\n\n**File: ${attachment.name}**\n[Error processing file: ${error.message}]`;
-              }
-            }
-            } catch (attachmentError) {
-              console.error('Error processing attachment:', attachmentError);
-              enhancedMessage += `\n\n**Attachment Error: ${attachment.name}**\n[Error: ${attachmentError.message}]`;
-            }
-          }
-        }
-        
-        // Add the enhanced message (with any file content) as text
-        messageParts.push({ text: enhancedMessage });
-
-        console.log(`📨 Sending to Gemini with ${messageParts.length} parts:`);
-        messageParts.forEach((part, index) => {
-          if (part.text) {
-            console.log(`  Part ${index}: text (${part.text.length} chars)`);
-          } else if (part.inlineData) {
-            console.log(`  Part ${index}: ${part.inlineData.mimeType} (${part.inlineData.data.length} chars)`);
-          }
-        });
+        // 🆕 V3 Architecture: Attachment processing now handled by AttachmentHandler service
+        const { messageParts, enhancedMessage } = await attachmentHandler.processAttachments(attachments, message);
 
         // Send message and get response
         console.log('🚀 Calling Gemini API...');
