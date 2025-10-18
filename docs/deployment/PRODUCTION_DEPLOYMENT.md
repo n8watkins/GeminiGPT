@@ -23,8 +23,7 @@ Your app now has **ALL advanced features** working:
 In Railway dashboard → Variables tab, add:
 
 ```bash
-# Required
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+# Required - Gemini API Key for AI processing
 GEMINI_API_KEY=your_gemini_api_key_here
 
 # Advanced Features (optional)
@@ -34,6 +33,8 @@ GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id_here
 # Production Settings
 NODE_ENV=production
 ```
+
+**Note:** Only Railway needs `GEMINI_API_KEY` - this keeps your API key secure on the backend!
 
 ### **1.3 Deploy**
 Railway will automatically:
@@ -56,12 +57,11 @@ After deployment, Railway gives you a URL like:
 In Vercel dashboard → Settings → Environment Variables, add:
 
 ```bash
-# Gemini API
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
-
-# Railway Backend URL
+# Railway Backend URL (required - connects frontend to backend)
 NEXT_PUBLIC_RAILWAY_URL=https://geminigpt-production.up.railway.app
 ```
+
+**Note:** You do NOT need `GEMINI_API_KEY` on Vercel - all AI processing happens on Railway!
 
 ### **2.3 Deploy**
 Vercel will automatically deploy your frontend.
