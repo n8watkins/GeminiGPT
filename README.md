@@ -432,6 +432,48 @@ Deploy using Docker and Docker Compose:
 - **Vercel**: Frontend hosting and CDN
 - **Google Cloud**: AI and search APIs
 
+## 🎯 Code Quality & Best Practices
+
+This project implements production-ready patterns and best practices:
+
+### **Accessibility (a11y)**
+- **Focus Management**: Modal focus traps ensure keyboard navigation stays within dialogs
+- **ARIA Labels**: Comprehensive aria-label and title attributes for screen readers
+- **Keyboard Navigation**: Full keyboard support with tab/shift-tab cycling
+- **Semantic HTML**: Proper use of semantic elements and roles
+
+### **Shared Utilities**
+- **File Validation**: Centralized validation logic in `src/lib/fileValidation.ts`
+  - Supports images, PDFs, DOCX, RTF, and text files
+  - Configurable size limits (10MB default)
+  - Type checking and MIME type validation
+- **Constants**: Centralized configuration in `src/lib/constants.ts`
+  - Rate limit thresholds
+  - Z-index layers
+  - Animation durations
+  - Debounce delays
+- **Custom Hooks**:
+  - `useDebounce`: Performance optimization for search inputs
+  - `useFocusTrap`: Accessibility enhancement for modals
+
+### **Production Logging**
+- **Environment-Aware**: Different behavior for development vs production
+- **Log Levels**: DEBUG, INFO, WARN, ERROR
+- **Prefixed Loggers**: Module-specific loggers (chat, websocket, file upload)
+- **No Console Statements**: All logging goes through the logger system
+
+### **Code Organization**
+- **TypeScript**: Full type safety across the codebase
+- **Component Separation**: Clear separation of concerns
+- **Reusable Logic**: Shared validation, logging, and utility functions
+- **Consistent Patterns**: Standardized error handling and state management
+
+### **Performance Optimizations**
+- **Debounced Search**: 300ms debounce on search inputs to reduce re-renders
+- **Memoized Components**: useMemo for expensive computations
+- **Lazy Loading**: Dynamic imports for non-critical components
+- **Optimized Queries**: Indexed database operations with prepared statements
+
 ## 📊 Performance
 
 - **Real-time Communication**: WebSocket-based messaging
