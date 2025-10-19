@@ -43,20 +43,38 @@ export function useWebSocket() {
   const typingHandlers = useRef<Map<string, (data: TypingIndicator) => void>>(new Map());
 
   useEffect(() => {
-    // Always use Railway URL if configured, otherwise fall back to localhost
+    // CRITICAL SECURITY: Enforce WSS (WebSocket Secure) in production
     let wsUrl: string;
 
     if (typeof window !== 'undefined') {
       const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
+      const isLocalhost = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname === '[::1]';
+      const isProduction = window.location.protocol === 'https:';
 
       if (railwayUrl && !railwayUrl.includes('your-app-name')) {
         // Railway URL is configured - use it
         wsUrl = railwayUrl;
-        wsLogger.info('Connecting to Railway WebSocket server', { wsUrl });
+
+        // CRITICAL: Validate Railway URL uses HTTPS/WSS in production
+        if (isProduction && !wsUrl.startsWith('https://') && !wsUrl.startsWith('wss://')) {
+          wsLogger.error('SECURITY ERROR: Production requires HTTPS/WSS connection', { wsUrl });
+          throw new Error('Security violation: WSS required in production. Configure NEXT_PUBLIC_RAILWAY_URL with https://');
+        }
+
+        wsLogger.info('Connecting to Railway WebSocket server', { wsUrl, isProduction });
       } else {
         // Railway not configured - fall back to localhost
-        wsUrl = 'http://localhost:1337';
-        wsLogger.info('Railway not configured, connecting to localhost:1337');
+        if (isProduction && !isLocalhost) {
+          // Production environment without proper configuration
+          wsLogger.error('SECURITY ERROR: Production deployment without WSS configuration');
+          throw new Error('Production deployment requires NEXT_PUBLIC_RAILWAY_URL with https:// URL');
+        }
+
+        // Only allow HTTP for localhost
+        wsUrl = isLocalhost ? 'http://localhost:1337' : 'https://localhost:1337';
+        wsLogger.info('Development mode: connecting to localhost', { wsUrl, isLocalhost });
       }
     } else {
       wsUrl = 'http://localhost:1337';

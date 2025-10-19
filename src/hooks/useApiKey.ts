@@ -7,6 +7,10 @@ import { validateGeminiApiKey, sanitizeApiKeyForLogging } from '@/lib/apiKeyVali
 export function useApiKey() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastKeyChangeTime, setLastKeyChangeTime] = useState<number>(0);
+
+  // Rate limit: 1 minute cooldown between API key changes
+  const KEY_CHANGE_COOLDOWN_MS = 60000;
 
   useEffect(() => {
     // Load API key from localStorage on mount
@@ -42,6 +46,13 @@ export function useApiKey() {
 
   const saveApiKey = (key: string) => {
     try {
+      // SECURITY: Rate limit API key changes to prevent abuse
+      const now = Date.now();
+      if (lastKeyChangeTime > 0 && (now - lastKeyChangeTime) < KEY_CHANGE_COOLDOWN_MS) {
+        const remainingSeconds = Math.ceil((KEY_CHANGE_COOLDOWN_MS - (now - lastKeyChangeTime)) / 1000);
+        throw new Error(`Please wait ${remainingSeconds} seconds before changing your API key again. This prevents rate limit bypass.`);
+      }
+
       // Validate before saving
       const validation = validateGeminiApiKey(key);
       if (!validation.valid) {
@@ -51,6 +62,7 @@ export function useApiKey() {
       const trimmedKey = key.trim();
       localStorage.setItem('gemini-api-key', trimmedKey);
       setApiKey(trimmedKey);
+      setLastKeyChangeTime(now);
       logger.info('API key saved', { keyPreview: sanitizeApiKeyForLogging(trimmedKey) });
     } catch (error) {
       logger.error('Failed to save API key', { error });

@@ -57,15 +57,17 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
     const validation = validateGeminiApiKey(inputValue);
 
     if (!validation.valid) {
-      // Show validation error but allow user to save anyway using modal
+      // Show validation error with strong security warnings
       setConfirmDialog({
         isOpen: true,
-        title: 'Invalid API Key Format',
-        message: `${validation.reason}\n\nThis may not work with the Gemini API. Save anyway?`,
-        confirmLabel: 'Save Anyway',
-        variant: 'primary',
+        title: '⚠️ Invalid API Key Format',
+        message: `${validation.reason}\n\n⚠️ WARNING: Saving an invalid API key may:\n• Not work with the Gemini API\n• Be logged or transmitted improperly\n• Expose sensitive data in error messages\n• Cause unexpected application behavior\n\nOnly save if you are absolutely sure this is correct.\n\nAre you sure you want to save anyway?`,
+        confirmLabel: 'I Understand, Save Anyway',
+        variant: 'danger',
         onConfirm: () => {
           setConfirmDialog({ ...confirmDialog, isOpen: false });
+          // Log this as a security warning for audits
+          logger.warn('User saved invalid API key format', { reason: validation.reason });
           performSave();
         },
       });

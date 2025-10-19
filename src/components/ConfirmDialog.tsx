@@ -27,12 +27,19 @@ export default function ConfirmDialog({
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus confirm button when dialog opens
+  // Focus appropriate button when dialog opens
+  // ACCESSIBILITY: For danger actions, focus cancel to prevent accidental confirmation
   useEffect(() => {
-    if (isOpen && confirmButtonRef.current) {
-      confirmButtonRef.current.focus();
+    if (isOpen) {
+      if (confirmVariant === 'danger' && cancelButtonRef.current) {
+        // Focus cancel button for dangerous actions
+        cancelButtonRef.current.focus();
+      } else if (confirmButtonRef.current) {
+        // Focus confirm button for normal actions
+        confirmButtonRef.current.focus();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, confirmVariant]);
 
   // Handle Escape key
   useEffect(() => {
