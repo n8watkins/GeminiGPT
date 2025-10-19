@@ -69,10 +69,36 @@ const messagePipeline = new MessagePipeline(
 function setupWebSocketServer(server) {
   console.log('🚀 Setting up WebSocket server...');
 
+  // SECURITY: Strict CORS policy - only allow specific origins
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [
+        process.env.NEXT_PUBLIC_RAILWAY_URL,
+        process.env.PRODUCTION_URL
+      ].filter(Boolean)
+    : [
+        'http://localhost:3000',
+        'http://localhost:1337',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:1337'
+      ];
+
+  console.log('✅ CORS allowed origins:', allowedOrigins);
+
   const io = new SocketIOServer(server, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`❌ CORS blocked origin: ${origin}`);
+          callback(new Error('CORS policy violation: Origin not allowed'));
+        }
+      },
+      methods: ["GET", "POST"],
+      credentials: true
     },
     maxHttpBufferSize: 10 * 1024 * 1024, // 10MB limit for large documents
     pingTimeout: 60000, // 60 second timeout

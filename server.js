@@ -5,10 +5,94 @@ try {
   console.log('No .env.local file found, using system environment variables');
 }
 
-console.log('Server environment check:');
-console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
-console.log('GOOGLE_SEARCH_API_KEY exists:', !!process.env.GOOGLE_SEARCH_API_KEY);
-console.log('GOOGLE_SEARCH_ENGINE_ID exists:', !!process.env.GOOGLE_SEARCH_ENGINE_ID);
+/**
+ * ============================================
+ * ENVIRONMENT VARIABLE VALIDATION
+ * ============================================
+ * CRITICAL: Validate required environment variables before starting server
+ */
+function validateEnvironment() {
+  const required = {
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY
+  };
+
+  const optional = {
+    GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY,
+    GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID,
+    NEXT_PUBLIC_RAILWAY_URL: process.env.NEXT_PUBLIC_RAILWAY_URL,
+    PRODUCTION_URL: process.env.PRODUCTION_URL
+  };
+
+  const missing = [];
+  const warnings = [];
+
+  // Check required variables
+  for (const [key, value] of Object.entries(required)) {
+    if (!value || value.trim() === '') {
+      missing.push(key);
+    }
+  }
+
+  // Validate API key format
+  if (required.GEMINI_API_KEY && !required.GEMINI_API_KEY.startsWith('AIzaSy')) {
+    warnings.push('GEMINI_API_KEY does not match expected format (should start with AIzaSy)');
+  }
+
+  // Check optional variables
+  for (const [key, value] of Object.entries(optional)) {
+    if (!value || value.trim() === '') {
+      warnings.push(`Optional variable ${key} is not set - some features may be limited`);
+    }
+  }
+
+  // Production-specific validation
+  if (process.env.NODE_ENV === 'production') {
+    if (!process.env.NEXT_PUBLIC_RAILWAY_URL && !process.env.PRODUCTION_URL) {
+      missing.push('NEXT_PUBLIC_RAILWAY_URL or PRODUCTION_URL (required for CORS in production)');
+    }
+  }
+
+  console.log('\n========================================');
+  console.log('🔍 Environment Variable Validation');
+  console.log('========================================');
+
+  // Log status
+  for (const [key, value] of Object.entries(required)) {
+    console.log(`✅ ${key}: ${value ? 'Set' : 'MISSING'}`);
+  }
+
+  for (const [key, value] of Object.entries(optional)) {
+    if (value) {
+      console.log(`✅ ${key}: Set`);
+    } else {
+      console.log(`⚠️  ${key}: Not set (optional)`);
+    }
+  }
+
+  // Display warnings
+  if (warnings.length > 0) {
+    console.log('\n⚠️  WARNINGS:');
+    warnings.forEach(warning => console.log(`  - ${warning}`));
+  }
+
+  // Fail if required variables are missing
+  if (missing.length > 0) {
+    console.error('\n❌ CRITICAL: Missing required environment variables:');
+    missing.forEach(key => console.error(`  - ${key}`));
+    console.error('\nPlease set these variables in .env.local or your environment.');
+    console.error('Example .env.local:');
+    console.error('  GEMINI_API_KEY=your_api_key_here');
+    console.error('  GOOGLE_SEARCH_API_KEY=your_search_key_here');
+    console.error('  GOOGLE_SEARCH_ENGINE_ID=your_engine_id_here');
+    console.error('========================================\n');
+    process.exit(1);
+  }
+
+  console.log('========================================\n');
+}
+
+// Run validation
+validateEnvironment();
 
 const { createServer } = require('http');
 const { parse } = require('url');

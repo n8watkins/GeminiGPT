@@ -8,14 +8,18 @@ import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import AboutModal from '@/components/AboutModal';
 import ApiKeySetup from '@/components/ApiKeySetup';
 import TermsOfService from '@/components/TermsOfService';
+import UsageStats from '@/components/UsageStats';
 import { useApiKey } from '@/hooks/useApiKey';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [usageStatsOpen, setUsageStatsOpen] = useState(false);
   const { hasApiKey, isLoading } = useApiKey();
+  const { rateLimitInfo } = useWebSocket();
 
   useEffect(() => {
     if (isLoading) return;
@@ -47,6 +51,7 @@ export default function Home() {
         onOpenAbout={() => setAboutModalOpen(true)}
         onOpenApiKeySetup={() => setApiKeyModalOpen(true)}
         onOpenTerms={() => setTermsModalOpen(true)}
+        onOpenUsageStats={() => setUsageStatsOpen(true)}
       />
 
       <div className="flex-1 flex flex-col lg:ml-80">
@@ -97,6 +102,13 @@ export default function Home() {
       <TermsOfService
         isOpen={termsModalOpen}
         onClose={() => setTermsModalOpen(false)}
+      />
+
+      {/* Usage Stats Modal */}
+      <UsageStats
+        isOpen={usageStatsOpen}
+        onClose={() => setUsageStatsOpen(false)}
+        rateLimitInfo={rateLimitInfo}
       />
     </div>
   );

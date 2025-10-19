@@ -106,6 +106,7 @@ export default function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-message"
       >
         <h2
           id="confirm-dialog-title"
@@ -114,7 +115,10 @@ export default function ConfirmDialog({
           {title}
         </h2>
 
-        <p className="text-gray-700 mb-6 whitespace-pre-line">
+        <p
+          id="confirm-dialog-message"
+          className="text-gray-700 mb-6 whitespace-pre-line"
+        >
           {message}
         </p>
 
