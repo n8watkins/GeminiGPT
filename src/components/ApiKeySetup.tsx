@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useApiKey } from '@/hooks/useApiKey';
 import { validateGeminiApiKey } from '@/lib/apiKeyValidation';
+import ConfirmDialog from './ConfirmDialog';
 
 interface ApiKeySetupProps {
   isOpen: boolean;
@@ -21,6 +22,21 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
   const [showKey, setShowKey] = useState(false);
   const [step, setStep] = useState<'intro' | 'input' | 'success'>('intro');
   const [error, setError] = useState<string | null>(null);
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmLabel?: string;
+    variant?: 'primary' | 'danger';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Update step based on whether user has a key
   useEffect(() => {
@@ -41,13 +57,25 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
     const validation = validateGeminiApiKey(inputValue);
 
     if (!validation.valid) {
-      // Show validation error but allow user to save anyway
-      const confirmSave = window.confirm(
-        `${validation.reason}\n\nThis may not work with the Gemini API. Save anyway?`
-      );
-      if (!confirmSave) return;
+      // Show validation error but allow user to save anyway using modal
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Invalid API Key Format',
+        message: `${validation.reason}\n\nThis may not work with the Gemini API. Save anyway?`,
+        confirmLabel: 'Save Anyway',
+        variant: 'primary',
+        onConfirm: () => {
+          setConfirmDialog({ ...confirmDialog, isOpen: false });
+          performSave();
+        },
+      });
+      return;
     }
 
+    performSave();
+  };
+
+  const performSave = () => {
     try {
       // Use hook's saveApiKey method (validates and saves)
       saveApiKey(inputValue);
@@ -68,21 +96,25 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
   };
 
   const handleRemove = () => {
-    const confirmRemove = window.confirm(
-      'Are you sure you want to remove your API key? You won\'t be able to use the chat without one.'
-    );
-
-    if (confirmRemove) {
-      try {
-        removeApiKey(); // Use hook's removeApiKey method
-        logger.info('User API key removed via modal');
-        setStep('intro');
-        setError(null);
-      } catch (error) {
-        logger.error('Failed to remove API key', { error });
-        setError('Failed to remove API key. Please try again.');
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove API Key',
+      message: "Are you sure you want to remove your API key? You won't be able to use the chat without one.",
+      confirmLabel: 'Remove Key',
+      variant: 'danger',
+      onConfirm: () => {
+        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        try {
+          removeApiKey(); // Use hook's removeApiKey method
+          logger.info('User API key removed via modal');
+          setStep('intro');
+          setError(null);
+        } catch (error) {
+          logger.error('Failed to remove API key', { error });
+          setError('Failed to remove API key. Please try again.');
+        }
+      },
+    });
   };
 
   const handleSkip = () => {
@@ -328,6 +360,17 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.confirmLabel}
+        confirmVariant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      />
     </div>
   );
 }
