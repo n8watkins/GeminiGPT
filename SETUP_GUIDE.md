@@ -107,24 +107,57 @@ PORT=1337
 
 ### 1. Google Gemini API Key (Required)
 
+**⚠️ IMPORTANT: Billing Safety**
+
+To protect yourself from unexpected charges, **ALWAYS create a new, separate Google Cloud project** for your Gemini API key. This isolates billing from your other projects.
+
 **For server-side use OR as a fallback:**
 
 1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
 2. Sign in with your Google account
 3. Click **"Create API Key"**
-4. Choose a Google Cloud project (or create new one)
+4. **CRITICAL:** Select **"Create new project"** instead of using an existing project
+   - This creates a separate billing account
+   - Protects your other Google Cloud projects
+   - Makes it easy to monitor costs for just this app
 5. Copy the generated key (starts with `AIza...`)
 6. Paste it in your `.env.local` file
 
+**Billing Protection Tips:**
+
+🔒 **Create a Separate Project**
+- Always use a NEW Google Cloud project for API keys
+- Never use an existing project with production services
+- This isolates billing and prevents surprise charges
+
+💳 **Use Free Tier Safely**
+- Google provides $300 in free credits (plenty for personal use)
+- Free tier includes ~15 million input tokens per month
+- Typical conversation uses 1,000-5,000 tokens
+
+📊 **Set Up Billing Alerts**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Select your Gemini API project
+3. Go to "Billing" → "Budgets & alerts"
+4. Create alert at $10, $50, $100 (or your comfort level)
+5. You'll get email notifications if usage approaches limits
+
+🛡️ **Monitor Usage**
+- Check usage at [Google AI Studio](https://aistudio.google.com/apikey)
+- Review costs in Google Cloud Console billing dashboard
+- Delete API key if you see unexpected usage
+
 **Benefits:**
-- Free tier includes $300 in credits
+- Free tier includes $300 in credits (lasts months for personal use)
 - 60 requests per minute
 - Generous token limits
+- Pay-as-you-go pricing after free credits
 
 **For client-side BYOK (recommended for users):**
 - Users will get their own keys using the same steps above
 - Their keys are stored in browser localStorage only
 - Never transmitted to your backend server
+- Each user manages their own billing and quotas
 
 ### 2. Google Custom Search API (Optional)
 

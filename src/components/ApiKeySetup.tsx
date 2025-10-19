@@ -177,9 +177,32 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
                 <ol className="space-y-2 text-sm list-decimal list-inside">
                   <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Google AI Studio</a></li>
                   <li>Click &quot;Create API Key&quot;</li>
+                  <li><strong>Important:</strong> Create a NEW Google Cloud project for this key (keeps billing separate)</li>
                   <li>Copy your key and paste it below</li>
                   <li>Start chatting!</li>
                 </ol>
+              </div>
+
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h3 className="font-semibold text-orange-900 mb-2">💡 Billing Safety Tips:</h3>
+                <ul className="space-y-2 text-sm text-orange-800">
+                  <li className="flex items-start">
+                    <span className="mr-2">🔒</span>
+                    <span><strong>Create a separate Google Cloud project</strong> for this API key - this isolates billing from your other projects</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">💳</span>
+                    <span><strong>Use the free tier</strong> - Google provides $300 in credits (enough for thousands of messages)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">📊</span>
+                    <span><strong>Set billing alerts</strong> in Google Cloud Console to get notified if usage increases</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">🛡️</span>
+                    <span><strong>Never share your API key</strong> - it&apos;s stored only in your browser and never leaves your device</span>
+                  </li>
+                </ul>
               </div>
 
               <div className="flex gap-3 mt-6">
