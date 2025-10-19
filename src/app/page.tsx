@@ -7,12 +7,14 @@ import UserId from '@/components/UserId';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import AboutModal from '@/components/AboutModal';
 import ApiKeySetup from '@/components/ApiKeySetup';
+import TermsOfService from '@/components/TermsOfService';
 import { useApiKey } from '@/hooks/useApiKey';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
   const { hasApiKey, isLoading } = useApiKey();
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function Home() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onOpenAbout={() => setAboutModalOpen(true)}
         onOpenApiKeySetup={() => setApiKeyModalOpen(true)}
+        onOpenTerms={() => setTermsModalOpen(true)}
       />
 
       <div className="flex-1 flex flex-col lg:ml-80">
@@ -84,6 +87,16 @@ export default function Home() {
             localStorage.setItem('geminigpt-has-visited', 'true');
           }
         }}
+        onOpenTerms={() => {
+          setApiKeyModalOpen(false);
+          setTermsModalOpen(true);
+        }}
+      />
+
+      {/* Terms of Service Modal */}
+      <TermsOfService
+        isOpen={termsModalOpen}
+        onClose={() => setTermsModalOpen(false)}
       />
     </div>
   );

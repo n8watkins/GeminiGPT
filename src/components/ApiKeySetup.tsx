@@ -7,9 +7,10 @@ interface ApiKeySetupProps {
   isOpen: boolean;
   onClose: () => void;
   onKeySaved?: () => void;
+  onOpenTerms?: () => void;
 }
 
-export default function ApiKeySetup({ isOpen, onClose, onKeySaved }: ApiKeySetupProps) {
+export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }: ApiKeySetupProps) {
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [hasExistingKey, setHasExistingKey] = useState(false);
@@ -211,6 +212,9 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved }: ApiKeySetup
                   <li>• Sent directly to Google's API from your browser</li>
                   <li>• You can delete it anytime</li>
                 </ul>
+                <p className="text-xs text-gray-500 mt-2">
+                  Read our <button onClick={(e) => { e.preventDefault(); onOpenTerms?.(); }} className="text-blue-600 hover:underline">Terms of Service</button> for full details on API key privacy.
+                </p>
               </div>
 
               <div className="flex gap-3">
