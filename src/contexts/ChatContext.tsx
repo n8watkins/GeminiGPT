@@ -9,6 +9,7 @@ import { useWebSocket, WebSocketMessage } from '@/hooks/useWebSocket';
 import { getSessionUserId } from '@/lib/userId';
 import { useNotification } from '@/contexts/NotificationContext';
 import { chatLogger } from '@/lib/logger';
+import { useApiKey } from '@/hooks/useApiKey';
 
 type ChatAction =
   | { type: 'CREATE_CHAT'; payload: { title: string; id: string } }
@@ -221,6 +222,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const { socket, isConnected, sendMessage: sendWebSocketMessage, onMessage, onTyping, removeMessageHandler, removeTypingHandler } = useWebSocket();
   const { showError } = useNotification();
+  const { apiKey } = useApiKey();
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -429,7 +431,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
       // Send chat history BEFORE the current message
       // The current message will be sent separately by the WebSocket server
-      sendWebSocketMessage(chatId, content, serializedChatHistory, attachments, userId);
+      sendWebSocketMessage(chatId, content, serializedChatHistory, attachments, userId, apiKey || undefined);
     } catch (error) {
       chatLogger.error('Error sending message', error);
       // Re-throw the error so the UI can handle it

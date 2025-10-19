@@ -6,6 +6,12 @@ A modern, full-featured AI chat application powered by Google's Gemini AI with a
 
 ## ✨ Features
 
+### 🔑 **Bring Your Own API Key (BYOK)**
+- **No Signup Required**: Use your own Google Gemini API key - stored only in your browser
+- **Privacy First**: Your API key never leaves your browser or touches our servers
+- **Full Control**: Manage your own usage and costs with Google's generous free tier ($300 in credits)
+- **Easy Setup**: Interactive tutorial walks you through getting a free API key in 2 minutes
+
 ### 🧠 **Core AI Features**
 - **Gemini 2.5 Flash Integration**: Advanced AI conversations with Google's latest model
 - **Function Calling**: Real-time web search, stock prices, weather, and time queries
@@ -47,12 +53,37 @@ A modern, full-featured AI chat application powered by Google's Gemini AI with a
 
 ## 🚀 Getting Started
 
+### Two Ways to Use GeminiGPT
+
+#### Option 1: **Quick Start with BYOK** (Recommended for Users)
+
+No installation needed! Just visit the deployed app and use your own Google Gemini API key:
+
+1. **Visit the App**: [Your Deployment URL]
+2. **Get a Free API Key** (Takes 2 minutes):
+   - Visit [Google AI Studio](https://aistudio.google.com/apikey)
+   - Sign in with your Google account
+   - Click "Create API Key"
+   - Copy your key (starts with `AIza...`)
+3. **Enter Your Key**: The app will prompt you on first visit with a helpful tutorial
+4. **Start Chatting**: Your key is stored locally in your browser - never sent to our servers!
+
+**Why BYOK?**
+- ✅ **Free**: Google provides $300 in free credits
+- ✅ **Private**: Your key stays in your browser (localStorage)
+- ✅ **No Account**: No signup or authentication required
+- ✅ **Full Control**: You manage your own usage and costs
+
+#### Option 2: **Self-Hosted Development**
+
+For developers who want to run their own instance:
+
 ### Prerequisites
 
 Before you begin, ensure you have the following installed:
 - **Node.js** 18+ ([Download](https://nodejs.org/))
 - **npm** or **yarn** package manager
-- **Google AI Studio API Key** ([Get one here](https://makersuite.google.com/app/apikey))
+- **Google AI Studio API Key** (optional for server-side) - ([Get one here](https://aistudio.google.com/apikey))
 - **Google Search API credentials** (optional, for web search function calling)
 
 ### Installation
@@ -98,7 +129,9 @@ cp .env.example .env.local
 Edit `.env.local` with your API keys:
 
 ```env
-# Required - Gemini AI API Key
+# Optional - Gemini AI API Key (server-side fallback)
+# Note: With BYOK, users provide their own keys in the browser
+# This is only used if no client-side key is provided
 GEMINI_API_KEY=your_gemini_api_key_here
 
 # Optional - Google Search (for web search functionality)
@@ -108,6 +141,8 @@ GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id_here
 # Development Settings
 NODE_ENV=development
 ```
+
+**Note about BYOK**: When users provide their own API key through the web interface, it's stored in their browser's localStorage and sent directly to the Gemini API. The server-side `GEMINI_API_KEY` is only used as a fallback if no client key is provided.
 
 #### 5. Run the Development Server
 
@@ -122,10 +157,32 @@ Open your browser and navigate to the displayed URL to start chatting!
 ### First-Time Setup
 
 When you first run the app:
-1. An **About** modal will appear explaining the portfolio project
-2. A unique User ID will be generated for your session
-3. The app creates local SQLite and LanceDB databases in the `data/` directory
-4. You're ready to start chatting!
+1. An **API Key Setup** modal will appear if you haven't provided a key yet
+   - Follow the tutorial to get a free Google Gemini API key
+   - Your key is stored locally in your browser (never sent to our servers)
+   - You can update or remove your key anytime in Settings
+2. An **About** modal will appear explaining the portfolio project (after you've added a key)
+3. A unique User ID will be generated for your session
+4. The app creates local SQLite and LanceDB databases in the `data/` directory
+5. You're ready to start chatting!
+
+### Managing Your API Key
+
+**Accessing Settings**:
+- Click the "API Key Settings" button in the sidebar
+- Or click the settings icon in the app
+
+**What You Can Do**:
+- ✏️ **Update Your Key**: Replace with a different API key
+- 🗑️ **Remove Your Key**: Delete the stored key from your browser
+- ℹ️ **View Tutorial**: See the setup instructions again
+
+**Security & Privacy**:
+- Your API key is stored in `localStorage` (your browser's local storage)
+- It's never sent to our backend servers
+- It's sent directly from your browser to Google's Gemini API
+- You can inspect the network traffic to verify this
+- Clearing your browser data will remove the stored key
 
 ## 🏗️ Architecture
 

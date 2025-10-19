@@ -148,14 +148,15 @@ export function useWebSocket() {
     };
   }, []);
 
-  const sendMessage = (chatId: string, message: string, chatHistory: Message[], attachments?: Attachment[], userId?: string) => {
+  const sendMessage = (chatId: string, message: string, chatHistory: Message[], attachments?: Attachment[], userId?: string, apiKey?: string) => {
     if (socket && isConnected) {
       socket.emit('send-message', {
         chatId,
         message,
         chatHistory,
         attachments,
-        userId
+        userId,
+        apiKey
       });
     }
   };

@@ -15,9 +15,10 @@ interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onOpenAbout?: () => void;
+  onOpenApiKeySetup?: () => void;
 }
 
-export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySetup }: SidebarProps) {
   const router = useRouter();
   const { state, createChat, deleteChat } = useChat();
   const { socket, isConnected, rateLimitInfo } = useWebSocket();
@@ -440,6 +441,22 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout }: SidebarProps)
           <div className="border-t border-blue-800 p-3 bg-blue-950/30 space-y-2">
             {!isCollapsed ? (
               <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* API Key Settings Button */}
+            {onOpenApiKeySetup && (
+              <button
+                onClick={onOpenApiKeySetup}
+                className="w-full px-3 py-2.5 text-sm font-medium text-blue-100 bg-blue-800/30 hover:bg-blue-800/50 rounded-lg border border-blue-700/40 hover:border-blue-600/60 transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
+                title="Manage your Gemini API key"
+              >
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-2 text-blue-300 group-hover:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  <span className="group-hover:text-white transition-colors">API Key Settings</span>
+                </div>
+              </button>
+            )}
+
             {/* About Button */}
             {onOpenAbout && (
               <button

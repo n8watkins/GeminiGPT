@@ -6,19 +6,32 @@ import ChatInterface from '@/components/ChatInterface';
 import UserId from '@/components/UserId';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import AboutModal from '@/components/AboutModal';
+import ApiKeySetup from '@/components/ApiKeySetup';
+import { useApiKey } from '@/hooks/useApiKey';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const { hasApiKey, isLoading } = useApiKey();
 
   useEffect(() => {
-    // Check if user has visited before
+    if (isLoading) return;
+
+    // Check if user has API key
+    if (!hasApiKey) {
+      // Show API key setup on first visit or if no key
+      setApiKeyModalOpen(true);
+      return;
+    }
+
+    // Check if user has visited before (only show About if they have API key)
     const hasVisited = localStorage.getItem('geminigpt-has-visited');
     if (!hasVisited) {
       setAboutModalOpen(true);
       localStorage.setItem('geminigpt-has-visited', 'true');
     }
-  }, []);
+  }, [hasApiKey, isLoading]);
 
   // For testing - remove this after verifying modal works
   // Uncomment the line below to force modal to show
@@ -30,6 +43,7 @@ export default function Home() {
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onOpenAbout={() => setAboutModalOpen(true)}
+        onOpenApiKeySetup={() => setApiKeyModalOpen(true)}
       />
 
       <div className="flex-1 flex flex-col lg:ml-80">
@@ -56,6 +70,21 @@ export default function Home() {
 
       {/* About Modal */}
       <AboutModal isOpen={aboutModalOpen} onClose={() => setAboutModalOpen(false)} />
+
+      {/* API Key Setup Modal */}
+      <ApiKeySetup
+        isOpen={apiKeyModalOpen}
+        onClose={() => setApiKeyModalOpen(false)}
+        onKeySaved={() => {
+          // After saving key, close modal and show about modal if first visit
+          setApiKeyModalOpen(false);
+          const hasVisited = localStorage.getItem('geminigpt-has-visited');
+          if (!hasVisited) {
+            setAboutModalOpen(true);
+            localStorage.setItem('geminigpt-has-visited', 'true');
+          }
+        }}
+      />
     </div>
   );
 }
