@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { useApiKey } from '@/hooks/useApiKey';
+import { validateGeminiApiKey } from '@/lib/apiKeyValidation';
 
 interface ApiKeySetupProps {
   isOpen: boolean;
@@ -11,62 +13,75 @@ interface ApiKeySetupProps {
 }
 
 export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }: ApiKeySetupProps) {
-  const [apiKey, setApiKey] = useState('');
+  // Use the hook as single source of truth
+  const { hasApiKey, saveApiKey, removeApiKey } = useApiKey();
+
+  // Local state only for the input field and UI
+  const [inputValue, setInputValue] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [hasExistingKey, setHasExistingKey] = useState(false);
   const [step, setStep] = useState<'intro' | 'input' | 'success'>('intro');
+  const [error, setError] = useState<string | null>(null);
 
+  // Update step based on whether user has a key
   useEffect(() => {
-    // Check if user already has an API key
-    const existingKey = localStorage.getItem('gemini-api-key');
-    setHasExistingKey(!!existingKey);
-
-    if (existingKey && step === 'intro') {
+    if (hasApiKey && step === 'intro') {
       setStep('success');
     }
-  }, [step]);
+  }, [hasApiKey, step]);
 
   const handleSave = () => {
-    if (!apiKey.trim()) {
-      alert('Please enter an API key');
+    setError(null);
+
+    if (!inputValue.trim()) {
+      setError('Please enter an API key');
       return;
     }
 
-    // Basic validation - Gemini API keys typically start with 'AIza'
-    if (!apiKey.startsWith('AIza')) {
-      const confirm = window.confirm(
-        'This doesn\'t look like a valid Gemini API key (should start with "AIza"). Save anyway?'
+    // Validate API key format
+    const validation = validateGeminiApiKey(inputValue);
+
+    if (!validation.valid) {
+      // Show validation error but allow user to save anyway
+      const confirmSave = window.confirm(
+        `${validation.reason}\n\nThis may not work with the Gemini API. Save anyway?`
       );
-      if (!confirm) return;
+      if (!confirmSave) return;
     }
 
     try {
-      // Store in localStorage (client-side only, never sent to our server)
-      localStorage.setItem('gemini-api-key', apiKey);
-      logger.info('User API key saved to localStorage');
+      // Use hook's saveApiKey method (validates and saves)
+      saveApiKey(inputValue);
+      logger.info('User API key saved via modal');
 
       setStep('success');
-      setApiKey(''); // Clear from memory
+      setInputValue(''); // Clear input
+      setError(null);
 
       if (onKeySaved) {
         onKeySaved();
       }
     } catch (error) {
       logger.error('Failed to save API key', { error });
-      alert('Failed to save API key. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save API key. Please try again.';
+      setError(errorMessage);
     }
   };
 
   const handleRemove = () => {
-    const confirm = window.confirm(
+    const confirmRemove = window.confirm(
       'Are you sure you want to remove your API key? You won\'t be able to use the chat without one.'
     );
 
-    if (confirm) {
-      localStorage.removeItem('gemini-api-key');
-      logger.info('User API key removed');
-      setHasExistingKey(false);
-      setStep('intro');
+    if (confirmRemove) {
+      try {
+        removeApiKey(); // Use hook's removeApiKey method
+        logger.info('User API key removed via modal');
+        setStep('intro');
+        setError(null);
+      } catch (error) {
+        logger.error('Failed to remove API key', { error });
+        setError('Failed to remove API key. Please try again.');
+      }
     }
   };
 
@@ -129,7 +144,7 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
                 <h3 className="font-semibold text-yellow-900 mb-2">📝 Quick Setup (2 minutes):</h3>
                 <ol className="space-y-2 text-sm list-decimal list-inside">
                   <li>Go to <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Google AI Studio</a></li>
-                  <li>Click "Create API Key"</li>
+                  <li>Click &quot;Create API Key&quot;</li>
                   <li>Copy your key and paste it below</li>
                   <li>Start chatting!</li>
                 </ol>
@@ -176,8 +191,11 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
                 <div className="relative">
                   <input
                     type={showKey ? 'text' : 'password'}
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
+                    value={inputValue}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      setError(null); // Clear error on input
+                    }}
                     placeholder="AIza..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                     autoFocus
@@ -204,12 +222,24 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
                 </p>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-800 text-sm flex items-start">
+                    <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {error}
+                  </p>
+                </div>
+              )}
+
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-2">🔒 Security & Privacy</h4>
                 <ul className="space-y-1 text-sm text-gray-600">
-                  <li>• Stored only in your browser's localStorage</li>
+                  <li>• Stored only in your browser&apos;s localStorage</li>
                   <li>• Never transmitted to our backend</li>
-                  <li>• Sent directly to Google's API from your browser</li>
+                  <li>• Sent directly to Google&apos;s API from your browser</li>
                   <li>• You can delete it anytime</li>
                 </ul>
                 <p className="text-xs text-gray-500 mt-2">
@@ -220,7 +250,7 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
               <div className="flex gap-3">
                 <button
                   onClick={handleSave}
-                  disabled={!apiKey.trim()}
+                  disabled={!inputValue.trim()}
                   className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   Save API Key

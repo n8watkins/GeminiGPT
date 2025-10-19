@@ -84,11 +84,11 @@ export default function TermsOfService({ isOpen, onClose }: TermsOfServiceProps)
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-start">
                     <span className="text-green-600 mr-2 mt-0.5">✓</span>
-                    <span><strong>Stored Locally:</strong> Your API key is saved only in your browser's localStorage</span>
+                    <span><strong>Stored Locally:</strong> Your API key is saved only in your browser&apos;s localStorage</span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-green-600 mr-2 mt-0.5">✓</span>
-                    <span><strong>Direct Communication:</strong> Your browser sends API requests directly to Google's servers</span>
+                    <span><strong>Direct Communication:</strong> Your browser sends API requests directly to Google&apos;s servers</span>
                   </li>
                   <li className="flex items-start">
                     <span className="text-green-600 mr-2 mt-0.5">✓</span>
@@ -119,7 +119,7 @@ export default function TermsOfService({ isOpen, onClose }: TermsOfServiceProps)
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
-                <span>This is a demonstration/portfolio project provided "as-is"</span>
+                <span>This is a demonstration/portfolio project provided &quot;as-is&quot;</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">•</span>
@@ -131,7 +131,7 @@ export default function TermsOfService({ isOpen, onClose }: TermsOfServiceProps)
               </li>
               <li className="flex items-start">
                 <span className="mr-2">•</span>
-                <span>You must comply with Google's Gemini API Terms of Service</span>
+                <span>You must comply with Google&apos;s Gemini API Terms of Service</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">•</span>
@@ -193,7 +193,7 @@ export default function TermsOfService({ isOpen, onClose }: TermsOfServiceProps)
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
-                <span><strong>Data Deletion:</strong> Use the "Reset Everything" button to delete all your chats and data</span>
+                <span><strong>Data Deletion:</strong> Use the &quot;Reset Everything&quot; button to delete all your chats and data</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">•</span>
@@ -213,7 +213,7 @@ export default function TermsOfService({ isOpen, onClose }: TermsOfServiceProps)
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start">
                 <span className="mr-2">•</span>
-                <span><strong>Google Gemini AI:</strong> Subject to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google's Terms</a></span>
+                <span><strong>Google Gemini AI:</strong> Subject to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google&apos;s Terms</a></span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2">•</span>
@@ -232,7 +232,7 @@ export default function TermsOfService({ isOpen, onClose }: TermsOfServiceProps)
               <ul className="space-y-2">
                 <li className="flex items-start">
                   <span className="mr-2">⚠️</span>
-                  <span><strong>No Warranty:</strong> This service is provided "as-is" without any warranties</span>
+                  <span><strong>No Warranty:</strong> This service is provided &quot;as-is&quot; without any warranties</span>
                 </li>
                 <li className="flex items-start">
                   <span className="mr-2">⚠️</span>
