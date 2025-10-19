@@ -5,6 +5,9 @@ const { getStockPrice, getWeather, getTime, getGeneralSearch, searchChatHistory 
 const { addMessage, searchChats } = require('./vectorDB');
 const { processDocumentAttachment } = require('./documentProcessor');
 
+// Import logger
+const { wsLogger, geminiLogger, securityLogger } = require('./lib/logger');
+
 // 🆕 Import prompts module (V3 Architecture)
 const { getFullPrompt, buildToolsArray } = require('./lib/websocket/prompts');
 
@@ -21,7 +24,7 @@ const { RateLimiter } = require('./lib/websocket/services/RateLimiter');
 
 // 🆕 V3 Architecture: Services extracted to lib/websocket/services/
 const rateLimiter = new RateLimiter();
-console.log('✅ Rate limiter initialized:', rateLimiter.getStats());
+wsLogger.info('✅ Rate limiter initialized', rateLimiter.getStats());
 
 const { HistoryProcessor } = require('./lib/websocket/services/HistoryProcessor');
 const historyProcessor = new HistoryProcessor();
@@ -37,15 +40,14 @@ const vectorIndexer = new VectorIndexer(addMessage);
 // REMOVED: Pre-emptive pattern matching
 // Now letting Gemini decide when to search chat history via function calling
 
-console.log('Environment check:');
-console.log('GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
+geminiLogger.info('Environment check - GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // 🆕 V3 Architecture: Function tools now defined in lib/websocket/prompts/functionTools.js
 // To edit function descriptions, edit that file instead of this one!
 const tools = buildToolsArray();
-console.log(`✅ Loaded ${tools[0].function_declarations.length} function tools from prompts module`);
+geminiLogger.info(`✅ Loaded ${tools[0].function_declarations.length} function tools from prompts module`);
 
 // Initialize GeminiService with function handlers
 const geminiService = new GeminiService(genAI, tools, {
@@ -67,7 +69,7 @@ const messagePipeline = new MessagePipeline(
 );
 
 function setupWebSocketServer(server) {
-  console.log('🚀 Setting up WebSocket server...');
+  wsLogger.info('🚀 Setting up WebSocket server...');
 
   // SECURITY: Strict CORS policy - only allow specific origins
   const allowedOrigins = process.env.NODE_ENV === 'production'
@@ -82,7 +84,7 @@ function setupWebSocketServer(server) {
         'http://127.0.0.1:1337'
       ];
 
-  console.log('✅ CORS allowed origins:', allowedOrigins);
+  securityLogger.info('✅ CORS allowed origins:', allowedOrigins);
 
   const io = new SocketIOServer(server, {
     cors: {
@@ -93,7 +95,7 @@ function setupWebSocketServer(server) {
         if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          console.warn(`❌ CORS blocked origin: ${origin}`);
+          securityLogger.warn(`❌ CORS blocked origin: ${origin}`);
           callback(new Error('CORS policy violation: Origin not allowed'));
         }
       },
@@ -106,24 +108,24 @@ function setupWebSocketServer(server) {
     transports: ['websocket', 'polling']
   });
 
-  console.log('✅ WebSocket server configured');
+  wsLogger.info('✅ WebSocket server configured');
 
   io.on('connection', (socket) => {
-    console.log('✅ Client connected:', socket.id, 'Transport:', socket.conn.transport.name);
+    wsLogger.info('✅ Client connected', { socketId: socket.id, transport: socket.conn.transport.name });
 
     // Handle connection errors
     socket.on('error', (error) => {
-      console.error('❌ Socket error:', socket.id, error);
+      wsLogger.error('Socket error', { socketId: socket.id, error: error.message });
     });
 
     socket.on('connect_error', (error) => {
-      console.error('❌ Connection error:', socket.id, error);
+      wsLogger.error('Connection error', { socketId: socket.id, error: error.message });
     });
 
     socket.on('send-message', async (data) => {
       try {
-        console.log('Received message:', {
-          message: data.message?.substring(0, 100) + '...',
+        wsLogger.debug('Received message', {
+          messagePreview: data.message?.substring(0, 100) + '...',
           chatId: data.chatId,
           hasAttachments: !!data.attachments?.length,
           userId: data.userId
@@ -133,10 +135,9 @@ function setupWebSocketServer(server) {
         await messagePipeline.processMessage(socket, data);
 
       } catch (error) {
-        console.error('Error processing message:', error);
-        console.error('Error stack:', error.stack);
-        console.error('Message data:', {
-          message: data.message?.substring(0, 100),
+        wsLogger.error('Error processing message', error);
+        wsLogger.debug('Message data', {
+          messagePreview: data.message?.substring(0, 100),
           chatId: data.chatId,
           hasAttachments: !!data.attachments?.length
         });
@@ -155,39 +156,39 @@ function setupWebSocketServer(server) {
     socket.on('delete-chat', async (data) => {
       try {
         const { chatId, userId } = data;
-        console.log(`Deleting chat ${chatId} for user ${userId} from vector database`);
-        
+        wsLogger.info(`Deleting chat ${chatId} for user ${userId} from vector database`);
+
         const { deleteChat } = require('./vectorDB');
         await deleteChat(userId, chatId);
-        
-        console.log(`Successfully deleted chat ${chatId} from vector database`);
+
+        wsLogger.info(`Successfully deleted chat ${chatId} from vector database`);
       } catch (error) {
-        console.error('Error deleting chat from vector database:', error);
+        wsLogger.error('Error deleting chat from vector database', error);
       }
     });
 
     socket.on('reset-vector-db', async (data) => {
       try {
         const { userId } = data;
-        console.log(`Resetting vector database for user ${userId}`);
-        
+        wsLogger.info(`Resetting vector database for user ${userId}`);
+
         const { deleteUserChats } = require('./vectorDB');
         await deleteUserChats(userId);
-        
-        console.log(`Successfully reset vector database for user ${userId}`);
+
+        wsLogger.info(`Successfully reset vector database for user ${userId}`);
         socket.emit('vector-db-reset', { success: true });
       } catch (error) {
-        console.error('Error resetting vector database:', error);
+        wsLogger.error('Error resetting vector database', error);
         socket.emit('vector-db-reset', { success: false, error: error.message });
       }
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('🔌 Client disconnected:', socket.id, 'Reason:', reason);
+      wsLogger.info('🔌 Client disconnected', { socketId: socket.id, reason });
     });
   });
 
-  console.log('✅ WebSocket event handlers registered');
+  wsLogger.info('✅ WebSocket event handlers registered');
   return io;
 }
 

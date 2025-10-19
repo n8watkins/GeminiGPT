@@ -2,8 +2,11 @@
 try {
   require('dotenv').config({ path: '.env.local' });
 } catch {
-  console.log('No .env.local file found, using system environment variables');
+  // Will be logged after logger is imported
 }
+
+// Import logger
+const { serverLogger, securityLogger } = require('./lib/logger');
 
 /**
  * ============================================
@@ -52,43 +55,47 @@ function validateEnvironment() {
     }
   }
 
-  console.log('\n========================================');
-  console.log('🔍 Environment Variable Validation');
-  console.log('========================================');
+  serverLogger.info('\n========================================');
+  serverLogger.info('🔍 Environment Variable Validation');
+  serverLogger.info('========================================');
 
   // Log status
   for (const [key, value] of Object.entries(required)) {
-    console.log(`✅ ${key}: ${value ? 'Set' : 'MISSING'}`);
+    if (value) {
+      serverLogger.info(`✅ ${key}: Set`);
+    } else {
+      securityLogger.error(`❌ ${key}: MISSING`);
+    }
   }
 
   for (const [key, value] of Object.entries(optional)) {
     if (value) {
-      console.log(`✅ ${key}: Set`);
+      serverLogger.info(`✅ ${key}: Set`);
     } else {
-      console.log(`⚠️  ${key}: Not set (optional)`);
+      serverLogger.warn(`⚠️  ${key}: Not set (optional)`);
     }
   }
 
   // Display warnings
   if (warnings.length > 0) {
-    console.log('\n⚠️  WARNINGS:');
-    warnings.forEach(warning => console.log(`  - ${warning}`));
+    serverLogger.warn('\n⚠️  WARNINGS:');
+    warnings.forEach(warning => serverLogger.warn(`  - ${warning}`));
   }
 
   // Fail if required variables are missing
   if (missing.length > 0) {
-    console.error('\n❌ CRITICAL: Missing required environment variables:');
-    missing.forEach(key => console.error(`  - ${key}`));
-    console.error('\nPlease set these variables in .env.local or your environment.');
-    console.error('Example .env.local:');
-    console.error('  GEMINI_API_KEY=your_api_key_here');
-    console.error('  GOOGLE_SEARCH_API_KEY=your_search_key_here');
-    console.error('  GOOGLE_SEARCH_ENGINE_ID=your_engine_id_here');
-    console.error('========================================\n');
+    securityLogger.error('\n❌ CRITICAL: Missing required environment variables:');
+    missing.forEach(key => securityLogger.error(`  - ${key}`));
+    securityLogger.error('\nPlease set these variables in .env.local or your environment.');
+    securityLogger.error('Example .env.local:');
+    securityLogger.error('  GEMINI_API_KEY=your_api_key_here');
+    securityLogger.error('  GOOGLE_SEARCH_API_KEY=your_search_key_here');
+    securityLogger.error('  GOOGLE_SEARCH_ENGINE_ID=your_engine_id_here');
+    securityLogger.error('========================================\n');
     process.exit(1);
   }
 
-  console.log('========================================\n');
+  serverLogger.info('========================================\n');
 }
 
 // Run validation
@@ -105,16 +112,18 @@ let port = parseInt(process.env.PORT) || 3000; // Railway provides PORT env var,
 
 // Railway specific configuration
 if (process.env.RAILWAY_ENVIRONMENT) {
-  console.log('🚂 Running on Railway');
-  console.log('  RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
-  console.log('  RAILWAY_PUBLIC_DOMAIN:', process.env.RAILWAY_PUBLIC_DOMAIN);
+  serverLogger.info('🚂 Running on Railway', {
+    environment: process.env.RAILWAY_ENVIRONMENT,
+    domain: process.env.RAILWAY_PUBLIC_DOMAIN
+  });
 }
 
-console.log('🚀 Server starting with config:');
-console.log('  NODE_ENV:', process.env.NODE_ENV);
-console.log('  dev mode:', dev);
-console.log('  hostname:', hostname);
-console.log('  port:', port);
+serverLogger.info('🚀 Server starting with config', {
+  NODE_ENV: process.env.NODE_ENV,
+  dev,
+  hostname,
+  port
+});
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -124,7 +133,7 @@ const handle = app.getRequestHandler();
  */
 function startServer(currentPort, maxAttempts = 10) {
   if (maxAttempts <= 0) {
-    console.error('Failed to find an available port after 10 attempts');
+    serverLogger.error('Failed to find an available port after 10 attempts');
     process.exit(1);
   }
 
@@ -143,7 +152,7 @@ function startServer(currentPort, maxAttempts = 10) {
 
       await handle(req, res, parsedUrl);
     } catch (err) {
-      console.error('Error occurred handling', req.url, err);
+      serverLogger.error('Error occurred handling request', { url: req.url, error: err.message });
       res.statusCode = 500;
       res.end('internal server error');
     }
@@ -155,38 +164,38 @@ function startServer(currentPort, maxAttempts = 10) {
   server.listen(currentPort, hostname, (err) => {
     if (err) {
       if (err.code === 'EADDRINUSE') {
-        console.log(`Port ${currentPort} is in use, trying ${currentPort + 1}...`);
+        serverLogger.warn(`Port ${currentPort} is in use, trying ${currentPort + 1}...`);
         server.close();
         startServer(currentPort + 1, maxAttempts - 1);
       } else {
-        console.error('❌ Server listen error:', err);
+        serverLogger.error('Server listen error', err);
         throw err;
       }
     } else {
       // Display localhost for local development, actual hostname for production
       const displayHost = (hostname === '0.0.0.0' && dev) ? 'localhost' : hostname;
-      console.log(`✅ Server ready on http://${displayHost}:${currentPort}`);
-      console.log(`✅ WebSocket server running on port ${currentPort}`);
-      console.log(`✅ Health check available at http://${displayHost}:${currentPort}/healthz`);
+      serverLogger.info(`✅ Server ready on http://${displayHost}:${currentPort}`);
+      serverLogger.info(`✅ WebSocket server running on port ${currentPort}`);
+      serverLogger.info(`✅ Health check available at http://${displayHost}:${currentPort}/healthz`);
     }
   });
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${currentPort} is in use, trying ${currentPort + 1}...`);
+      serverLogger.warn(`Port ${currentPort} is in use, trying ${currentPort + 1}...`);
       server.close();
       startServer(currentPort + 1, maxAttempts - 1);
     } else {
-      console.error('Server error:', err);
+      serverLogger.error('Server error', err);
       throw err;
     }
   });
 }
 
 app.prepare().then(() => {
-  console.log('✅ Next.js app prepared successfully');
+  serverLogger.info('✅ Next.js app prepared successfully');
   startServer(port);
 }).catch((err) => {
-  console.error('❌ Failed to prepare Next.js app:', err);
+  serverLogger.error('Failed to prepare Next.js app', err);
   process.exit(1);
 });
