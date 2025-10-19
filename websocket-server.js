@@ -56,6 +56,16 @@ const geminiService = new GeminiService(genAI, tools, {
   search_chat_history: async (args, context) => await searchChatHistory(context.userId, args.query)
 });
 
+// 🆕 V3 Architecture: MessagePipeline orchestrates all services
+const { MessagePipeline } = require('./lib/websocket/services/MessagePipeline');
+const messagePipeline = new MessagePipeline(
+  rateLimiter,
+  historyProcessor,
+  attachmentHandler,
+  geminiService,
+  vectorIndexer
+);
+
 function setupWebSocketServer(server) {
   console.log('🚀 Setting up WebSocket server...');
 
@@ -93,125 +103,25 @@ function setupWebSocketServer(server) {
           userId: data.userId
         });
 
-        const { message, chatHistory, chatId, attachments, userId } = data;
+        // 🆕 V3 Architecture: MessagePipeline orchestrates entire message processing flow
+        await messagePipeline.processMessage(socket, data);
 
-        // ============================================
-        // RATE LIMITING CHECK
-        // ============================================
-        const rateLimit = rateLimiter.checkLimit(userId);
-
-        // Send rate limit info to client (for UI display)
-        socket.emit('rate-limit-info', {
-          remaining: rateLimit.remaining,
-          limit: rateLimit.limit,
-          resetAt: rateLimit.resetAt
-        });
-
-        // If rate limited, reject the request
-        if (!rateLimit.allowed) {
-          const retryInSeconds = Math.ceil(rateLimit.retryAfter / 1000);
-          const retryInMinutes = Math.ceil(retryInSeconds / 60);
-          const limitTypeText = rateLimit.limitType === 'minute' ? 'minute' : 'hour';
-
-          console.log(`🚫 Rate limit exceeded for user ${userId}. Retry after ${retryInSeconds}s`);
-
-          // Calculate the exact time when they can send again (in their timezone)
-          const resetTime = new Date(rateLimit.resetAt[rateLimit.limitType]);
-          const resetTimeString = resetTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-          });
-
-          // Create a friendly message without mentioning "rate limit"
-          let waitMessage;
-          if (retryInSeconds < 60) {
-            waitMessage = `${retryInSeconds} seconds`;
-          } else if (retryInMinutes < 60) {
-            waitMessage = `${retryInMinutes} minute${retryInMinutes > 1 ? 's' : ''}`;
-          } else {
-            const hours = Math.ceil(retryInMinutes / 60);
-            waitMessage = `${hours} hour${hours > 1 ? 's' : ''}`;
-          }
-
-          // Send friendly message to client
-          socket.emit('message-response', {
-            chatId,
-            message: `### You've reached your message limit\n\nTo prevent abuse, there's a limit on how many messages you can send per ${limitTypeText}.\n\n**You can send more messages in ${waitMessage}** (at ${resetTimeString}).\n\n**Current usage:**\n- ${rateLimit.remaining.minute} of ${rateLimit.limit.minute} messages remaining this minute\n- ${rateLimit.remaining.hour} of ${rateLimit.limit.hour} messages remaining this hour\n\nThank you for your patience! 🙏`,
-            isComplete: true,
-            rateLimited: true
-          });
-
-          socket.emit('typing', { chatId, isTyping: false });
-          return; // Stop processing
-        }
-
-        console.log(`✅ Rate limit check passed for user ${userId}. Remaining: ${rateLimit.remaining.minute}/min, ${rateLimit.remaining.hour}/hr`);
-        
-        // Debug: Log chat history details
-        console.log('📝 Chat History Debug:');
-        console.log('  - Chat ID:', chatId);
-        console.log('  - History length:', chatHistory ? chatHistory.length : 'undefined');
-        console.log('  - User ID:', userId);
-        if (chatHistory && chatHistory.length > 0) {
-          console.log('  - First message:', {
-            role: chatHistory[0].role,
-            content: chatHistory[0].content?.substring(0, 50) + '...',
-            hasAttachments: !!chatHistory[0].attachments?.length
-          });
-          console.log('  - Last message:', {
-            role: chatHistory[chatHistory.length - 1].role,
-            content: chatHistory[chatHistory.length - 1].content?.substring(0, 50) + '...',
-            hasAttachments: !!chatHistory[chatHistory.length - 1].attachments?.length
-          });
-        } else {
-          console.log('  - No chat history provided!');
-        }
-        
-        // Emit typing indicator
-        socket.emit('typing', { chatId, isTyping: true });
-
-        // 🆕 V3 Architecture: History processing now handled by HistoryProcessor service
-        // This converts chat history to Gemini format and adds system prompts
-        const finalHistory = historyProcessor.processHistory(chatHistory);
-
-        // 🆕 V3 Architecture: Attachment processing now handled by AttachmentHandler service
-        const { messageParts, enhancedMessage } = await attachmentHandler.processAttachments(attachments, message);
-
-        // 🆕 V3 Architecture: Gemini API interaction now handled by GeminiService
-        const result = await geminiService.sendMessage(
-          socket,
-          chatId,
-          finalHistory,
-          messageParts,
-          message,
-          chatHistory,
-          { userId }
-        );
-
-        // Handle result - index messages if response was successful
-        if (result && result.response && !result.blocked && !result.error) {
-          await vectorIndexer.indexMessagePair(userId, chatId, message, result.response, chatHistory);
-        }
-
-        socket.emit('typing', { chatId, isTyping: false });
-        
       } catch (error) {
         console.error('Error processing message:', error);
         console.error('Error stack:', error.stack);
-        console.error('Message data:', { 
-          message: data.message?.substring(0, 100), 
-          chatId: data.chatId, 
-          hasAttachments: !!data.attachments?.length 
+        console.error('Message data:', {
+          message: data.message?.substring(0, 100),
+          chatId: data.chatId,
+          hasAttachments: !!data.attachments?.length
         });
-        
+
         // Send error response to client
         socket.emit('message-response', {
           chatId: data.chatId,
           message: `Sorry, I encountered an error processing your message: ${error.message}. Please try again.`,
           isComplete: true
         });
-        
+
         socket.emit('typing', { chatId: data.chatId, isTyping: false });
       }
     });
