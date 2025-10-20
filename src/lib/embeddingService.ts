@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { LRUCache } from 'lru-cache';
+import { logger } from './logger.js';
 
 /**
  * Lazy initialization of Google Generative AI client
@@ -15,7 +16,7 @@ function getGenAI(): GoogleGenerativeAI {
       );
     }
     genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    console.log('✅ Initialized GoogleGenerativeAI for embeddings');
+    logger.info('Initialized GoogleGenerativeAI for embeddings');
   }
   return genAI;
 }
@@ -88,9 +89,10 @@ async function generateEmbedding(text: string): Promise<number[]> {
     // Truncate long text to prevent API errors
     const MAX_TEXT_LENGTH = 10000;
     if (text.length > MAX_TEXT_LENGTH) {
-      console.warn(
-        `Text too long (${text.length} chars), truncating to ${MAX_TEXT_LENGTH} chars`
-      );
+      logger.warn('Text too long, truncating', {
+        originalLength: text.length,
+        truncatedLength: MAX_TEXT_LENGTH
+      });
       text = text.substring(0, MAX_TEXT_LENGTH);
     }
 
@@ -99,18 +101,16 @@ async function generateEmbedding(text: string): Promise<number[]> {
     const cached = embeddingCache.get(cacheKey);
 
     if (cached) {
-      console.log(
-        'Cache hit for:',
-        text.substring(0, 50) + (text.length > 50 ? '...' : '')
-      );
+      logger.debug('Embedding cache hit', {
+        textPreview: text.substring(0, 50) + (text.length > 50 ? '...' : '')
+      });
       return cached;
     }
 
     // Cache miss - generate embedding
-    console.log(
-      'Cache miss, generating embedding for:',
-      text.substring(0, 50) + (text.length > 50 ? '...' : '')
-    );
+    logger.debug('Embedding cache miss, generating', {
+      textPreview: text.substring(0, 50) + (text.length > 50 ? '...' : '')
+    });
 
     // Lazy initialization of genAI
     const ai = getGenAI();
@@ -125,7 +125,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
 
     return embedding;
   } catch (error) {
-    console.error('Error generating embedding:', error);
+    logger.error('Error generating embedding', { error });
     throw new Error(
       `Failed to generate embedding: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -163,7 +163,7 @@ async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 
     return results;
   } catch (error) {
-    console.error('Error generating batch embeddings:', error);
+    logger.error('Error generating batch embeddings', { error });
     throw new Error(
       `Failed to generate batch embeddings: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -178,7 +178,7 @@ async function generateEmbeddings(texts: string[]): Promise<number[][]> {
  */
 function clearEmbeddingCache(): void {
   embeddingCache.clear();
-  console.log('Embedding cache cleared');
+  logger.info('Embedding cache cleared');
 }
 
 /**

@@ -1,7 +1,16 @@
 import { NextRequest } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { withTimeout, isTimeoutError } from '@/lib/apiTimeout';
+import { logger } from '@/lib/logger';
+import { rateLimit } from '@/lib/middleware/rateLimit';
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
+
+// Rate limit: 30 requests per minute
+const chatRateLimit = rateLimit({
+  maxRequests: 30,
+  windowMs: 60 * 1000,
+});
 
 interface ChatHistoryEntry {
   role: 'user' | 'assistant';
@@ -37,8 +46,18 @@ const isChatRequestBody = (value: unknown): value is ChatRequestBody => {
 };
 
 export async function POST(request: NextRequest) {
+  // Check rate limit first
+  const rateLimitResponse = chatRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
-    const body = (await request.json()) as unknown;
+    const body = (await withTimeout(
+      request.json(),
+      5000, // 5 second timeout for parsing request
+      'Request body parsing timeout'
+    )) as unknown;
 
     if (!isChatRequestBody(body)) {
       return Response.json(
@@ -69,8 +88,12 @@ export async function POST(request: NextRequest) {
       history: history
     });
 
-    // Send message and get response
-    const result = await chat.sendMessage(message);
+    // Send message and get response with timeout
+    const result = await withTimeout(
+      chat.sendMessage(message),
+      30000, // 30 second timeout for Gemini API
+      'AI response timeout'
+    );
     const response = await result.response;
     
     return Response.json({ 
@@ -79,10 +102,21 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Error in chat API:', error);
-    return Response.json({ 
+    if (isTimeoutError(error)) {
+      logger.warn('Chat API timeout', { error });
+      return Response.json(
+        {
+          error: 'Request timeout. Please try again.',
+          success: false
+        },
+        { status: 504 } // Gateway Timeout
+      );
+    }
+
+    logger.error('Error in chat API', { error });
+    return Response.json({
       error: 'Failed to generate response',
-      success: false 
+      success: false
     }, { status: 500 });
   }
 }
