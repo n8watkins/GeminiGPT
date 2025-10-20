@@ -111,7 +111,7 @@ export function getApiKeyFingerprint(key: string | null | undefined): string | n
     const hash = crypto.createHash('sha256').update(key).digest('hex');
     // Use first 16 chars for better collision resistance than 8
     return hash.substring(0, 16);
-  } catch (error) {
+  } catch {
     // Fallback if crypto not available
     console.warn('Crypto module not available, using fallback hash');
     let hash = 0;

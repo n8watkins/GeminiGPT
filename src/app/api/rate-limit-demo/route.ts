@@ -40,7 +40,7 @@ interface RateLimitInfo {
  * Mock rate limiter for demonstration
  * In production, this would use the actual RateLimiter service
  */
-function getMockRateLimitInfo(userId: string): RateLimitInfo {
+function getMockRateLimitInfo(_userId: string): RateLimitInfo {
   // For demo purposes, simulate rate limit info
   return {
     allowed: true,

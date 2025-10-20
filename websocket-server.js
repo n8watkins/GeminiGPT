@@ -2,14 +2,14 @@ const { Server: SocketIOServer } = require('socket.io');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { getStockPrice, getWeather, getTime, getGeneralSearch, searchChatHistory } = require('./searchService');
 // Import real implementations for production
-const { addMessage, searchChats } = require('./vectorDB');
+const { addMessage } = require('./vectorDB');
 const { processDocumentAttachment } = require('./documentProcessor');
 
 // Import logger
 const { wsLogger, geminiLogger, securityLogger } = require('./lib/logger');
 
 // 🆕 Import prompts module (V3 Architecture)
-const { getFullPrompt, buildToolsArray } = require('./lib/websocket/prompts');
+const { buildToolsArray } = require('./lib/websocket/prompts');
 
 // 🆕 Import services (V3 Architecture)
 const { RateLimiter } = require('./lib/websocket/services/RateLimiter');

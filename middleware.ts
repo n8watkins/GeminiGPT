@@ -20,7 +20,7 @@ import { serverLogger } from './lib/logger';
 
 export async function middleware(request: NextRequest) {
   const startTime = Date.now();
-  const { pathname, search } = request.nextUrl;
+  const { pathname } = request.nextUrl;
   const method = request.method;
 
   // Generate unique request ID for correlation
