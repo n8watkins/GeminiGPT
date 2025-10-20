@@ -31,6 +31,8 @@
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
     "@lancedb/lancedb": "^0.22.2",
+    "@sentry/nextjs": "^10.20.0",
+    "@sentry/node": "^10.20.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
