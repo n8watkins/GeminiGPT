@@ -1,4 +1,11 @@
 /**
+ * Custom error type for timeout errors
+ */
+interface TimeoutError extends Error {
+  code: 'TIMEOUT';
+}
+
+/**
  * Wraps a promise with a timeout, rejecting if the operation takes too long
  *
  * IMPORTANT: Properly clears timeout to prevent memory leaks
@@ -24,10 +31,12 @@ export function withTimeout<T>(
 ): Promise<T> {
   let timeoutHandle: NodeJS.Timeout | null = null;
 
-  const timeoutPromise = new Promise<T>((_, reject) => {
+  // Use Promise<never> instead of Promise<any> for type safety
+  // never indicates this promise will only reject, never resolve
+  const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutHandle = setTimeout(() => {
-      const error = new Error(errorMessage);
-      (error as any).code = 'TIMEOUT';
+      const error = new Error(errorMessage) as TimeoutError;
+      error.code = 'TIMEOUT';
       reject(error);
     }, timeoutMs);
   });
@@ -52,6 +61,11 @@ export function withTimeout<T>(
  * @param error - Error to check
  * @returns true if error is a timeout error
  */
-export function isTimeoutError(error: any): boolean {
-  return error?.code === 'TIMEOUT' || error?.message?.toLowerCase().includes('timeout');
+export function isTimeoutError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const err = error as Partial<TimeoutError> & { message?: string };
+  return err.code === 'TIMEOUT' || err.message?.toLowerCase().includes('timeout') || false;
 }

@@ -4,7 +4,9 @@ import { withTimeout, isTimeoutError } from '@/lib/apiTimeout';
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/middleware/rateLimit';
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
+// SECURITY: Use server-side only env var (no NEXT_PUBLIC_ prefix)
+// This keeps the API key secure and not exposed to the client bundle
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // Rate limit: 30 requests per minute
 const chatRateLimit = rateLimit({

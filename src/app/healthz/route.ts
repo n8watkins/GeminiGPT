@@ -78,11 +78,15 @@ async function checkVectorDB(): Promise<HealthCheck> {
   const start = Date.now();
   try {
     // Dynamic import to avoid circular dependencies
-    const { getDB } = await import('@/lib/vectordb');
-    const db = await getDB();
+    const { getDBStats } = await import('@/lib/vectordb');
 
-    // Verify database is accessible
-    const tableNames = await db.tableNames();
+    // Verify database is accessible by getting stats
+    const stats = await getDBStats();
+
+    // Check if stats indicate an error
+    if ('error' in stats) {
+      throw new Error(stats.error as string);
+    }
 
     return {
       status: 'pass',
@@ -129,7 +133,7 @@ function checkMemory(): MemoryCheck {
  *
  * Enhanced health check endpoint with database connectivity checks
  */
-export async function GET(request: NextRequest): Promise<NextResponse<HealthResponse>> {
+export async function GET(): Promise<NextResponse<HealthResponse>> {
   // Run all checks in parallel for faster response
   const [databaseCheck, vectordbCheck, memoryCheck] = await Promise.all([
     checkDatabase(),

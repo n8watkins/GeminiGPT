@@ -100,7 +100,8 @@ export function rateLimit(options: {
       // Not behind trusted proxy - use connection IP or mark as unknown
       // In Next.js Edge/Middleware, request.ip may not be available
       // Fall back to 'unknown' which will still rate limit (all unknowns grouped together)
-      ip = (request as any).ip || 'unknown';
+      const requestWithIp = request as NextRequest & { ip?: string };
+      ip = requestWithIp.ip || 'unknown';
 
       if (ip !== 'unknown' && !isValidIP(ip)) {
         logger.warn('Invalid connection IP', { ip });
