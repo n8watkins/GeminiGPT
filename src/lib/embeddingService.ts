@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { LRUCache } from 'lru-cache';
-import { logger } from './logger.js';
+import { logger } from './logger';
 
 /**
  * Lazy initialization of Google Generative AI client

@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
-import { logger } from './logger.js';
+import { logger } from './logger';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
