@@ -12,7 +12,6 @@
  */
 
 const Sentry = require('@sentry/node');
-const { nodeProfilingIntegration } = require('@sentry/profiling-node');
 
 // Only initialize Sentry if DSN is provided
 if (process.env.SENTRY_DSN) {
@@ -23,12 +22,11 @@ if (process.env.SENTRY_DSN) {
     // Performance Monitoring
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0, // 10% in prod, 100% in dev
 
-    // Profiling (optional)
-    profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    integrations: [
-      // Add profiling integration
-      nodeProfilingIntegration(),
-    ],
+    // Note: Profiling disabled - requires @sentry/profiling-node package
+    // Install with: npm install @sentry/profiling-node
+    // Then uncomment the lines below
+    // profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    // integrations: [nodeProfilingIntegration()],
 
     // PRIVACY: Strip sensitive data before sending to Sentry
     beforeSend(event, hint) {
