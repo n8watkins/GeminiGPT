@@ -43,6 +43,8 @@ export default function MarkdownRenderer({ content, isUser = false }: MarkdownRe
       ALLOW_DATA_ATTR: false,
       ALLOW_UNKNOWN_PROTOCOLS: false,
       SAFE_FOR_TEMPLATES: true,
+      // Explicit protocol whitelist to prevent javascript:, data:, vbscript:, etc.
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|ftp):)/i,
     });
   }, [content]);
 

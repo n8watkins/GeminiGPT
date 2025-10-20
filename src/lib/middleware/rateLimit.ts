@@ -13,6 +13,34 @@ const rateLimitCache = new LRUCache<string, RateLimitEntry>({
 });
 
 /**
+ * Validates if a string is a valid IP address (IPv4 or IPv6)
+ *
+ * @param ip - IP address string to validate
+ * @returns true if valid IP format, false otherwise
+ */
+function isValidIP(ip: string): boolean {
+  // IPv4 regex
+  const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+  // IPv6 regex (simplified)
+  const ipv6Regex = /^([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}$/i;
+
+  if (!ipv4Regex.test(ip) && !ipv6Regex.test(ip)) {
+    return false;
+  }
+
+  // Additional validation for IPv4 octets (0-255)
+  if (ipv4Regex.test(ip)) {
+    const octets = ip.split('.');
+    return octets.every(octet => {
+      const num = parseInt(octet, 10);
+      return num >= 0 && num <= 255;
+    });
+  }
+
+  return true; // IPv6 passed basic regex
+}
+
+/**
  * Creates a rate limiting function for Next.js API routes
  *
  * @param options - Configuration for rate limiting
@@ -39,10 +67,46 @@ export function rateLimit(options: {
   windowMs: number;
 }) {
   return (request: NextRequest): NextResponse | null => {
-    // Get client IP (works with Railway, Vercel, etc.)
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const realIp = request.headers.get('x-real-ip');
-    const ip = forwardedFor?.split(',')[0].trim() || realIp || 'unknown';
+    // Extract client IP with validation to prevent header spoofing
+    let ip = 'unknown';
+
+    // Only trust proxy headers if explicitly configured
+    // This prevents attackers from spoofing X-Forwarded-For headers
+    const trustProxy = process.env.TRUST_PROXY === 'true';
+
+    if (trustProxy) {
+      // When behind a trusted proxy (Railway, Vercel, etc.)
+      const forwardedFor = request.headers.get('x-forwarded-for');
+      if (forwardedFor) {
+        // Take the rightmost IP as that's set by the trusted proxy
+        // Format: "client, proxy1, proxy2" -> take "proxy2" (most recent)
+        const ips = forwardedFor.split(',').map(ip => ip.trim());
+        const candidateIp = ips[ips.length - 1];
+
+        // Validate IP format before using
+        if (isValidIP(candidateIp)) {
+          ip = candidateIp;
+        } else {
+          logger.warn('Invalid IP in X-Forwarded-For header', { forwardedFor });
+        }
+      } else {
+        // Fallback to X-Real-IP if no X-Forwarded-For
+        const realIp = request.headers.get('x-real-ip');
+        if (realIp && isValidIP(realIp)) {
+          ip = realIp;
+        }
+      }
+    } else {
+      // Not behind trusted proxy - use connection IP or mark as unknown
+      // In Next.js Edge/Middleware, request.ip may not be available
+      // Fall back to 'unknown' which will still rate limit (all unknowns grouped together)
+      ip = (request as any).ip || 'unknown';
+
+      if (ip !== 'unknown' && !isValidIP(ip)) {
+        logger.warn('Invalid connection IP', { ip });
+        ip = 'unknown';
+      }
+    }
 
     const now = Date.now();
     const entry = rateLimitCache.get(ip);

@@ -64,6 +64,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate message count to prevent memory exhaustion
+    const MAX_MESSAGE_COUNT = 1000;
+    if (!Array.isArray(chat.messages)) {
+      return NextResponse.json(
+        { error: 'Invalid messages format' },
+        { status: 400 }
+      );
+    }
+
+    if (chat.messages.length > MAX_MESSAGE_COUNT) {
+      logger.warn('Chat has too many messages', { count: chat.messages.length });
+      return NextResponse.json(
+        { error: `Chat has too many messages (max ${MAX_MESSAGE_COUNT})` },
+        { status: 400 }
+      );
+    }
+
     // Validate chat object size after parsing
     const chatJson = JSON.stringify(chat);
     if (chatJson.length > MAX_SHARE_SIZE_BYTES) {

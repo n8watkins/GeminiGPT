@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { randomBytes } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 
 const CSRF_TOKEN_HEADER = 'X-CSRF-Token';
 const CSRF_COOKIE_NAME = 'csrf-token';
@@ -15,6 +15,7 @@ export function generateCsrfToken(): string {
 
 /**
  * Validates CSRF token from request headers against cookie value
+ * Uses timing-safe comparison to prevent timing attacks
  *
  * @param request - Next.js request object
  * @returns true if CSRF token is valid, false otherwise
@@ -23,11 +24,26 @@ export function validateCsrfToken(request: NextRequest): boolean {
   const token = request.headers.get(CSRF_TOKEN_HEADER);
   const cookieToken = request.cookies.get(CSRF_COOKIE_NAME)?.value;
 
-  if (!token || !cookieToken || token !== cookieToken) {
+  if (!token || !cookieToken) {
     return false;
   }
 
-  return true;
+  try {
+    // Convert strings to buffers for timing-safe comparison
+    const tokenBuffer = Buffer.from(token, 'utf-8');
+    const cookieBuffer = Buffer.from(cookieToken, 'utf-8');
+
+    // Check length first (timingSafeEqual requires same length)
+    if (tokenBuffer.length !== cookieBuffer.length) {
+      return false;
+    }
+
+    // Use timing-safe comparison to prevent timing attacks
+    return timingSafeEqual(tokenBuffer, cookieBuffer);
+  } catch {
+    // If comparison fails for any reason, reject
+    return false;
+  }
 }
 
 /**
