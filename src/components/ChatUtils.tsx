@@ -100,10 +100,19 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
     setShowShareModal(true);
 
     try {
+      // Fetch CSRF token first
+      const csrfResponse = await fetch('/api/csrf');
+      if (!csrfResponse.ok) {
+        throw new Error('Failed to get CSRF token');
+      }
+      const { token } = await csrfResponse.json();
+
+      // Create share link with CSRF token
       const response = await fetch('/api/share', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': token,
         },
         body: JSON.stringify({ chat }),
       });
