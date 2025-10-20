@@ -349,9 +349,27 @@ const migration = {
   }
 };
 
+/**
+ * Close the database connection
+ * Called during graceful shutdown to ensure clean exit
+ */
+async function closeDatabase(): Promise<void> {
+  if (db) {
+    try {
+      db.close();
+      console.log('✅ SQLite database connection closed');
+      db = null;
+    } catch (error) {
+      console.error('Error closing SQLite database:', error);
+      throw error;
+    }
+  }
+}
+
 export {
   initializeDatabase,
   getDatabase,
+  closeDatabase,
   userOps,
   chatOps,
   messageOps,

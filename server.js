@@ -8,6 +8,10 @@ try {
 // Import logger
 const { serverLogger, securityLogger } = require('./lib/logger');
 
+// Import graceful shutdown handler
+const { ShutdownHandler } = require('./lib/shutdown');
+const shutdownHandler = new ShutdownHandler();
+
 /**
  * ============================================
  * ENVIRONMENT VARIABLE VALIDATION
@@ -104,6 +108,7 @@ validateEnvironment();
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
+const helmet = require('helmet');
 const { setupWebSocketServer } = require('./websocket-server');
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -142,6 +147,35 @@ function startServer(currentPort, maxAttempts = 10) {
       const parsedUrl = parse(req.url, true);
       const { pathname } = parsedUrl;
 
+      // SECURITY: Apply security headers with Helmet
+      // Note: Next.js handles some headers, but we add extra protection
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Next.js needs eval for hot reload
+            styleSrc: ["'self'", "'unsafe-inline'"], // Tailwind needs inline styles
+            imgSrc: ["'self'", "data:", "https:", "blob:"],
+            connectSrc: ["'self'", "wss:", "ws:", "https:"],
+            fontSrc: ["'self'", "data:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+          },
+        },
+        hsts: {
+          maxAge: 31536000, // 1 year
+          includeSubDomains: true,
+          preload: true,
+        },
+        referrerPolicy: {
+          policy: 'strict-origin-when-cross-origin',
+        },
+        noSniff: true, // X-Content-Type-Options: nosniff
+        xssFilter: true, // X-XSS-Protection: 1; mode=block
+        hidePoweredBy: true, // Remove X-Powered-By header
+      })(req, res, () => {});
+
       // Handle health check directly
       if (pathname === '/healthz') {
         res.statusCode = 200;
@@ -159,7 +193,7 @@ function startServer(currentPort, maxAttempts = 10) {
   });
 
   // Setup Advanced WebSocket server with all features (attachments, embeddings, function calling)
-  setupWebSocketServer(server);
+  const io = setupWebSocketServer(server);
 
   server.listen(currentPort, hostname, (err) => {
     if (err) {
@@ -174,6 +208,11 @@ function startServer(currentPort, maxAttempts = 10) {
     } else {
       // Display localhost for local development, actual hostname for production
       const displayHost = (hostname === '0.0.0.0' && dev) ? 'localhost' : hostname;
+
+      // Register server with shutdown handler
+      shutdownHandler.setServer(server, io);
+      shutdownHandler.registerHandlers();
+
       serverLogger.info(`✅ Server ready on http://${displayHost}:${currentPort}`);
       serverLogger.info(`✅ WebSocket server running on port ${currentPort}`);
       serverLogger.info(`✅ Health check available at http://${displayHost}:${currentPort}/healthz`);
