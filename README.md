@@ -4,6 +4,17 @@ A modern, full-featured AI chat application powered by Google's Gemini AI with a
 
 > **Portfolio Project** - This project demonstrates modern full-stack development practices including Next.js, TypeScript, WebSocket communication, vector databases, and AI integration.
 
+## 📖 Quick Links
+
+- **[WebSocket API Documentation](docs/WEBSOCKET_API.md)** - Real-time communication API reference
+- **[HTTP API Documentation](docs/HTTP_API.md)** - REST API endpoints
+- **[Database Schema](docs/DATABASE_SCHEMA.md)** - SQLite & LanceDB schema
+- **[Railway Deployment Guide](docs/deployment/RAILWAY.md)** - Production deployment
+- **[Docker Deployment Guide](docs/deployment/DOCKER.md)** - Containerized deployment
+- **[Contributing Guide](CONTRIBUTING.md)** - Development guidelines
+- **[Production Checklist](docs/PRODUCTION_CHECKLIST.md)** - Pre-deployment checklist
+- **[Implementation Plan](IMPLEMENTATION_PLAN.md)** - Development phases and timeline
+
 ## ✨ Features
 
 ### 🔑 **Bring Your Own API Key (BYOK)**
@@ -548,10 +559,21 @@ This project implements production-ready patterns and best practices:
 
 ## 📚 Documentation
 
-- [Features](docs/features/) - Detailed feature documentation
-- [Deployment](docs/deployment/) - Production deployment guides
-- [Testing](docs/testing/) - Test documentation and results
-- [Development](docs/development/) - Development guides
+### API Documentation
+- **[WebSocket API](docs/WEBSOCKET_API.md)** - Real-time WebSocket events, authentication, rate limiting
+- **[HTTP API](docs/HTTP_API.md)** - REST endpoints, health checks, error handling
+
+### Database
+- **[Database Schema](docs/DATABASE_SCHEMA.md)** - SQLite tables, LanceDB vectors, indexes, relationships
+
+### Deployment
+- **[Railway Deployment](docs/deployment/RAILWAY.md)** - Deploy to Railway with persistent volumes
+- **[Docker Deployment](docs/deployment/DOCKER.md)** - Containerized deployment guide
+
+### Development
+- **[Contributing Guide](CONTRIBUTING.md)** - Code guidelines, development process
+- **[Production Checklist](docs/PRODUCTION_CHECKLIST.md)** - Pre-deployment validation
+- **[Implementation Plan](IMPLEMENTATION_PLAN.md)** - Project phases and roadmap
 
 ## 🔧 Troubleshooting
 
