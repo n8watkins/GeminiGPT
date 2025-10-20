@@ -146,12 +146,6 @@ function startServer(currentPort, maxAttempts = 10) {
   }
 
   const server = createServer(async (req, res) => {
-    // MONITORING: Track request in Sentry
-    const transaction = Sentry.startTransaction({
-      op: 'http.server',
-      name: `${req.method} ${req.url}`,
-    });
-
     try {
       const parsedUrl = parse(req.url, true);
       const { pathname } = parsedUrl;
@@ -194,29 +188,26 @@ function startServer(currentPort, maxAttempts = 10) {
       }
 
       await handle(req, res, parsedUrl);
-
-      transaction.finish();
     } catch (err) {
-      // MONITORING: Capture exception in Sentry
-      Sentry.captureException(err, {
-        contexts: {
-          request: {
-            method: req.method,
-            url: req.url,
-            headers: {
-              'user-agent': req.headers['user-agent'],
+      // MONITORING: Capture exception in Sentry (if configured)
+      if (Sentry.captureException) {
+        Sentry.captureException(err, {
+          contexts: {
+            request: {
+              method: req.method,
+              url: req.url,
+              headers: {
+                'user-agent': req.headers['user-agent'],
+              },
             },
           },
-        },
-      });
+        });
+      }
 
       serverLogger.error('Error occurred handling request', {
         url: req.url,
         error: err.message,
       });
-
-      transaction.setStatus('internal_error');
-      transaction.finish();
 
       res.statusCode = 500;
       res.end('internal server error');
