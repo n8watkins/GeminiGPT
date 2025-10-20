@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import { logger } from './logger.js';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -24,21 +25,21 @@ let db: Database.Database | null = null;
  */
 function initializeDatabase() {
   try {
-    console.log('Initializing SQLite database...');
-    
+    logger.info('Initializing SQLite database');
+
     // Connect to SQLite database
     db = new Database(DB_PATH);
-    
+
     // Enable foreign keys
     db.pragma('foreign_keys = ON');
-    
+
     // Create tables
     createTables();
-    
-    console.log('SQLite database initialized successfully');
+
+    logger.info('SQLite database initialized successfully');
     return true;
   } catch (error) {
-    console.error('Error initializing SQLite database:', error);
+    logger.error('Error initializing SQLite database', { error });
     throw error;
   }
 }
@@ -343,7 +344,7 @@ const migration = {
     const transaction = db.transaction(() => {
       // This would be called to migrate existing localStorage data
       // Implementation depends on your current localStorage structure
-      console.log('Migration from localStorage would be implemented here');
+      logger.info('Migration from localStorage would be implemented here');
     });
     return transaction();
   }
@@ -357,10 +358,10 @@ async function closeDatabase(): Promise<void> {
   if (db) {
     try {
       db.close();
-      console.log('✅ SQLite database connection closed');
+      logger.info('SQLite database connection closed');
       db = null;
     } catch (error) {
-      console.error('Error closing SQLite database:', error);
+      logger.error('Error closing SQLite database', { error });
       throw error;
     }
   }

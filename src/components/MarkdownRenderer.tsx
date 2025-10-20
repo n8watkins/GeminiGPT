@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
+import DOMPurify from 'isomorphic-dompurify';
+import { logger } from '@/lib/logger';
 
 interface MarkdownRendererProps {
   content: string;
@@ -12,13 +14,37 @@ interface MarkdownRendererProps {
 }
 
 export default function MarkdownRenderer({ content, isUser = false }: MarkdownRendererProps) {
-  // DEBUG: Log if content contains [object Object]
-  if (content && content.includes('[object Object]')) {
-    console.error('🚨 MarkdownRenderer received content with [object Object]!');
-    console.error('Content type:', typeof content);
-    console.error('Content length:', content.length);
-    console.error('First 500 chars:', content.substring(0, 500));
-  }
+  // Sanitize content to prevent XSS attacks
+  const sanitizedContent = useMemo(() => {
+    if (!content || typeof content !== 'string') {
+      logger.warn('MarkdownRenderer received invalid content', { type: typeof content });
+      return '';
+    }
+
+    // DEBUG: Log if content contains [object Object]
+    if (content.includes('[object Object]')) {
+      logger.error('MarkdownRenderer received content with [object Object]', {
+        contentType: typeof content,
+        contentLength: content.length,
+        preview: content.substring(0, 500)
+      });
+    }
+
+    // Sanitize with DOMPurify to prevent XSS
+    return DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'em', 'u', 's', 'code', 'pre',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'a', 'blockquote', 'hr',
+        'table', 'thead', 'tbody', 'tr', 'td', 'th',
+        'div', 'span', 'img'
+      ],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'src', 'alt', 'title'],
+      ALLOW_DATA_ATTR: false,
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+      SAFE_FOR_TEMPLATES: true,
+    });
+  }, [content]);
 
   return (
     <div className={`markdown-content ${isUser ? 'text-white' : 'text-gray-800'}`}>
@@ -52,10 +78,10 @@ export default function MarkdownRenderer({ content, isUser = false }: MarkdownRe
 
               // DEBUG: Log if we're about to pass [object Object]
               if (codeText.includes('[object Object]')) {
-                console.error('🚨 CodeBlock about to receive [object Object]!');
-                console.error('children type:', typeof children);
-                console.error('children:', children);
-                console.error('codeText:', codeText);
+                logger.error('CodeBlock about to receive [object Object]', {
+                  childrenType: typeof children,
+                  codeText
+                });
               }
 
               return (
@@ -152,7 +178,7 @@ export default function MarkdownRenderer({ content, isUser = false }: MarkdownRe
           ),
         }}
       >
-        {content}
+        {sanitizedContent}
       </ReactMarkdown>
     </div>
   );
