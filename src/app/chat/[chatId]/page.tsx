@@ -1,18 +1,29 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useChat } from '@/contexts/ChatContext';
 import Sidebar from '@/components/Sidebar';
 import ChatInterface from '@/components/ChatInterface';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
-import { useState } from 'react';
+import AboutModal from '@/components/AboutModal';
+import ApiKeySetup from '@/components/ApiKeySetup';
+import TermsOfService from '@/components/TermsOfService';
+import UsageStats from '@/components/UsageStats';
+import SettingsModal from '@/components/SettingsModal';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const { state, selectChat } = useChat();
+  const { rateLimitInfo } = useWebSocket();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [usageStatsOpen, setUsageStatsOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const chatId = params.chatId as string;
 
   useEffect(() => {
@@ -34,7 +45,15 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex bg-blue-50">
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onOpenAbout={() => setAboutModalOpen(true)}
+        onOpenApiKeySetup={() => setApiKeyModalOpen(true)}
+        onOpenTerms={() => setTermsModalOpen(true)}
+        onOpenUsageStats={() => setUsageStatsOpen(true)}
+        onOpenSettings={() => setSettingsModalOpen(true)}
+      />
 
       <div className="flex-1 flex flex-col lg:ml-80">
         {/* Mobile header */}
@@ -57,6 +76,46 @@ export default function ChatPage() {
         {/* Keyboard Shortcuts */}
         <KeyboardShortcuts />
       </div>
+
+      {/* About Modal */}
+      <AboutModal
+        isOpen={aboutModalOpen}
+        onClose={() => setAboutModalOpen(false)}
+        onSetupApiKey={() => {
+          setAboutModalOpen(false);
+          setApiKeyModalOpen(true);
+        }}
+      />
+
+      {/* API Key Setup Modal */}
+      <ApiKeySetup
+        isOpen={apiKeyModalOpen}
+        onClose={() => setApiKeyModalOpen(false)}
+        onKeySaved={() => setApiKeyModalOpen(false)}
+        onOpenTerms={() => {
+          setApiKeyModalOpen(false);
+          setTermsModalOpen(true);
+        }}
+      />
+
+      {/* Terms of Service Modal */}
+      <TermsOfService
+        isOpen={termsModalOpen}
+        onClose={() => setTermsModalOpen(false)}
+      />
+
+      {/* Usage Stats Modal */}
+      <UsageStats
+        isOpen={usageStatsOpen}
+        onClose={() => setUsageStatsOpen(false)}
+        rateLimitInfo={rateLimitInfo}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+      />
     </div>
   );
 }
