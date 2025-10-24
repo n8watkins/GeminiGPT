@@ -12,6 +12,7 @@ import UsageStats from '@/components/UsageStats';
 import RateLimitModal from '@/components/RateLimitModal';
 import SettingsModal from '@/components/SettingsModal';
 import ThemeDebug from '@/components/ThemeDebug';
+import DarkModeTest from '@/components/DarkModeTest';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
@@ -157,6 +158,9 @@ export default function Home() {
 
       {/* Theme Debug Panel */}
       <ThemeDebug />
+
+      {/* Dark Mode Test Panel */}
+      <DarkModeTest />
     </div>
   );
 }
