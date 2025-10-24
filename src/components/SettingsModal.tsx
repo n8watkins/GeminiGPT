@@ -100,11 +100,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">Theme</p>
                     <select
                       value={theme}
-                      onChange={(e) => {
-                        const newValue = e.target.value as 'light' | 'dark' | 'system';
-                        console.log('[SettingsModal] Dropdown changed to:', newValue);
-                        setTheme(newValue);
-                      }}
+                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
                       className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer"
                     >
                       <option value="light">☀️ Light</option>

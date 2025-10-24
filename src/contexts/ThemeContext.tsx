@@ -20,44 +20,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Load saved theme after mount to avoid hydration mismatch
   useEffect(() => {
-    console.log('[ThemeContext] Component mounted, loading from localStorage...');
     setMounted(true);
     const savedTheme = localStorage.getItem('theme') as Theme;
-    console.log('[ThemeContext] Saved theme from localStorage:', savedTheme);
     if (savedTheme) {
       setThemeState(savedTheme);
-      console.log('[ThemeContext] Set theme state to:', savedTheme);
     }
   }, []);
 
   // Update resolved theme and apply to document
   useEffect(() => {
-    console.log('[ThemeContext] useEffect triggered, current theme:', theme);
-
     const updateResolvedTheme = () => {
       let resolved: 'light' | 'dark' = 'light';
 
       if (theme === 'system') {
         resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        console.log('[ThemeContext] Theme is system, resolved to:', resolved);
       } else {
         resolved = theme;
-        console.log('[ThemeContext] Theme is explicit:', resolved);
       }
 
-      console.log('[ThemeContext] Setting resolvedTheme to:', resolved);
       setResolvedTheme(resolved);
 
       // Apply theme to document
-      console.log('[ThemeContext] Current classList before change:', document.documentElement.classList.toString());
       if (resolved === 'dark') {
-        console.log('[ThemeContext] ADDING dark class');
         document.documentElement.classList.add('dark');
       } else {
-        console.log('[ThemeContext] REMOVING dark class');
         document.documentElement.classList.remove('dark');
       }
-      console.log('[ThemeContext] Current classList after change:', document.documentElement.classList.toString());
     };
 
     updateResolvedTheme();
@@ -75,11 +63,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
-    console.log('[ThemeContext] setTheme called with:', newTheme);
-    console.log('[ThemeContext] Updating theme state and localStorage...');
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
-    console.log('[ThemeContext] localStorage updated to:', newTheme);
   };
 
   return (
