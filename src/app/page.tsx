@@ -67,7 +67,7 @@ export default function Home() {
   // setAboutModalOpen(true);
 
   return (
-    <div className="h-screen flex bg-blue-50">
+    <div className="h-screen flex bg-blue-50 dark:bg-gray-900">
       <Sidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}

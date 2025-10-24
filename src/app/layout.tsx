@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import DebugPanel from "@/components/DebugPanel";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -31,14 +32,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
-          <NotificationProvider>
-            <ChatProvider>
-              {children}
-              <DebugPanel />
-            </ChatProvider>
-          </NotificationProvider>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <NotificationProvider>
+              <ChatProvider>
+                {children}
+                <DebugPanel />
+              </ChatProvider>
+            </NotificationProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );
