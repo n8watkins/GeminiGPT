@@ -344,30 +344,30 @@ export default function ChatInterface() {
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion.text)}
-                  className="p-4 text-left bg-white hover:bg-blue-50 border border-blue-200 hover:border-blue-400 rounded-xl transition-all hover:shadow-md group"
+                  className="p-4 text-left bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 border border-blue-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl transition-all hover:shadow-md group"
                 >
                   <div className="flex items-start gap-3">
                     {suggestion.icon}
-                    <span className="text-sm text-gray-700 group-hover:text-blue-900">{suggestion.text}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-200 group-hover:text-blue-900 dark:group-hover:text-blue-300">{suggestion.text}</span>
                   </div>
                 </button>
               ))}
             </div>
 
             {/* Centered Input Form */}
-            <div className="bg-white rounded-2xl shadow-lg border border-blue-200 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4">
               {/* Error Message */}
               {errorMessage && (
-                <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
-                  <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start space-x-2">
+                  <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+                    <p className="text-sm font-medium text-red-800 dark:text-red-200">{errorMessage}</p>
                   </div>
                   <button
                     onClick={() => setErrorMessage(null)}
-                    className="text-red-600 hover:text-red-800"
+                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -378,21 +378,21 @@ export default function ChatInterface() {
 
               {/* Pending Attachments */}
               {pendingAttachments.length > 0 && (
-                <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-blue-800">
+                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
                       Attachments ({pendingAttachments.length})
                     </span>
                     <button
                       onClick={() => setPendingAttachments([])}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
                     >
                       Clear all
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {pendingAttachments.map((attachment) => (
-                      <div key={attachment.id} className="flex items-center space-x-2 bg-white rounded border p-2">
+                      <div key={attachment.id} className="flex items-center space-x-2 bg-white dark:bg-gray-700 rounded border dark:border-gray-600 p-2">
                         {attachment.type === 'image' ? (
                           <Image
                             src={attachment.url}
@@ -402,18 +402,18 @@ export default function ChatInterface() {
                             className="w-8 h-8 object-cover rounded"
                           />
                         ) : (
-                          <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
-                            <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                            <svg className="w-4 h-4 text-gray-500 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                             </svg>
                           </div>
                         )}
-                        <span className="text-xs text-gray-600 truncate max-w-20">
+                        <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-20">
                           {attachment.name}
                         </span>
                         <button
                           onClick={() => removeAttachment(attachment.id)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -434,7 +434,7 @@ export default function ChatInterface() {
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="Type your message..."
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-gray-900 placeholder-gray-400"
+                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400"
                 />
                 <button
                   type="submit"
@@ -476,14 +476,14 @@ export default function ChatInterface() {
 
             {(isLoading || (activeChat && typingStates[activeChat.id])) && (
               <div className="flex justify-start w-full">
-                <div className="bg-white border border-blue-100 rounded-lg p-4 shadow-sm max-w-xs">
+                <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-600 rounded-lg p-4 shadow-sm max-w-xs">
                   <div className="flex items-center space-x-2">
                     <div className="flex space-x-1">
-                      <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce"></div>
-                      <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
-                      <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                      <div className="w-2.5 h-2.5 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce"></div>
+                      <div className="w-2.5 h-2.5 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                      <div className="w-2.5 h-2.5 bg-blue-500 dark:bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                     </div>
-                    <span className="text-sm text-gray-600 ml-2">GeminiGPT is thinking...</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300 ml-2">GeminiGPT is thinking...</span>
                   </div>
                 </div>
               </div>

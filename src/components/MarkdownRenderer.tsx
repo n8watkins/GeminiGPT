@@ -49,7 +49,7 @@ export default function MarkdownRenderer({ content, isUser = false }: MarkdownRe
   }, [content]);
 
   return (
-    <div className={`markdown-content ${isUser ? 'text-white' : 'text-gray-800'}`}>
+    <div className={`markdown-content ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight, rehypeRaw]}
@@ -97,7 +97,7 @@ export default function MarkdownRenderer({ content, isUser = false }: MarkdownRe
             return (
               <code
                 className={`${className || ''} ${
-                  isUser ? 'bg-white bg-opacity-20' : 'bg-gray-100'
+                  isUser ? 'bg-white bg-opacity-20' : 'bg-gray-100 dark:bg-gray-700'
                 } px-1.5 py-0.5 rounded text-sm font-mono`}
                 {...props}
               >
@@ -109,17 +109,17 @@ export default function MarkdownRenderer({ content, isUser = false }: MarkdownRe
             return <>{children}</>;
           },
           h1: ({ children }) => (
-            <h1 className={`text-2xl font-bold mt-4 mb-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-2xl font-bold mt-4 mb-2 ${isUser ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
               {children}
             </h1>
           ),
           h2: ({ children }) => (
-            <h2 className={`text-xl font-semibold mt-3 mb-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>
+            <h2 className={`text-xl font-semibold mt-3 mb-2 ${isUser ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className={`text-lg font-semibold mt-2 mb-1 ${isUser ? 'text-white' : 'text-gray-900'}`}>
+            <h3 className={`text-lg font-semibold mt-2 mb-1 ${isUser ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
               {children}
             </h3>
           ),
