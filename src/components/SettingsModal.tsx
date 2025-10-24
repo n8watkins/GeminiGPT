@@ -12,8 +12,10 @@ interface SettingsModalProps {
 type SettingsSection = 'general' | 'appearance' | 'notifications' | 'privacy';
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+
+  console.log('[SettingsModal] Rendered with theme:', theme, 'resolved:', resolvedTheme);
 
   const sections = [
     { id: 'general' as const, label: 'General', icon: '⚙️' },
@@ -100,13 +102,25 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">Theme</p>
                     <select
                       value={theme}
-                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                      onChange={(e) => {
+                        console.log('[SettingsModal] Theme dropdown changed to:', e.target.value);
+                        setTheme(e.target.value as 'light' | 'dark' | 'system');
+                      }}
                       className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer"
                     >
                       <option value="light">☀️ Light</option>
                       <option value="dark">🌙 Dark</option>
                       <option value="system">💻 System</option>
                     </select>
+
+                    {/* Debug Info */}
+                    <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-xs font-mono">
+                      <div>Current theme: <strong>{theme}</strong></div>
+                      <div>Resolved: <strong>{resolvedTheme}</strong></div>
+                      <div>HTML class: <strong className="text-blue-600 dark:text-blue-400">
+                        {typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                      </strong></div>
+                    </div>
                   </label>
                 </div>
               </div>
