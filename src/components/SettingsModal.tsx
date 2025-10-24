@@ -24,7 +24,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="4xl">
-      <div className="flex h-[600px] -m-8">
+      <div className="flex h-[600px] -m-8 overflow-hidden rounded-2xl">
         {/* Sidebar */}
         <div className="w-64 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Settings</h2>
@@ -98,26 +98,15 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
                   <label className="block">
                     <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">Theme</p>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { value: 'light', label: 'Light', icon: '☀️' },
-                        { value: 'dark', label: 'Dark', icon: '🌙' },
-                        { value: 'system', label: 'System', icon: '💻' },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setTheme(option.value as 'light' | 'dark' | 'system')}
-                          className={`p-4 rounded-lg border-2 transition-all ${
-                            theme === option.value
-                              ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                          }`}
-                        >
-                          <div className="text-2xl mb-2">{option.icon}</div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{option.label}</div>
-                        </button>
-                      ))}
-                    </div>
+                    <select
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer"
+                    >
+                      <option value="light">☀️ Light</option>
+                      <option value="dark">🌙 Dark</option>
+                      <option value="system">💻 System</option>
+                    </select>
                   </label>
                 </div>
               </div>
