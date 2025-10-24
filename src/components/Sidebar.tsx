@@ -32,7 +32,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
   const [userId, setUserId] = useState('');
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const settingsMenuRef = useRef<HTMLDivElement>(null);
 
   // Set userId after mount to avoid hydration mismatch
   useEffect(() => {
@@ -205,7 +207,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
 
       // Esc to close modals or clear search
       if (event.key === 'Escape') {
-        if (searchQuery) {
+        if (showSettingsMenu) {
+          setShowSettingsMenu(false);
+        } else if (searchQuery) {
           setSearchQuery('');
           searchInputRef.current?.blur();
         } else if (isOpen) {
@@ -216,7 +220,21 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNewChat, isOpen, onToggle, searchQuery, isCollapsed]);
+  }, [handleNewChat, isOpen, onToggle, searchQuery, isCollapsed, showSettingsMenu]);
+
+  // Close settings menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
+        setShowSettingsMenu(false);
+      }
+    };
+
+    if (showSettingsMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSettingsMenu]);
 
   // Connection status indicator with text label - memoized to prevent re-renders
   const connectionIndicator = useMemo(() => {
@@ -340,6 +358,21 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                 {/* Rate Limit Display - Memoized */}
                 {rateLimitDisplay}
 
+                {/* New Chat Button - Moved to Top */}
+                <button
+                  onClick={handleNewChat}
+                  className="w-full px-4 py-2.5 mb-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-between group shadow-lg"
+                  title="Start new chat (Alt+N)"
+                >
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span className="font-medium">New Chat</span>
+                  </div>
+                  <kbd className="text-xs bg-blue-400 px-2 py-0.5 rounded opacity-70 group-hover:opacity-100 font-mono">Alt+N</kbd>
+                </button>
+
                 {/* Search Input */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -410,125 +443,131 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
           </div>
           )}
 
-          {/* New Chat Button - Moved to Bottom */}
-          <div className="border-t border-blue-800 p-3">
+          {/* Settings Button with Popup Menu */}
+          <div ref={settingsMenuRef} className="border-t border-blue-800 p-3 bg-blue-950/30 relative">
             {!isCollapsed ? (
-              <button
-                onClick={handleNewChat}
-                className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-between group shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300"
-                title="Start new chat (Alt+N)"
-              >
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>New Chat</span>
-                </div>
-                <kbd className="text-xs bg-blue-400 px-2 py-0.5 rounded opacity-70 group-hover:opacity-100 font-mono">Alt+N</kbd>
-              </button>
-            ) : (
-              <button
-                onClick={handleNewChat}
-                className="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center justify-center shadow-lg"
-                title="New chat (Alt+N)"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            )}
-          </div>
+              <>
+                {/* Settings Menu - Positioned Above Button */}
+                {showSettingsMenu && (
+                  <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-blue-900 rounded-lg shadow-xl border border-blue-700 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
+                    <div className="py-1">
+                      {/* API Key Settings */}
+                      {onOpenApiKeySetup && (
+                        <button
+                          onClick={() => {
+                            onOpenApiKeySetup();
+                            setShowSettingsMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                        >
+                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                          </svg>
+                          <span>API Key Settings</span>
+                        </button>
+                      )}
 
-          {/* Settings Section */}
-          <div className="border-t border-blue-800 p-3 bg-blue-950/30 space-y-2">
-            {!isCollapsed ? (
-              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* API Key Settings Button */}
-            {onOpenApiKeySetup && (
-              <button
-                onClick={onOpenApiKeySetup}
-                className="w-full px-3 py-2.5 text-sm font-medium text-blue-100 bg-blue-800/30 hover:bg-blue-800/50 rounded-lg border border-blue-700/40 hover:border-blue-600/60 transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
-                title="Manage your Gemini API key"
-              >
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-blue-300 group-hover:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                  <span className="group-hover:text-white transition-colors">API Key Settings</span>
-                </div>
-              </button>
-            )}
+                      {/* About */}
+                      {onOpenAbout && (
+                        <button
+                          onClick={() => {
+                            onOpenAbout();
+                            setShowSettingsMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                        >
+                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>About</span>
+                        </button>
+                      )}
 
-            {/* About Button */}
-            {onOpenAbout && (
-              <button
-                onClick={onOpenAbout}
-                className="w-full px-3 py-2.5 text-sm font-medium text-blue-100 bg-blue-800/30 hover:bg-blue-800/50 rounded-lg border border-blue-700/40 hover:border-blue-600/60 transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
-                title="About this portfolio project"
-              >
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-blue-300 group-hover:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="group-hover:text-white transition-colors">About</span>
-                </div>
-              </button>
-            )}
+                      {/* Terms & Privacy */}
+                      {onOpenTerms && (
+                        <button
+                          onClick={() => {
+                            onOpenTerms();
+                            setShowSettingsMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                        >
+                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>Terms & Privacy</span>
+                        </button>
+                      )}
 
-            {/* Terms of Service Button */}
-            {onOpenTerms && (
-              <button
-                onClick={onOpenTerms}
-                className="w-full px-3 py-2.5 text-sm font-medium text-blue-100 bg-blue-800/30 hover:bg-blue-800/50 rounded-lg border border-blue-700/40 hover:border-blue-600/60 transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
-                title="Terms of Service & Privacy Policy"
-              >
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-blue-300 group-hover:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="group-hover:text-white transition-colors">Terms & Privacy</span>
-                </div>
-              </button>
-            )}
+                      {/* Usage Stats */}
+                      {onOpenUsageStats && (
+                        <button
+                          onClick={() => {
+                            onOpenUsageStats();
+                            setShowSettingsMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                        >
+                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          <span>Usage Stats</span>
+                        </button>
+                      )}
 
-            {/* Usage Stats Button */}
-            {onOpenUsageStats && (
-              <button
-                onClick={onOpenUsageStats}
-                className="w-full text-left px-4 py-2 text-sm text-blue-200 hover:bg-blue-600/20 transition-all rounded-lg group"
-              >
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-blue-300 group-hover:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <span className="group-hover:text-white transition-colors">Usage Stats</span>
-                </div>
-              </button>
-            )}
+                      {/* Divider */}
+                      <div className="my-1 border-t border-blue-800"></div>
 
-                {/* Reset Everything Button */}
+                      {/* Reset Everything */}
+                      <button
+                        onClick={() => {
+                          setShowResetModal(true);
+                          setShowSettingsMenu(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm text-red-200 hover:bg-red-900/30 transition-colors flex items-center gap-3"
+                      >
+                        <svg className="w-4 h-4 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Reset Everything</span>
+                        <kbd className="ml-auto text-xs bg-red-800/40 text-red-200 px-2 py-0.5 rounded font-mono">Alt+R</kbd>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Settings Button */}
                 <button
-                  onClick={() => setShowResetModal(true)}
-                  className="w-full px-3 py-2.5 text-sm font-medium text-red-100 bg-red-900/20 hover:bg-red-900/40 rounded-lg border border-red-800/40 hover:border-red-700/60 transition-all duration-200 flex items-center justify-between group shadow-sm hover:shadow-md"
-                  title="Reset everything - chats, vector DB, and local data (Alt+R)"
+                  onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                  className="w-full px-4 py-2.5 bg-blue-800/30 hover:bg-blue-800/50 text-blue-100 rounded-lg transition-colors flex items-center justify-between group border border-blue-700/40 hover:border-blue-600/60"
+                  title="Settings"
                 >
                   <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2 text-red-300 group-hover:text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg className="w-4 h-4 mr-2 text-blue-300 group-hover:text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span className="group-hover:text-white transition-colors">Reset Everything</span>
+                    <span className="font-medium">Settings</span>
                   </div>
-                  <kbd className="text-xs bg-red-800/40 text-red-200 px-2 py-0.5 rounded opacity-60 group-hover:opacity-100 font-mono transition-opacity">Alt+R</kbd>
+                  <svg
+                    className={`w-4 h-4 text-blue-300 transition-transform ${showSettingsMenu ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
                 </button>
-              </div>
+              </>
             ) : (
               <button
-                onClick={() => setShowResetModal(true)}
-                className="w-full p-3 text-red-100 bg-red-900/20 hover:bg-red-900/40 rounded-lg border border-red-800/40 hover:border-red-700/60 transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md"
-                title="Reset everything (Alt+R)"
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                className="w-full p-3 bg-blue-800/30 hover:bg-blue-800/50 rounded-lg transition-colors flex items-center justify-center border border-blue-700/40 hover:border-blue-600/60"
+                title="Settings"
               >
-                <svg className="w-5 h-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg className="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
             )}
