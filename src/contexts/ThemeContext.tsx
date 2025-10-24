@@ -17,7 +17,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as Theme;
-      console.log('[ThemeContext] Initializing theme from localStorage:', savedTheme);
       return savedTheme || 'system';
     }
     return 'system';
@@ -26,26 +25,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as Theme;
-      if (savedTheme === 'dark') {
-        console.log('[ThemeContext] Initial resolved theme: dark');
-        return 'dark';
-      }
-      if (savedTheme === 'light') {
-        console.log('[ThemeContext] Initial resolved theme: light');
-        return 'light';
-      }
+      if (savedTheme === 'dark') return 'dark';
+      if (savedTheme === 'light') return 'light';
       // For 'system' or no saved theme, check system preference
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      console.log('[ThemeContext] Initial resolved theme from system:', systemDark ? 'dark' : 'light');
-      return systemDark ? 'dark' : 'light';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     return 'light';
   });
 
   // Update resolved theme and apply to document
   useEffect(() => {
-    console.log('[ThemeContext] useEffect triggered, theme:', theme);
-
     const updateResolvedTheme = () => {
       let resolved: 'light' | 'dark' = 'light';
 
@@ -55,19 +44,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         resolved = theme;
       }
 
-      console.log('[ThemeContext] Resolved theme:', resolved);
       setResolvedTheme(resolved);
 
       // Apply theme to document
       if (resolved === 'dark') {
-        console.log('[ThemeContext] Adding dark class to document');
         document.documentElement.classList.add('dark');
       } else {
-        console.log('[ThemeContext] Removing dark class from document');
         document.documentElement.classList.remove('dark');
       }
-
-      console.log('[ThemeContext] Document classes:', document.documentElement.classList.toString());
     };
 
     updateResolvedTheme();
@@ -85,10 +69,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
-    console.log('[ThemeContext] setTheme called with:', newTheme);
     setThemeState(newTheme);
     localStorage.setItem('theme', newTheme);
-    console.log('[ThemeContext] Theme saved to localStorage:', newTheme);
   };
 
   return (
