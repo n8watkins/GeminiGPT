@@ -9,6 +9,7 @@ import AboutModal from '@/components/AboutModal';
 import ApiKeySetup from '@/components/ApiKeySetup';
 import TermsOfService from '@/components/TermsOfService';
 import UsageStats from '@/components/UsageStats';
+import RateLimitModal from '@/components/RateLimitModal';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
@@ -18,26 +19,46 @@ export default function Home() {
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [usageStatsOpen, setUsageStatsOpen] = useState(false);
+  const [rateLimitModalOpen, setRateLimitModalOpen] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { hasApiKey, isLoading } = useApiKey();
   const { rateLimitInfo } = useWebSocket();
 
+  // Check for rate limiting
   useEffect(() => {
-    if (isLoading) return;
-
-    // Check if user has API key
-    if (!hasApiKey) {
-      // Show API key setup on first visit or if no key
-      setApiKeyModalOpen(true);
-      return;
+    if (rateLimitInfo) {
+      const isRateLimited = rateLimitInfo.remaining.minute === 0 || rateLimitInfo.remaining.hour === 0;
+      if (isRateLimited && !hasApiKey) {
+        setRateLimitModalOpen(true);
+      }
     }
+  }, [rateLimitInfo, hasApiKey]);
 
-    // Check if user has visited before (only show About if they have API key)
-    const hasVisited = localStorage.getItem('geminigpt-has-visited');
-    if (!hasVisited) {
+  useEffect(() => {
+    // Only run once on mount
+    if (isLoading || hasInitialized) return;
+
+    // Check when the About modal was last shown
+    const lastShownTimestamp = localStorage.getItem('geminigpt-about-last-shown');
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    // Show About modal if:
+    // 1. Never shown before (null)
+    // 2. Last shown more than 24 hours ago
+    const shouldShowAbout = !lastShownTimestamp || (now - parseInt(lastShownTimestamp)) > twentyFourHours;
+
+    if (shouldShowAbout) {
+      // Show About modal and update timestamp
       setAboutModalOpen(true);
-      localStorage.setItem('geminigpt-has-visited', 'true');
+      localStorage.setItem('geminigpt-about-last-shown', now.toString());
     }
-  }, [hasApiKey, isLoading]);
+    // Note: Don't auto-show API key modal here
+    // It will only show when About modal closes (if user has no key)
+    // Or when user explicitly opens it from sidebar
+
+    setHasInitialized(true);
+  }, [isLoading, hasInitialized, hasApiKey]);
 
   // For testing - remove this after verifying modal works
   // Uncomment the line below to force modal to show
@@ -77,20 +98,22 @@ export default function Home() {
       </div>
 
       {/* About Modal */}
-      <AboutModal isOpen={aboutModalOpen} onClose={() => setAboutModalOpen(false)} />
+      <AboutModal
+        isOpen={aboutModalOpen}
+        onClose={() => setAboutModalOpen(false)}
+        onSetupApiKey={() => {
+          setAboutModalOpen(false);
+          setApiKeyModalOpen(true);
+        }}
+      />
 
       {/* API Key Setup Modal */}
       <ApiKeySetup
         isOpen={apiKeyModalOpen}
         onClose={() => setApiKeyModalOpen(false)}
         onKeySaved={() => {
-          // After saving key, close modal and show about modal if first visit
+          // After saving key, just close the modal
           setApiKeyModalOpen(false);
-          const hasVisited = localStorage.getItem('geminigpt-has-visited');
-          if (!hasVisited) {
-            setAboutModalOpen(true);
-            localStorage.setItem('geminigpt-has-visited', 'true');
-          }
         }}
         onOpenTerms={() => {
           setApiKeyModalOpen(false);
@@ -109,6 +132,17 @@ export default function Home() {
         isOpen={usageStatsOpen}
         onClose={() => setUsageStatsOpen(false)}
         rateLimitInfo={rateLimitInfo}
+      />
+
+      {/* Rate Limit Modal */}
+      <RateLimitModal
+        isOpen={rateLimitModalOpen}
+        onClose={() => setRateLimitModalOpen(false)}
+        onSetupApiKey={() => {
+          setRateLimitModalOpen(false);
+          setApiKeyModalOpen(true);
+        }}
+        resetTime={rateLimitInfo?.resetAt.minute}
       />
     </div>
   );
