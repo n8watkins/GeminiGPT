@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Modal from './Modal';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -9,132 +9,199 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+type SettingsSection = 'general' | 'appearance' | 'notifications' | 'privacy';
+
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
+  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+
+  const sections = [
+    { id: 'general' as const, label: 'General', icon: '⚙️' },
+    { id: 'appearance' as const, label: 'Appearance', icon: '🎨' },
+    { id: 'notifications' as const, label: 'Notifications', icon: '🔔' },
+    { id: 'privacy' as const, label: 'Privacy & Data', icon: '🔒' },
+  ];
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-              <p className="text-sm text-gray-600">Customize your experience</p>
-            </div>
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="4xl">
+      <div className="flex h-[600px] -m-8">
+        {/* Sidebar */}
+        <div className="w-64 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Settings</h2>
+          <nav className="space-y-1">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-3 ${
+                  activeSection === section.id
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span className="text-lg">{section.icon}</span>
+                <span className="text-sm">{section.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Settings Content */}
-        <div className="space-y-4">
-          {/* Appearance Section */}
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-              </svg>
-              Appearance
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Theme</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
+        {/* Content Area */}
+        <div className="flex-1 p-8 overflow-y-auto bg-white dark:bg-gray-900">
+          {/* General Section */}
+          {activeSection === 'general' && (
+            <div className="max-w-2xl">
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">General</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Manage your general preferences</p>
+
+              <div className="space-y-6">
+                <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Auto-save conversations</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Automatically save your chats</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="w-9 h-5 bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors checked:bg-blue-600 appearance-none
+                      after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform checked:after:translate-x-4"
+                      defaultChecked
+                    />
+                  </label>
                 </div>
-                <select
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
-                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="system">System</option>
-                </select>
+
+                <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Show suggestions</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Display suggested prompts in empty chats</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="w-9 h-5 bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors checked:bg-blue-600 appearance-none
+                      after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform checked:after:translate-x-4"
+                      defaultChecked
+                    />
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Appearance Section */}
+          {activeSection === 'appearance' && (
+            <div className="max-w-2xl">
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Appearance</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Customize how your app looks</p>
+
+              <div className="space-y-6">
+                <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <label className="block">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">Theme</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { value: 'light', label: 'Light', icon: '☀️' },
+                        { value: 'dark', label: 'Dark', icon: '🌙' },
+                        { value: 'system', label: 'System', icon: '💻' },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setTheme(option.value as 'light' | 'dark' | 'system')}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                            theme === option.value
+                              ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          }`}
+                        >
+                          <div className="text-2xl mb-2">{option.icon}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{option.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Notifications Section */}
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              Notifications
-            </h3>
-            <div className="space-y-3">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Sound effects</p>
-                  <p className="text-xs text-gray-500">Play sounds for messages</p>
+          {activeSection === 'notifications' && (
+            <div className="max-w-2xl">
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Notifications</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Manage how you receive notifications</p>
+
+              <div className="space-y-6">
+                <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Sound effects</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Play sounds when messages arrive</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="w-9 h-5 bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors checked:bg-blue-600 appearance-none
+                      after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform checked:after:translate-x-4"
+                      defaultChecked
+                    />
+                  </label>
                 </div>
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  defaultChecked
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Desktop notifications</p>
-                  <p className="text-xs text-gray-500">Show notifications on desktop</p>
+
+                <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Desktop notifications</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Show desktop notifications for new messages</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="w-9 h-5 bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors checked:bg-blue-600 appearance-none
+                      after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform checked:after:translate-x-4"
+                    />
+                  </label>
                 </div>
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-              </label>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Privacy Section */}
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              Privacy & Data
-            </h3>
-            <div className="space-y-3">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Save chat history</p>
-                  <p className="text-xs text-gray-500">Store conversations locally</p>
-                </div>
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  defaultChecked
-                />
-              </label>
-              <label className="flex items-center justify-between cursor-pointer">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Analytics</p>
-                  <p className="text-xs text-gray-500">Help improve the app</p>
-                </div>
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  defaultChecked
-                />
-              </label>
-            </div>
-          </div>
-        </div>
+          {activeSection === 'privacy' && (
+            <div className="max-w-2xl">
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Privacy & Data</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Control your data and privacy settings</p>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
-          >
-            Done
-          </button>
+              <div className="space-y-6">
+                <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Save chat history</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Store conversations locally on your device</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="w-9 h-5 bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors checked:bg-blue-600 appearance-none
+                      after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform checked:after:translate-x-4"
+                      defaultChecked
+                    />
+                  </label>
+                </div>
+
+                <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Analytics</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Help improve the app with usage data</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="w-9 h-5 bg-gray-200 dark:bg-gray-700 rounded-full relative cursor-pointer transition-colors checked:bg-blue-600 appearance-none
+                      after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform checked:after:translate-x-4"
+                      defaultChecked
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Modal>
