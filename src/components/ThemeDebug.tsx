@@ -66,24 +66,44 @@ export default function ThemeDebug() {
         <div className="text-gray-400 mb-2">Quick Test:</div>
         <div className="flex gap-2">
           <button
-            onClick={() => setTheme('light')}
-            className="px-2 py-1 bg-white text-black rounded text-xs"
+            onClick={() => {
+              console.log('[ThemeDebug] Light button clicked');
+              setTheme('light');
+            }}
+            className="px-2 py-1 bg-white text-black rounded text-xs hover:bg-gray-200"
           >
             Light
           </button>
           <button
-            onClick={() => setTheme('dark')}
-            className="px-2 py-1 bg-gray-800 text-white rounded text-xs"
+            onClick={() => {
+              console.log('[ThemeDebug] Dark button clicked');
+              setTheme('dark');
+            }}
+            className="px-2 py-1 bg-gray-800 text-white rounded text-xs hover:bg-gray-700"
           >
             Dark
           </button>
           <button
-            onClick={() => setTheme('system')}
-            className="px-2 py-1 bg-blue-600 text-white rounded text-xs"
+            onClick={() => {
+              console.log('[ThemeDebug] System button clicked');
+              setTheme('system');
+            }}
+            className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
           >
             System
           </button>
         </div>
+        <button
+          onClick={() => {
+            console.log('[ThemeDebug] Clearing localStorage and resetting...');
+            localStorage.removeItem('theme');
+            document.documentElement.classList.remove('dark');
+            window.location.reload();
+          }}
+          className="mt-2 w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+        >
+          Clear & Reset
+        </button>
       </div>
     </div>
   );
