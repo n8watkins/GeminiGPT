@@ -10,6 +10,7 @@ import ApiKeySetup from '@/components/ApiKeySetup';
 import TermsOfService from '@/components/TermsOfService';
 import UsageStats from '@/components/UsageStats';
 import RateLimitModal from '@/components/RateLimitModal';
+import SettingsModal from '@/components/SettingsModal';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
@@ -20,6 +21,7 @@ export default function Home() {
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [usageStatsOpen, setUsageStatsOpen] = useState(false);
   const [rateLimitModalOpen, setRateLimitModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const { hasApiKey, isLoading } = useApiKey();
   const { rateLimitInfo } = useWebSocket();
@@ -73,6 +75,7 @@ export default function Home() {
         onOpenApiKeySetup={() => setApiKeyModalOpen(true)}
         onOpenTerms={() => setTermsModalOpen(true)}
         onOpenUsageStats={() => setUsageStatsOpen(true)}
+        onOpenSettings={() => setSettingsModalOpen(true)}
       />
 
       <div className="flex-1 flex flex-col lg:ml-80">
@@ -143,6 +146,12 @@ export default function Home() {
           setApiKeyModalOpen(true);
         }}
         resetTime={rateLimitInfo?.resetAt.minute}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
       />
     </div>
   );
