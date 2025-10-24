@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Modal from './Modal';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const { theme, setTheme } = useTheme();
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="2xl">
       <div className="space-y-6">
@@ -41,13 +43,17 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Theme</p>
-                  <p className="text-xs text-gray-500">Choose your preferred theme</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Theme</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Choose your preferred theme</p>
                 </div>
-                <select className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option>Light</option>
-                  <option>Dark</option>
-                  <option>System</option>
+                <select
+                  value={theme}
+                  onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                  className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="system">System</option>
                 </select>
               </div>
             </div>

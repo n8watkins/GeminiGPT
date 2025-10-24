@@ -288,7 +288,7 @@ export default function ChatInterface() {
 
   return (
     <div
-      className="flex-1 flex flex-col bg-gradient-to-br from-blue-50 to-white relative"
+      className="flex-1 flex flex-col bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 relative"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -309,11 +309,11 @@ export default function ChatInterface() {
 
       {/* Chat Header - Only show if there's an active chat */}
       {activeChat && (
-        <div className="border-b border-blue-200 p-3 bg-white/80 backdrop-blur-sm">
+        <div className="border-b border-blue-200 dark:border-gray-700 p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <div className="flex items-center justify-between max-w-4xl mx-auto">
             <div className="flex-1">
-              <h1 className="text-lg font-semibold text-gray-800">{activeChat.title}</h1>
-              <p className="text-xs text-gray-500">
+              <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{activeChat.title}</h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {activeChat.messages.length} messages
               </p>
             </div>
@@ -334,8 +334,8 @@ export default function ChatInterface() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <h2 className="text-3xl font-bold text-blue-900 mb-3">How can I help you today?</h2>
-              <p className="text-blue-700">Choose a suggestion or type your own message</p>
+              <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-3">How can I help you today?</h2>
+              <p className="text-blue-700 dark:text-blue-300">Choose a suggestion or type your own message</p>
             </div>
 
             {/* Suggestion Chips */}

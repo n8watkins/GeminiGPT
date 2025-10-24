@@ -300,7 +300,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
   return (
     <>
       <div
-        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 text-white transform transition-all duration-300 ease-in-out z-50 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 dark:from-gray-800 dark:to-gray-900 text-white transform transition-all duration-300 ease-in-out z-50 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'w-20' : 'w-96'}`}
       >
