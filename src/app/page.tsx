@@ -11,6 +11,7 @@ import TermsOfService from '@/components/TermsOfService';
 import UsageStats from '@/components/UsageStats';
 import RateLimitModal from '@/components/RateLimitModal';
 import SettingsModal from '@/components/SettingsModal';
+import { MigrationBanner } from '@/components/MigrationBanner';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
@@ -106,6 +107,11 @@ export default function Home() {
               </svg>
             </button>
           </div>
+        </div>
+
+        {/* Migration Banner - Shows for anonymous users with chats */}
+        <div className="p-4 lg:p-6">
+          <MigrationBanner />
         </div>
 
         <ChatInterface />
