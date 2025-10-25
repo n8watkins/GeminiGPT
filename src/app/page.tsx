@@ -12,6 +12,7 @@ import UsageStats from '@/components/UsageStats';
 import RateLimitModal from '@/components/RateLimitModal';
 import SettingsModal from '@/components/SettingsModal';
 import { MigrationBanner } from '@/components/MigrationBanner';
+import { SignInModal } from '@/components/SignInModal';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useMigration } from '@/hooks/useMigration';
@@ -24,6 +25,7 @@ export default function Home() {
   const [usageStatsOpen, setUsageStatsOpen] = useState(false);
   const [rateLimitModalOpen, setRateLimitModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [signInModalOpen, setSignInModalOpen] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const { hasApiKey, isLoading } = useApiKey();
   const { rateLimitInfo, socket, isConnected } = useWebSocket();
@@ -95,6 +97,7 @@ export default function Home() {
         onOpenTerms={() => setTermsModalOpen(true)}
         onOpenUsageStats={() => setUsageStatsOpen(true)}
         onOpenSettings={() => setSettingsModalOpen(true)}
+        onOpenSignIn={() => setSignInModalOpen(true)}
       />
 
       <div className="flex-1 flex flex-col lg:ml-80">
@@ -177,6 +180,12 @@ export default function Home() {
         isOpen={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
         onResetEverything={handleResetEverything}
+      />
+
+      {/* Sign In Modal */}
+      <SignInModal
+        isOpen={signInModalOpen}
+        onClose={() => setSignInModalOpen(false)}
       />
     </div>
   );
