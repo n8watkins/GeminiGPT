@@ -2,13 +2,12 @@
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useChat } from '@/contexts/ChatContext';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { getSessionUserId, generateUserId } from '@/lib/userId';
 import { Chat } from '@/types/chat';
 import ConfirmationModal from './ConfirmationModal';
-import { SignInButton } from './SignInButton';
 import { RATE_LIMIT_THRESHOLDS, DEBOUNCE_DELAY } from '@/lib/constants';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 
@@ -452,13 +451,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
           </div>
           )}
 
-          {/* Authentication Section */}
-          {!isCollapsed && (
-            <div className="border-t border-blue-800 p-3 bg-blue-950/30">
-              <SignInButton />
-            </div>
-          )}
-
           {/* Settings Button with Popup Menu */}
           <div ref={settingsMenuRef} className="border-t border-blue-800 p-3 bg-blue-950/30 relative">
             {!isCollapsed ? (
@@ -566,23 +558,39 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                         </button>
                       )}
 
-                      {/* Login/Sign Up - Only show in guest mode at bottom */}
+                      {/* Divider before authentication actions */}
+                      <div className="my-1 border-t border-blue-800"></div>
+
+                      {/* Login/Sign Up - Only show in guest mode */}
                       {!isAuthenticated && onOpenSignIn && (
-                        <>
-                          <div className="my-1 border-t border-blue-800"></div>
-                          <button
-                            onClick={() => {
-                              onOpenSignIn();
-                              setShowSettingsMenu(false);
-                            }}
-                            className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
-                          >
-                            <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                            </svg>
-                            <span>Login / Sign Up</span>
-                          </button>
-                        </>
+                        <button
+                          onClick={() => {
+                            onOpenSignIn();
+                            setShowSettingsMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                        >
+                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Login / Sign Up</span>
+                        </button>
+                      )}
+
+                      {/* Sign Out - Only show when authenticated */}
+                      {isAuthenticated && (
+                        <button
+                          onClick={() => {
+                            signOut();
+                            setShowSettingsMenu(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Sign Out</span>
+                        </button>
                       )}
                     </div>
                   </div>
