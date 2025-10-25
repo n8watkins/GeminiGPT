@@ -110,8 +110,52 @@ function setupWebSocketServer(server) {
 
   wsLogger.info('✅ WebSocket server configured');
 
+  // Middleware to verify authentication token
+  io.use(async (socket, next) => {
+    try {
+      const authToken = socket.handshake.auth.token;
+
+      if (authToken) {
+        // Parse the session data sent from client
+        const sessionData = JSON.parse(authToken);
+
+        if (sessionData?.user?.id) {
+          // Store authenticated user ID in socket
+          socket.data.authenticatedUserId = sessionData.user.id;
+          socket.data.isAuthenticated = true;
+          wsLogger.info('✅ Authenticated WebSocket connection', {
+            socketId: socket.id,
+            userId: sessionData.user.id,
+            email: sessionData.user.email
+          });
+        } else {
+          // No user in session data - anonymous user
+          socket.data.isAuthenticated = false;
+          wsLogger.debug('Anonymous WebSocket connection', { socketId: socket.id });
+        }
+      } else {
+        // No auth token - anonymous user
+        socket.data.isAuthenticated = false;
+        wsLogger.debug('Anonymous WebSocket connection (no token)', { socketId: socket.id });
+      }
+
+      next();
+    } catch (error) {
+      wsLogger.error('Error parsing auth token', { socketId: socket.id, error: error.message });
+      // Allow connection anyway (fall back to anonymous)
+      socket.data.isAuthenticated = false;
+      next();
+    }
+  });
+
   io.on('connection', (socket) => {
-    wsLogger.info('✅ Client connected', { socketId: socket.id, transport: socket.conn.transport.name });
+    const logContext = {
+      socketId: socket.id,
+      transport: socket.conn.transport.name,
+      authenticated: socket.data.isAuthenticated,
+      userId: socket.data.authenticatedUserId || 'anonymous'
+    };
+    wsLogger.info('✅ Client connected', logContext);
 
     // Handle connection errors
     socket.on('error', (error) => {
@@ -124,15 +168,25 @@ function setupWebSocketServer(server) {
 
     socket.on('send-message', async (data) => {
       try {
+        // SECURITY: Use authenticated user ID if available, otherwise fall back to client-provided ID
+        const effectiveUserId = socket.data.authenticatedUserId || data.userId;
+
         wsLogger.debug('Received message', {
           messagePreview: data.message?.substring(0, 100) + '...',
           chatId: data.chatId,
           hasAttachments: !!data.attachments?.length,
-          userId: data.userId
+          userId: effectiveUserId,
+          authenticated: socket.data.isAuthenticated
         });
 
+        // Override userId in data with authenticated ID
+        const secureData = {
+          ...data,
+          userId: effectiveUserId
+        };
+
         // 🆕 V3 Architecture: MessagePipeline orchestrates entire message processing flow
-        await messagePipeline.processMessage(socket, data);
+        await messagePipeline.processMessage(socket, secureData);
 
       } catch (error) {
         wsLogger.error('Error processing message', error);
@@ -155,11 +209,15 @@ function setupWebSocketServer(server) {
 
     socket.on('delete-chat', async (data) => {
       try {
-        const { chatId, userId } = data;
-        wsLogger.info(`Deleting chat ${chatId} for user ${userId} from vector database`);
+        // SECURITY: Use authenticated user ID if available
+        const effectiveUserId = socket.data.authenticatedUserId || data.userId;
+        const { chatId } = data;
+        wsLogger.info(`Deleting chat ${chatId} for user ${effectiveUserId} from vector database`, {
+          authenticated: socket.data.isAuthenticated
+        });
 
         const { deleteChat } = require('./vectorDB');
-        await deleteChat(userId, chatId);
+        await deleteChat(effectiveUserId, chatId);
 
         wsLogger.info(`Successfully deleted chat ${chatId} from vector database`);
       } catch (error) {
@@ -169,13 +227,16 @@ function setupWebSocketServer(server) {
 
     socket.on('reset-vector-db', async (data) => {
       try {
-        const { userId } = data;
-        wsLogger.info(`Resetting vector database for user ${userId}`);
+        // SECURITY: Use authenticated user ID if available
+        const effectiveUserId = socket.data.authenticatedUserId || data.userId;
+        wsLogger.info(`Resetting vector database for user ${effectiveUserId}`, {
+          authenticated: socket.data.isAuthenticated
+        });
 
         const { deleteUserChats } = require('./vectorDB');
-        await deleteUserChats(userId);
+        await deleteUserChats(effectiveUserId);
 
-        wsLogger.info(`Successfully reset vector database for user ${userId}`);
+        wsLogger.info(`Successfully reset vector database for user ${effectiveUserId}`);
         socket.emit('vector-db-reset', { success: true });
       } catch (error) {
         wsLogger.error('Error resetting vector database', error);

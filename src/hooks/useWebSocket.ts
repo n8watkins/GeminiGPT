@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { io, Socket } from 'socket.io-client';
 import { Attachment, Message } from '@/types/chat';
 import { wsLogger } from '@/lib/logger';
@@ -35,6 +36,7 @@ export interface RateLimitInfo {
 }
 
 export function useWebSocket() {
+  const { data: session } = useSession();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [typingStates, setTypingStates] = useState<Record<string, boolean>>({});
@@ -82,12 +84,36 @@ export function useWebSocket() {
 
     wsLogger.debug('Initializing WebSocket connection', { wsUrl });
 
-    const newSocket = io(wsUrl, {
-      timeout: 20000, // 20 second connection timeout
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      transports: ['websocket', 'polling']
-    });
+    // Get auth token from session if available
+    // Note: We use getSession from client-side to get the JWT token
+    const getAuthToken = async () => {
+      if (typeof window !== 'undefined') {
+        try {
+          // Get the session cookie which contains the JWT
+          const response = await fetch('/api/auth/session');
+          const sessionData = await response.json();
+          return sessionData?.user ? JSON.stringify(sessionData) : null;
+        } catch (error) {
+          wsLogger.warn('Failed to get auth token', error);
+          return null;
+        }
+      }
+      return null;
+    };
+
+    // Create socket connection with auth
+    const initializeSocket = async () => {
+      const authToken = await getAuthToken();
+
+      const newSocket = io(wsUrl, {
+        timeout: 20000, // 20 second connection timeout
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        transports: ['websocket', 'polling'],
+        auth: {
+          token: authToken
+        }
+      });
 
     newSocket.on('connect', () => {
       wsLogger.info('Connected to WebSocket server', {
@@ -153,18 +179,29 @@ export function useWebSocket() {
       wsLogger.error('Reconnection failed after all attempts');
     });
 
-    newSocket.on('rate-limit-info', (data: RateLimitInfo) => {
-      wsLogger.debug('Rate limit info received', data);
-      setRateLimitInfo(data);
+      newSocket.on('rate-limit-info', (data: RateLimitInfo) => {
+        wsLogger.debug('Rate limit info received', data);
+        setRateLimitInfo(data);
+      });
+
+      setSocket(newSocket);
+      wsLogger.debug('WebSocket client setup complete');
+
+      return newSocket;
+    };
+
+    // Initialize socket and handle cleanup
+    let socketInstance: Socket | null = null;
+    initializeSocket().then(sock => {
+      socketInstance = sock;
     });
 
-    setSocket(newSocket);
-    wsLogger.debug('WebSocket client setup complete');
-
     return () => {
-      newSocket.close();
+      if (socketInstance) {
+        socketInstance.close();
+      }
     };
-  }, []);
+  }, [session]); // Re-initialize when session changes (login/logout)
 
   const sendMessage = (chatId: string, message: string, chatHistory: Message[], attachments?: Attachment[], userId?: string, apiKey?: string) => {
     if (socket && isConnected) {
