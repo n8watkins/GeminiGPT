@@ -1,8 +1,8 @@
-import NextAuth, { AuthOptions } from "next-auth"
+import NextAuth from "next-auth/next"
 import GoogleProvider from "next-auth/providers/google"
 import { userOps } from "@/lib/database"
 
-export const authOptions: AuthOptions = {
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -11,7 +11,8 @@ export const authOptions: AuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, profile }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async signIn({ user, profile }: any) {
       if (!profile?.sub) {
         console.error('No Google ID in profile');
         return false;
@@ -42,7 +43,8 @@ export const authOptions: AuthOptions = {
       }
     },
 
-    async session({ session, token }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: any) {
       // Add Google ID to session
       if (token.sub) {
         session.user.id = token.sub;
@@ -50,7 +52,8 @@ export const authOptions: AuthOptions = {
       return session;
     },
 
-    async jwt({ token, user, account }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, user, account }: any) {
       // Persist Google ID in JWT
       if (account && user) {
         token.sub = account.providerAccountId; // Google ID
@@ -60,7 +63,7 @@ export const authOptions: AuthOptions = {
   },
 
   session: {
-    strategy: "jwt", // Use JWT instead of database sessions
+    strategy: "jwt" as const, // Use JWT instead of database sessions
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 

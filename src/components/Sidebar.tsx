@@ -2,11 +2,13 @@
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useChat } from '@/contexts/ChatContext';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { getSessionUserId, generateUserId } from '@/lib/userId';
 import { Chat } from '@/types/chat';
 import ConfirmationModal from './ConfirmationModal';
+import { SignInButton } from './SignInButton';
 import { RATE_LIMIT_THRESHOLDS, DEBOUNCE_DELAY } from '@/lib/constants';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 
@@ -22,6 +24,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings }: SidebarProps) {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const { state, createChat, deleteChat } = useChat();
   const { isConnected, rateLimitInfo } = useWebSocket();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -32,10 +35,12 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasOwnApiKey, setHasOwnApiKey] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Compute authentication status from session
+  const isAuthenticated = status === 'authenticated' && !!session?.user;
 
   // Set userId after mount to avoid hydration mismatch
   useEffect(() => {
@@ -58,10 +63,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
     };
 
     window.addEventListener('storage', handleStorageChange);
-
-    // TODO: Check authentication status from auth service
-    // For now, always guest mode
-    setIsAuthenticated(false);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -448,6 +449,13 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
               </div>
             )}
           </div>
+          )}
+
+          {/* Authentication Section */}
+          {!isCollapsed && (
+            <div className="border-t border-blue-800 p-3 bg-blue-950/30">
+              <SignInButton />
+            </div>
           )}
 
           {/* Settings Button with Popup Menu */}
