@@ -68,6 +68,12 @@ const messagePipeline = new MessagePipeline(
   vectorIndexer
 );
 
+/**
+ * Setup WebSocket server with Socket.IO
+ *
+ * @param {Object} server - HTTP server instance
+ * @returns {Object} Object containing io (WebSocket server) and rateLimiter instance for cleanup
+ */
 function setupWebSocketServer(server) {
   wsLogger.info('🚀 Setting up WebSocket server...');
 
@@ -250,7 +256,9 @@ function setupWebSocketServer(server) {
   });
 
   wsLogger.info('✅ WebSocket event handlers registered');
-  return io;
+
+  // Return both io server and rateLimiter for proper cleanup
+  return { io, rateLimiter };
 }
 
 module.exports = { setupWebSocketServer };
