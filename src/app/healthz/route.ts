@@ -131,13 +131,31 @@ function checkMemory(): MemoryCheck {
 /**
  * GET /healthz
  *
- * Lenient health check endpoint for Railway deployment
+ * Ultra-simple health check for Railway deployment
  *
- * Returns 200 as long as the server is running.
- * Database checks are informational only and don't fail the health check.
- * This allows the app to start and initialize databases after deployment.
+ * Just returns 200 OK if the server process is running.
+ * Railway only needs to know the HTTP server started successfully.
+ *
+ * For detailed health monitoring, use /api/health (to be implemented)
  */
-export async function GET(): Promise<NextResponse<HealthResponse>> {
+export async function GET(): Promise<NextResponse> {
+  return NextResponse.json(
+    {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: Math.round(process.uptime())
+    },
+    { status: 200 }
+  );
+}
+
+/**
+ * GET /healthz/detailed
+ *
+ * Comprehensive health check with database connectivity checks
+ * This endpoint can fail without affecting deployment
+ */
+export async function getDetailed(): Promise<NextResponse<HealthResponse>> {
   // Run all checks in parallel for faster response
   const [databaseCheck, vectordbCheck, memoryCheck] = await Promise.all([
     checkDatabase(),
@@ -145,23 +163,18 @@ export async function GET(): Promise<NextResponse<HealthResponse>> {
     checkMemory(),
   ]);
 
-  // LENIENT MODE: Only fail if memory is critically high (>90%)
-  // Database failures are informational only - they don't prevent startup
   const criticalFailure = memoryCheck.status === 'fail';
 
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy';
   let httpStatus: number;
 
   if (criticalFailure) {
-    // Only fail health check for critical issues like memory exhaustion
     overallStatus = 'unhealthy';
-    httpStatus = 503; // Service Unavailable
+    httpStatus = 503;
   } else if (databaseCheck.status === 'fail' || vectordbCheck.status === 'fail') {
-    // Database issues are degraded but still allow deployment
     overallStatus = 'degraded';
-    httpStatus = 200; // Still operational, databases can initialize later
+    httpStatus = 200;
   } else {
-    // Everything is working perfectly
     overallStatus = 'healthy';
     httpStatus = 200;
   }
@@ -169,7 +182,7 @@ export async function GET(): Promise<NextResponse<HealthResponse>> {
   const response: HealthResponse = {
     status: overallStatus,
     timestamp: new Date().toISOString(),
-    uptime: Math.round(process.uptime()), // seconds
+    uptime: Math.round(process.uptime()),
     checks: {
       database: databaseCheck,
       vectordb: vectordbCheck,
