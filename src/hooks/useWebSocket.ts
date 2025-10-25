@@ -84,15 +84,22 @@ export function useWebSocket() {
 
     wsLogger.debug('Initializing WebSocket connection', { wsUrl });
 
-    // Get auth token from session if available
-    // Note: We use getSession from client-side to get the JWT token
+    // CRITICAL SECURITY FIX: Get minimal auth token (only user ID)
+    // Previous implementation sent entire session object, exposing unnecessary data
     const getAuthToken = async () => {
       if (typeof window !== 'undefined') {
         try {
           // Get the session cookie which contains the JWT
           const response = await fetch('/api/auth/session');
           const sessionData = await response.json();
-          return sessionData?.user ? JSON.stringify(sessionData) : null;
+
+          // CRITICAL FIX: Only send user ID, not entire session
+          // This minimizes data exposure in WebSocket auth payload
+          if (sessionData?.user?.id) {
+            return JSON.stringify({ user: { id: sessionData.user.id } });
+          }
+
+          return null;
         } catch (error) {
           wsLogger.warn('Failed to get auth token', error);
           return null;

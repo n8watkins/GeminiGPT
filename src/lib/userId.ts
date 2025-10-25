@@ -1,17 +1,35 @@
 /**
- * Generates a random user ID that resets on browser refresh
- * Uses a combination of timestamp and random string for uniqueness
+ * Generates a cryptographically secure random user ID
+ *
+ * CRITICAL SECURITY FIX: Uses Web Crypto API instead of Math.random()
+ * - Math.random() is predictable and not cryptographically secure
+ * - crypto.getRandomValues() provides secure randomness
+ * - 16 bytes (128 bits) of entropy = 2^128 possible values (~3.4 x 10^38)
+ * - Collision probability with 1 billion users: ~1.47 x 10^-19 (negligible)
  */
-
 export function generateUserId(): string {
-  // Generate a random string of 6 characters
-  const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
-  
-  // Get current timestamp (last 4 digits for brevity)
-  const timestamp = Date.now().toString().slice(-4);
-  
-  // Combine them with a dash
-  return `USER-${randomString}-${timestamp}`;
+  // CRITICAL FIX: Use Web Crypto API for cryptographically secure random generation
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+    // Generate 16 random bytes (128 bits of entropy)
+    const buffer = new Uint8Array(16);
+    window.crypto.getRandomValues(buffer);
+
+    // Convert to hex string
+    const hexString = Array.from(buffer)
+      .map(byte => byte.toString(16).padStart(2, '0'))
+      .join('');
+
+    // Format as USER-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX (UUID-like)
+    return `USER-${hexString.substring(0, 8)}-${hexString.substring(8, 16)}-${hexString.substring(16, 24)}-${hexString.substring(24, 32)}`.toUpperCase();
+  }
+
+  // Fallback for environments without crypto.getRandomValues (should never happen in modern browsers)
+  // Use timestamp + multiple random values as weak fallback
+  console.warn('crypto.getRandomValues not available, using weaker fallback');
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random1 = Math.random().toString(36).substring(2, 10).toUpperCase();
+  const random2 = Math.random().toString(36).substring(2, 10).toUpperCase();
+  return `USER-${timestamp}-${random1}-${random2}`;
 }
 
 /**

@@ -2,7 +2,46 @@ import NextAuth from "next-auth/next"
 import GoogleProvider from "next-auth/providers/google"
 import { userOps } from "@/lib/database"
 
+// CRITICAL SECURITY: Helper function to validate NEXTAUTH_SECRET
+// This runs when NextAuth is initialized (at first request), not at build time
+function validateNextAuthSecret() {
+  if (!process.env.NEXTAUTH_SECRET) {
+    const errorMsg =
+      '🚨 CRITICAL SECURITY ERROR: NEXTAUTH_SECRET environment variable is not set. ' +
+      'This is required for secure JWT signing. ' +
+      'Generate a secure secret with: openssl rand -base64 32';
+    console.error(errorMsg);
+
+    // In production, this is a critical error
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('NEXTAUTH_SECRET is required in production');
+    }
+
+    return 'development-secret-replace-in-production'; // Fallback for development
+  }
+
+  if (process.env.NEXTAUTH_SECRET.length < 32) {
+    const warningMsg =
+      '🚨 CRITICAL SECURITY WARNING: NEXTAUTH_SECRET is too short (minimum 32 characters required). ' +
+      'Current length: ' + process.env.NEXTAUTH_SECRET.length + '. ' +
+      'Generate a secure secret with: openssl rand -base64 32';
+    console.error(warningMsg);
+
+    // In production, this is a critical error
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('NEXTAUTH_SECRET must be at least 32 characters in production');
+    }
+  }
+
+  return process.env.NEXTAUTH_SECRET;
+}
+
 export const authOptions = {
+  // CRITICAL SECURITY: Explicitly set and validate secret for JWT signing
+  // The getter function delays validation until first use (not at build time)
+  get secret() {
+    return validateNextAuthSecret();
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
