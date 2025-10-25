@@ -14,6 +14,7 @@ import SettingsModal from '@/components/SettingsModal';
 import { MigrationBanner } from '@/components/MigrationBanner';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useMigration } from '@/hooks/useMigration';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,6 +27,9 @@ export default function Home() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const { hasApiKey, isLoading } = useApiKey();
   const { rateLimitInfo, socket, isConnected } = useWebSocket();
+
+  // Handle automatic migration when user signs in
+  useMigration();
 
   // Reset everything function
   const handleResetEverything = () => {
