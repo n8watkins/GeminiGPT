@@ -131,7 +131,11 @@ function checkMemory(): MemoryCheck {
 /**
  * GET /healthz
  *
- * Enhanced health check endpoint with database connectivity checks
+ * Lenient health check endpoint for Railway deployment
+ *
+ * Returns 200 as long as the server is running.
+ * Database checks are informational only and don't fail the health check.
+ * This allows the app to start and initialize databases after deployment.
  */
 export async function GET(): Promise<NextResponse<HealthResponse>> {
   // Run all checks in parallel for faster response
@@ -141,29 +145,25 @@ export async function GET(): Promise<NextResponse<HealthResponse>> {
     checkMemory(),
   ]);
 
-  // Determine overall health status
-  const allPassing =
-    databaseCheck.status === 'pass' &&
-    vectordbCheck.status === 'pass' &&
-    memoryCheck.status === 'pass';
-
-  const anyFailing =
-    databaseCheck.status === 'fail' ||
-    vectordbCheck.status === 'fail' ||
-    memoryCheck.status === 'fail';
+  // LENIENT MODE: Only fail if memory is critically high (>90%)
+  // Database failures are informational only - they don't prevent startup
+  const criticalFailure = memoryCheck.status === 'fail';
 
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy';
   let httpStatus: number;
 
-  if (allPassing) {
-    overallStatus = 'healthy';
-    httpStatus = 200;
-  } else if (anyFailing) {
+  if (criticalFailure) {
+    // Only fail health check for critical issues like memory exhaustion
     overallStatus = 'unhealthy';
     httpStatus = 503; // Service Unavailable
-  } else {
+  } else if (databaseCheck.status === 'fail' || vectordbCheck.status === 'fail') {
+    // Database issues are degraded but still allow deployment
     overallStatus = 'degraded';
-    httpStatus = 200; // Still operational but degraded
+    httpStatus = 200; // Still operational, databases can initialize later
+  } else {
+    // Everything is working perfectly
+    overallStatus = 'healthy';
+    httpStatus = 200;
   }
 
   const response: HealthResponse = {
