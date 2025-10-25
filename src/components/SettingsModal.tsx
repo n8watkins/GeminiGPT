@@ -3,17 +3,20 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { useTheme } from '@/contexts/ThemeContext';
+import ConfirmationModal from './ConfirmationModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onResetEverything: () => void;
 }
 
 type SettingsSection = 'general' | 'appearance' | 'notifications' | 'privacy';
 
-export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export default function SettingsModal({ isOpen, onClose, onResetEverything }: SettingsModalProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const sections = [
     { id: 'general' as const, label: 'General', icon: '⚙️' },
@@ -188,11 +191,67 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     />
                   </label>
                 </div>
+
+                {/* Data Management Section */}
+                <div className="pt-4">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Data Management</h4>
+
+                  {/* Reset Everything Button */}
+                  <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <p className="text-sm font-medium text-red-900 dark:text-red-300">Reset Everything</p>
+                        </div>
+                        <p className="text-xs text-red-700 dark:text-red-400 mb-2">This will permanently delete:</p>
+                        <ul className="text-xs text-red-700 dark:text-red-400 mb-3 ml-4 space-y-1">
+                          <li>• All chat conversations and history</li>
+                          <li>• Your API key</li>
+                          <li>• Theme and appearance settings</li>
+                          <li>• All other preferences and data</li>
+                        </ul>
+                        <p className="text-xs text-red-800 dark:text-red-300 font-semibold mb-3">⚠️ This action cannot be undone.</p>
+                        <button
+                          onClick={() => setShowResetModal(true)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          Reset Everything
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Reset Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        onConfirm={() => {
+          onResetEverything();
+          setShowResetModal(false);
+          onClose();
+        }}
+        title="⚠️ Reset Everything?"
+        message="This will permanently delete ALL of your data including:
+
+• All chat conversations and history
+• Your API key
+• Theme and appearance settings
+• All other preferences and data
+
+This action CANNOT be undone. Are you absolutely sure?"
+        confirmText="Yes, Delete Everything"
+        cancelText="Cancel"
+        isDestructive={true}
+      />
     </Modal>
   );
 }
