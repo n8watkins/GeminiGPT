@@ -36,7 +36,7 @@ class Logger {
     this.config = { ...defaultConfig, ...config };
   }
 
-  private shouldLog(_level: LogLevel): boolean {
+  private shouldLog(): boolean {
     if (isDev) return true;
     return this.config.enabledInProduction;
   }
@@ -50,25 +50,25 @@ class Logger {
   }
 
   debug(message: string, data?: unknown): void {
-    if (this.shouldLog(LogLevel.DEBUG)) {
+    if (this.shouldLog()) {
       console.log(...this.formatMessage(message, data));
     }
   }
 
   info(message: string, data?: unknown): void {
-    if (this.shouldLog(LogLevel.INFO)) {
+    if (this.shouldLog()) {
       console.info(...this.formatMessage(message, data));
     }
   }
 
   warn(message: string, data?: unknown): void {
-    if (this.shouldLog(LogLevel.WARN)) {
+    if (this.shouldLog()) {
       console.warn(...this.formatMessage(message, data));
     }
   }
 
   error(message: string, error?: Error | unknown): void {
-    if (this.shouldLog(LogLevel.ERROR)) {
+    if (this.shouldLog()) {
       const [formattedMessage] = this.formatMessage(message);
       if (error instanceof Error) {
         console.error(formattedMessage, error.message, error.stack);
@@ -82,7 +82,7 @@ class Logger {
    * Group related log statements
    */
   group(label: string, callback: () => void): void {
-    if (this.shouldLog(LogLevel.DEBUG)) {
+    if (this.shouldLog()) {
       console.group(label);
       callback();
       console.groupEnd();

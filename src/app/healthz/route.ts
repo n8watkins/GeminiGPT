@@ -13,7 +13,7 @@
  * - 503: One or more systems unhealthy
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/database';
 
 interface HealthCheck {
