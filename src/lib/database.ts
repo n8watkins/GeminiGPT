@@ -52,9 +52,36 @@ function createTables() {
   db!.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
+      email TEXT UNIQUE,
+      name TEXT,
+      image TEXT,
+      google_id TEXT UNIQUE,
+      account_type TEXT DEFAULT 'anonymous' CHECK (account_type IN ('anonymous', 'google')),
+      migrated_from TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       last_active DATETIME DEFAULT CURRENT_TIMESTAMP,
       preferences TEXT DEFAULT '{}'
+    )
+  `);
+
+  // Accounts table for NextAuth
+  db!.exec(`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      provider_account_id TEXT NOT NULL,
+      refresh_token TEXT,
+      access_token TEXT,
+      expires_at INTEGER,
+      token_type TEXT,
+      scope TEXT,
+      id_token TEXT,
+      session_state TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(provider, provider_account_id)
     )
   `);
 
@@ -104,6 +131,11 @@ function createTables() {
 
   // Create indexes for better performance
   db!.exec(`
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+    CREATE INDEX IF NOT EXISTS idx_users_google_id ON users (google_id);
+    CREATE INDEX IF NOT EXISTS idx_users_account_type ON users (account_type);
+    CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts (user_id);
+    CREATE INDEX IF NOT EXISTS idx_accounts_provider ON accounts (provider, provider_account_id);
     CREATE INDEX IF NOT EXISTS idx_chats_user_id ON chats (user_id);
     CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages (chat_id);
     CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages (user_id);
@@ -149,6 +181,60 @@ const userOps = {
     const db = getDatabase();
     const stmt = db.prepare('UPDATE users SET preferences = ? WHERE id = ?');
     return stmt.run(JSON.stringify(preferences), userId);
+  },
+
+  /**
+   * Get user by Google ID (for OAuth)
+   */
+  getByGoogleId: (googleId: string) => {
+    const db = getDatabase();
+    const stmt = db.prepare('SELECT * FROM users WHERE google_id = ?');
+    return stmt.get(googleId);
+  },
+
+  /**
+   * Get user by email (for OAuth)
+   */
+  getByEmail: (email: string) => {
+    const db = getDatabase();
+    const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
+    return stmt.get(email);
+  },
+
+  /**
+   * Create Google user (for OAuth sign-up)
+   */
+  createGoogleUser: (googleId: string, email: string, name: string, image: string) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      INSERT INTO users (id, email, name, image, google_id, account_type)
+      VALUES (?, ?, ?, ?, ?, 'google')
+    `);
+    return stmt.run(googleId, email, name, image, googleId);
+  },
+
+  /**
+   * Migrate anonymous user to Google user (one-way, not reversible)
+   */
+  migrateToGoogle: (anonymousUserId: string, googleId: string, email: string, name: string, image: string) => {
+    const db = getDatabase();
+
+    return db.transaction(() => {
+      // 1. Create new Google user with migration marker
+      db.prepare(`
+        INSERT INTO users (id, email, name, image, google_id, account_type, migrated_from)
+        VALUES (?, ?, ?, ?, ?, 'google', ?)
+      `).run(googleId, email, name, image, googleId, anonymousUserId);
+
+      // 2. Transfer all chats to new user
+      db.prepare('UPDATE chats SET user_id = ? WHERE user_id = ?')
+        .run(googleId, anonymousUserId);
+
+      // 3. Delete old anonymous user (CASCADE will handle related data)
+      db.prepare('DELETE FROM users WHERE id = ?').run(anonymousUserId);
+
+      logger.info(`✅ Migrated user ${anonymousUserId} → ${googleId}`);
+    })();
   }
 };
 
