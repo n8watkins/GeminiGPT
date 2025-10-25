@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { Providers } from "@/components/Providers";
 import DebugPanel from "@/components/DebugPanel";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { WebVitals } from "@/components/WebVitals";
@@ -50,7 +50,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>
+        <Providers>
           <ErrorBoundary>
             <NotificationProvider>
               <ChatProvider>
@@ -61,7 +61,7 @@ export default function RootLayout({
           </ErrorBoundary>
           <WebVitals />
           <WebVitalsHUD />
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
