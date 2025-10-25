@@ -1,223 +1,120 @@
-# 🧪 Test Suite Organization
+# Test Suite
 
-This directory contains all test files organized by category for better maintainability and clarity.
+## Gemini Response Tests
 
-## 📁 Directory Structure
+### Purpose
 
-```
-tests/
-├── database/           # Database functionality tests
-│   ├── test-sqlite-db.js
-│   ├── comprehensive-db-tests.js
-│   ├── fixed-db-tests.js
-│   ├── persistence-test.js
-│   └── test-vectordb.js
-├── integration/        # System integration tests
-│   ├── integration-test.js
-│   ├── test-cross-chat-awareness.js
-│   ├── test-websocket-integration.js
-│   ├── test-search-chat-history.js
-│   ├── test-websocket.js
-│   └── test-message.js
-├── performance/        # Performance and load tests
-│   ├── test-attachment-flow.js
-│   ├── test-document-processing.js
-│   ├── test-pdf-api.js
-│   └── test-pdf-simple.js
-├── utilities/          # Utility and helper tests
-│   ├── example-sqlite-usage.js
-│   └── clear-storage.js
-├── test-chat-history.js
-├── test-db-contents.js
-├── test-manual.js
-├── test-trigger-patterns.js
-├── searchService.test.js
-├── websocket.test.js
-├── run-all-tests.js    # Test runner script
-├── setup.js
-└── README.md
-```
+The `gemini-responses.test.js` test suite verifies that legitimate technical questions do not trigger false-positive safety filter blocks.
 
-## 🚀 Running Tests
+### Running Tests
 
-### Run All Tests
 ```bash
-# From project root
-npm run test:all
+# Set your API key
+export GEMINI_API_KEY=your_key_here
 
-# Or directly
-node tests/run-all-tests.js
+# Run tests
+node tests/gemini-responses.test.js
 ```
 
-### Run Specific Test Categories
-```bash
-# Database tests only
-node tests/database/test-sqlite-db.js
+### What It Tests
 
-# Integration tests only
-node tests/integration/integration-test.js
+The test suite sends 8 common programming questions to the Gemini API and verifies:
 
-# Performance tests only
-node tests/performance/test-attachment-flow.js
+1. **No Empty Responses**: Response contains actual content
+2. **No Safety Blocks**: Not blocked by content filters
+3. **Relevant Content**: Response contains expected keywords
+4. **Proper Error Handling**: Gracefully handles API errors
+
+### Test Cases
+
+- JavaScript async/await
+- Python list comprehension
+- React useState hook
+- SQL JOIN types
+- Git rebase vs merge
+- CSS flexbox
+- Algorithm complexity (Big O)
+- RESTful API design
+
+### Expected Output
+
+```
+╔════════════════════════════════════════════════════╗
+║     Gemini Response False-Positive Test Suite     ║
+╚════════════════════════════════════════════════════╝
+
+Running 8 tests...
+
+Testing: JavaScript async/await
+Query: "Explain how async/await works in JavaScript"
+✓ PASSED
+  Response length: 142 chars
+  Found keywords: async, await, promise
+  Preview: Async/await is syntactic sugar built on top of Promises...
+
+[... more tests ...]
+
+╔════════════════════════════════════════════════════╗
+║                   Test Summary                     ║
+╚════════════════════════════════════════════════════╝
+
+Total Tests: 8
+Passed: 8
+Failed: 0
+Pass Rate: 100.0%
+
+All tests passed!
 ```
 
-### Run Individual Tests
-```bash
-# Specific test file
-node tests/database/fixed-db-tests.js
+### Debugging Failed Tests
 
-# Manual test
-node tests/test-manual.js
-```
+If tests fail, check:
 
-## 📋 Test Categories
+1. **API Key**: Ensure `GEMINI_API_KEY` is valid
+2. **Rate Limits**: Tests include 1-second delays between requests
+3. **API Quota**: Check your Google Cloud quota usage
+4. **Network Issues**: Verify internet connectivity
 
-### 🗄️ Database Tests (`tests/database/`)
-- **test-sqlite-db.js** - Basic SQLite database functionality
-- **comprehensive-db-tests.js** - Comprehensive database testing suite
-- **fixed-db-tests.js** - Fixed version of database tests
-- **persistence-test.js** - Data persistence across restarts
-- **test-vectordb.js** - LanceDB vector database tests
+### Adding New Test Cases
 
-### 🔗 Integration Tests (`tests/integration/`)
-- **integration-test.js** - SQLite + LanceDB integration
-- **test-cross-chat-awareness.js** - Cross-chat awareness functionality
-- **test-websocket-integration.js** - WebSocket server integration
-- **test-search-chat-history.js** - Chat history search functionality
+To add a new test case to `LEGITIMATE_QUERIES`:
 
-### ⚡ Performance Tests (`tests/performance/`)
-- **test-attachment-flow.js** - File attachment performance
-- **test-document-processing.js** - Document processing performance
-- **test-pdf-api.js** - PDF processing API tests
-- **test-pdf-simple.js** - Simple PDF processing tests
-
-### 🛠️ Utility Tests (`tests/utilities/`)
-- **example-sqlite-usage.js** - SQLite usage examples and demonstrations
-- **clear-storage.js** - Storage cleanup utilities
-
-### 🧪 General Tests (`tests/`)
-- **test-chat-history.js** - Chat history functionality
-- **test-db-contents.js** - Database content verification
-- **test-manual.js** - Manual testing utilities
-- **test-trigger-patterns.js** - Trigger pattern testing
-- **searchService.test.js** - Search service functionality tests
-- **websocket.test.js** - WebSocket connection tests
-
-## 📊 Test Results
-
-### Recent Test Results
-- **Database Tests**: ✅ 100% Pass Rate
-- **Integration Tests**: ✅ 100% Pass Rate  
-- **Performance Tests**: ✅ All Performance Targets Met
-- **Overall**: ✅ 100% Success Rate
-
-### Test Coverage
-- ✅ **Database Operations** - All CRUD operations tested
-- ✅ **Data Persistence** - Cross-restart persistence verified
-- ✅ **Search Functionality** - Full-text search tested
-- ✅ **User Management** - User isolation and management tested
-- ✅ **Performance** - Bulk operations and query performance tested
-- ✅ **Integration** - SQLite + LanceDB integration tested
-- ✅ **Edge Cases** - Error handling and edge cases tested
-
-## 🔧 Test Configuration
-
-### Environment Setup
-Tests require:
-- Node.js environment
-- SQLite database (auto-created)
-- LanceDB (for vector tests)
-- Gemini API key (for embedding tests)
-
-### Test Data
-- Tests use isolated test data
-- Test data is automatically cleaned up
-- No interference with production data
-
-## 📝 Adding New Tests
-
-### Database Tests
-1. Create test file in `tests/database/`
-2. Follow naming convention: `test-*.js`
-3. Use test user IDs with `TEST-` prefix
-4. Clean up test data after tests
-
-### Integration Tests
-1. Create test file in `tests/integration/`
-2. Test system interactions
-3. Verify data flow between components
-4. Test error handling
-
-### Performance Tests
-1. Create test file in `tests/performance/`
-2. Measure execution times
-3. Test with larger datasets
-4. Verify performance targets
-
-## 🎯 Test Best Practices
-
-### Test Structure
 ```javascript
-// Test file structure
-async function testFunctionality() {
-  console.log('🧪 Testing functionality...');
-  
-  try {
-    // Setup
-    const testData = setupTestData();
-    
-    // Test operations
-    const result = await performOperation(testData);
-    
-    // Verify results
-    assert(result.success, 'Operation should succeed');
-    
-    // Cleanup
-    await cleanupTestData(testData);
-    
-    console.log('✅ Test passed');
-  } catch (error) {
-    console.error('❌ Test failed:', error);
-  }
+{
+  name: 'Test Name',
+  query: 'Your question here',
+  expectedKeywords: ['keyword1', 'keyword2', 'keyword3']
 }
 ```
 
-### Test Data Management
-- Use unique test IDs (timestamp-based)
-- Clean up after each test
-- Isolate test data from production
-- Use consistent naming conventions
+The test will verify:
+- Response is not empty
+- No safety filter blocks
+- At least one expected keyword is found
 
-### Error Handling
-- Test both success and failure cases
-- Verify error messages and codes
-- Test edge cases and boundary conditions
-- Ensure proper cleanup on failures
+### Integration with CI/CD
 
-## 📈 Continuous Testing
+To run tests in CI/CD pipeline:
 
-### Automated Testing
-- Tests can be run in CI/CD pipelines
-- Exit codes indicate success/failure
-- Detailed logging for debugging
-- Performance metrics included
+```yaml
+# .github/workflows/test.yml
+- name: Run Gemini Response Tests
+  env:
+    GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  run: node tests/gemini-responses.test.js
+```
 
-### Test Monitoring
-- Track test execution times
-- Monitor success rates
-- Alert on test failures
-- Performance regression detection
+### Known Issues
 
----
+**False Positives**: If you encounter false-positive safety blocks, check:
 
-## 🎉 Test Suite Status
+1. **Safety Settings**: Review `safetySettings` in `GeminiService.js`
+2. **Model Version**: Ensure using latest model (`gemini-2.5-flash`)
+3. **Context**: Check if chat history contains problematic content
+4. **API Status**: Check Google Cloud Status Dashboard
 
-**Current Status**: ✅ **All Tests Passing**
+### Related Files
 
-Your test suite is comprehensive, well-organized, and ready for continuous testing. The organized structure makes it easy to:
-- Run specific test categories
-- Add new tests
-- Debug issues
-- Monitor system health
-
-Happy testing! 🧪✨
+- `/lib/websocket/services/GeminiService.js` - Main service handling Gemini API
+- `/lib/websocket/prompts/systemPrompts.js` - System instructions sent to AI
+- `/lib/logger.js` - Logging configuration
