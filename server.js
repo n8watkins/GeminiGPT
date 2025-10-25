@@ -215,7 +215,7 @@ function startServer(currentPort, maxAttempts = 10) {
   });
 
   // Setup Advanced WebSocket server with all features (attachments, embeddings, function calling)
-  const io = setupWebSocketServer(server);
+  const { io, rateLimiter } = setupWebSocketServer(server);
 
   server.listen(currentPort, hostname, (err) => {
     if (err) {
@@ -231,8 +231,8 @@ function startServer(currentPort, maxAttempts = 10) {
       // Display localhost for local development, actual hostname for production
       const displayHost = (hostname === '0.0.0.0' && dev) ? 'localhost' : hostname;
 
-      // Register server with shutdown handler
-      shutdownHandler.setServer(server, io);
+      // Register server with shutdown handler (including rateLimiter for cleanup)
+      shutdownHandler.setServer(server, io, rateLimiter);
       shutdownHandler.registerHandlers();
 
       serverLogger.info(`✅ Server ready on http://${displayHost}:${currentPort}`);
