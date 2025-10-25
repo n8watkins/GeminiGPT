@@ -16,11 +16,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Always start with 'system' to avoid hydration mismatch
   const [theme, setThemeState] = useState<Theme>('system');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
-  const [mounted, setMounted] = useState(false);
 
   // Load saved theme after mount to avoid hydration mismatch
   useEffect(() => {
-    setMounted(true);
     const savedTheme = localStorage.getItem('theme') as Theme;
     if (savedTheme) {
       setThemeState(savedTheme);

@@ -57,7 +57,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, onSetupApiKey 
                         />
                         <div className="text-center">
                             <p className="text-gray-700 dark:text-gray-200 text-sm leading-relaxed">
-                                I'm Nathan, and this is a Portfolio project designed to showcase modern web dev practices with a real-world application. It highlights my skills in full-stack development, API integration, and user experience design. I hope you enjoy it and if you'd like to explore further:
+                                I&apos;m Nathan, and this is a Portfolio project designed to showcase modern web dev practices with a real-world application. It highlights my skills in full-stack development, API integration, and user experience design. I hope you enjoy it and if you&apos;d like to explore further:
                             </p>
                         </div>
                     </div>
@@ -75,7 +75,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose, onSetupApiKey 
                             </li>
                             <li className="flex items-start space-x-2">
                                 <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
-                                <span>Feel free to connect with me on my socials if you'd like to connect</span>
+                                <span>Feel free to connect with me on my socials if you&apos;d like to connect</span>
                             </li>
                         </ul>
 

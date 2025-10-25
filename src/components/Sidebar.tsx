@@ -9,7 +9,6 @@ import { Chat } from '@/types/chat';
 import ConfirmationModal from './ConfirmationModal';
 import { RATE_LIMIT_THRESHOLDS, DEBOUNCE_DELAY } from '@/lib/constants';
 import { useDebounce } from '@/lib/hooks/useDebounce';
-import { devLog } from '@/lib/logger';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,7 +23,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings }: SidebarProps) {
   const router = useRouter();
   const { state, createChat, deleteChat } = useChat();
-  const { socket, isConnected, rateLimitInfo } = useWebSocket();
+  const { isConnected, rateLimitInfo } = useWebSocket();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

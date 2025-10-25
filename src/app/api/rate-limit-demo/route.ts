@@ -16,7 +16,7 @@
  * - 429: Too Many Requests (rate limited)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 interface RateLimitInfo {
   allowed: boolean;
@@ -40,7 +40,7 @@ interface RateLimitInfo {
  * Mock rate limiter for demonstration
  * In production, this would use the actual RateLimiter service
  */
-function getMockRateLimitInfo(_userId: string): RateLimitInfo {
+function getMockRateLimitInfo(): RateLimitInfo {
   // For demo purposes, simulate rate limit info
   return {
     allowed: true,
@@ -98,12 +98,9 @@ function addRateLimitHeaders(
  *
  * Demonstrates rate limit headers in HTTP responses
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  // Extract user ID (in production, this would come from authentication)
-  const userId = request.headers.get('x-user-id') || 'demo-user';
-
+export async function GET(): Promise<NextResponse> {
   // Check rate limit
-  const rateLimitInfo = getMockRateLimitInfo(userId);
+  const rateLimitInfo = getMockRateLimitInfo();
 
   // If rate limited, return 429 Too Many Requests
   if (!rateLimitInfo.allowed) {
@@ -146,6 +143,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  *
  * Same as GET but for demonstration of POST requests
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  return GET(request);
+export async function POST(): Promise<NextResponse> {
+  return GET();
 }

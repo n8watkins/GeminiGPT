@@ -14,7 +14,7 @@ interface SettingsModalProps {
 type SettingsSection = 'general' | 'appearance' | 'notifications' | 'privacy';
 
 export default function SettingsModal({ isOpen, onClose, onResetEverything }: SettingsModalProps) {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
   const [showResetModal, setShowResetModal] = useState(false);
 

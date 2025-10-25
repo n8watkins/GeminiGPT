@@ -17,7 +17,7 @@ export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
   const { state, selectChat } = useChat();
-  const { rateLimitInfo } = useWebSocket();
+  const { rateLimitInfo, socket, isConnected } = useWebSocket();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
@@ -25,6 +25,20 @@ export default function ChatPage() {
   const [usageStatsOpen, setUsageStatsOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const chatId = params.chatId as string;
+
+  // Reset everything function
+  const handleResetEverything = () => {
+    const userId = localStorage.getItem('gemini-chat-user-id');
+
+    // Clear vector database first
+    if (socket && isConnected && userId) {
+      socket.emit('reset-vector-db', { userId });
+    }
+
+    // Clear all local data
+    localStorage.clear();
+    window.location.reload();
+  };
 
   useEffect(() => {
     // Check if the chat exists
@@ -115,6 +129,7 @@ export default function ChatPage() {
       <SettingsModal
         isOpen={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
+        onResetEverything={handleResetEverything}
       />
     </div>
   );
