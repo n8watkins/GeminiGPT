@@ -215,25 +215,71 @@ const userOps = {
 
   /**
    * Migrate anonymous user to Google user (one-way, not reversible)
+   *
+   * CRITICAL: This function MUST transfer BOTH chats AND messages to prevent data loss.
+   * Messages have a user_id foreign key that CASCADE deletes when user is deleted.
    */
   migrateToGoogle: (anonymousUserId: string, googleId: string, email: string, name: string, image: string) => {
     const db = getDatabase();
 
     return db.transaction(() => {
-      // 1. Create new Google user with migration marker
-      db.prepare(`
-        INSERT INTO users (id, email, name, image, google_id, account_type, migrated_from)
-        VALUES (?, ?, ?, ?, ?, 'google', ?)
-      `).run(googleId, email, name, image, googleId, anonymousUserId);
+      // CRITICAL FIX #1: Check if Google user already exists (created by signIn callback)
+      const existingGoogleUser = db.prepare('SELECT id FROM users WHERE id = ?').get(googleId) as { id: string } | undefined;
 
-      // 2. Transfer all chats to new user
-      db.prepare('UPDATE chats SET user_id = ? WHERE user_id = ?')
+      if (!existingGoogleUser) {
+        // Only create if doesn't exist
+        logger.info(`Creating new Google user: ${googleId}`);
+        db.prepare(`
+          INSERT INTO users (id, email, name, image, google_id, account_type, migrated_from)
+          VALUES (?, ?, ?, ?, ?, 'google', ?)
+        `).run(googleId, email, name, image, googleId, anonymousUserId);
+      } else {
+        // Update existing user with migration marker and latest profile data
+        logger.info(`Updating existing Google user: ${googleId}`);
+        db.prepare(`
+          UPDATE users
+          SET migrated_from = ?,
+              name = ?,
+              image = ?,
+              email = ?,
+              last_active = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(anonymousUserId, name, image, email, googleId);
+      }
+
+      // CRITICAL FIX #2: Transfer messages BEFORE transferring chats
+      // Messages have user_id FK that will CASCADE delete if we don't transfer them!
+      const messagesTransferred = db.prepare('UPDATE messages SET user_id = ? WHERE user_id = ?')
         .run(googleId, anonymousUserId);
 
-      // 3. Delete old anonymous user (CASCADE will handle related data)
-      db.prepare('DELETE FROM users WHERE id = ?').run(anonymousUserId);
+      logger.info(`Transferred ${messagesTransferred.changes} messages from ${anonymousUserId} to ${googleId}`);
 
-      logger.info(`✅ Migrated user ${anonymousUserId} → ${googleId}`);
+      // CRITICAL FIX #3: Transfer chats after messages
+      const chatsTransferred = db.prepare('UPDATE chats SET user_id = ? WHERE user_id = ?')
+        .run(googleId, anonymousUserId);
+
+      logger.info(`Transferred ${chatsTransferred.changes} chats from ${anonymousUserId} to ${googleId}`);
+
+      // CRITICAL FIX #4: Get chat count BEFORE deletion
+      const chatCount = db.prepare('SELECT COUNT(*) as count FROM chats WHERE user_id = ?')
+        .get(googleId) as { count: number };
+
+      // CRITICAL FIX #5: Now safe to delete anonymous user (data already transferred)
+      // CASCADE will only delete orphaned records, not transferred data
+      const deleteResult = db.prepare('DELETE FROM users WHERE id = ?').run(anonymousUserId);
+
+      if (deleteResult.changes === 0) {
+        logger.warn(`Anonymous user ${anonymousUserId} not found for deletion (may have been deleted already)`);
+      }
+
+      logger.info(`✅ Migration complete: ${anonymousUserId} → ${googleId}`, {
+        chats: chatCount.count,
+        messages: messagesTransferred.changes,
+        userCreated: !existingGoogleUser
+      });
+
+      // Return chat count for API response
+      return chatCount.count;
     })();
   }
 };
@@ -269,8 +315,26 @@ const chatOps = {
 
   update: (chatId: string, updates: Record<string, unknown>) => {
     const db = getDatabase();
-    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-    const values = Object.values(updates);
+
+    // CRITICAL FIX: Whitelist allowed columns to prevent SQL injection
+    const ALLOWED_COLUMNS = ['title', 'is_active'] as const;
+
+    // Validate all keys are in whitelist
+    const updateKeys = Object.keys(updates);
+    const invalidKeys = updateKeys.filter(key => !(ALLOWED_COLUMNS as readonly string[]).includes(key));
+
+    if (invalidKeys.length > 0) {
+      throw new Error(`Invalid column names for update: ${invalidKeys.join(', ')}. Allowed: ${ALLOWED_COLUMNS.join(', ')}`);
+    }
+
+    if (updateKeys.length === 0) {
+      throw new Error('No valid fields to update');
+    }
+
+    // Now safe to construct query (keys are validated against whitelist)
+    const fields = updateKeys.map(key => `${key} = ?`).join(', ');
+    const values = updateKeys.map(key => updates[key]);
+
     const stmt = db.prepare(`UPDATE chats SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
     return stmt.run(...values, chatId);
   },

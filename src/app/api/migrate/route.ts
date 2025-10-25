@@ -23,6 +23,36 @@ import { userOps } from '@/lib/database';
  */
 export async function POST(request: NextRequest) {
   try {
+    // CRITICAL SECURITY: CSRF protection - validate request origin
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+
+    // Get expected origins from environment
+    const allowedOrigins = process.env.NODE_ENV === 'production'
+      ? [
+          process.env.NEXT_PUBLIC_RAILWAY_URL,
+          process.env.PRODUCTION_URL,
+          process.env.NEXTAUTH_URL
+        ].filter(Boolean)
+      : [
+          'http://localhost:3000',
+          'http://127.0.0.1:3000',
+          'http://localhost:1337',
+          'http://127.0.0.1:1337'
+        ];
+
+    // Validate origin or referer matches allowed origins
+    const isValidOrigin = origin && allowedOrigins.some(allowed => origin.startsWith(allowed as string));
+    const isValidReferer = referer && allowedOrigins.some(allowed => referer.startsWith(allowed as string));
+
+    if (!isValidOrigin && !isValidReferer) {
+      console.error('🚨 CSRF attempt detected', { origin, referer, allowedOrigins });
+      return NextResponse.json(
+        { success: false, message: 'Invalid request origin (CSRF protection)' },
+        { status: 403 }
+      );
+    }
+
     // Verify user is authenticated
     const session = await getServerSession(authOptions);
 

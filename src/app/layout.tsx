@@ -32,17 +32,31 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* CRITICAL SECURITY NOTE: This inline script prevents theme flash (FOUC)
+            - Must run before DOM paint to prevent flicker
+            - Safe because: no user input interpolation, only classList manipulation
+            - Theme value is validated against whitelist before use
+            - Wrapped in try-catch for error safety
+            - Cannot use external script (would cause FOUC)
+            - Cannot use React component (would run after paint) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                const theme = localStorage.getItem('theme') || 'system';
+                // CRITICAL SECURITY: Validate theme value against whitelist
+                const rawTheme = localStorage.getItem('theme');
+                const validThemes = ['light', 'dark', 'system'];
+                const theme = validThemes.includes(rawTheme) ? rawTheme : 'system';
+
+                // Safe: only uses validated theme value for logic, never injects into DOM
                 if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                   document.documentElement.classList.add('dark');
                 } else {
                   document.documentElement.classList.remove('dark');
                 }
-              } catch (e) {}
+              } catch (e) {
+                // Silently fail - theme will be set by ThemeContext on mount
+              }
             `,
           }}
         />

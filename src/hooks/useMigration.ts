@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { Session } from 'next-auth';
 import { useNotification } from '@/contexts/NotificationContext';
@@ -17,12 +17,21 @@ import { useNotification } from '@/contexts/NotificationContext';
  * The migration is triggered when:
  * - User is authenticated
  * - sessionStorage has 'migrate-from' key with anonymous user ID
+ *
+ * CRITICAL SECURITY FIX: Race condition protection
+ * - Uses useRef for synchronous lock (prevents TOCTOU)
+ * - Removes sessionStorage BEFORE API call (atomic operation)
+ * - Multiple safeguards prevent concurrent migrations
  */
 export function useMigration() {
   const { data: session, status } = useSession();
   const { showSuccess, showError } = useNotification();
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationComplete, setMigrationComplete] = useState(false);
+
+  // CRITICAL FIX: Use ref as synchronous lock to prevent race conditions
+  // State updates are async, so checking `isMigrating` has a TOCTOU vulnerability
+  const migrationLockRef = useRef(false);
 
   // Cast session to our extended type
   const typedSession = session as Session | null;
@@ -33,14 +42,28 @@ export function useMigration() {
       return;
     }
 
+    // CRITICAL FIX: Check lock FIRST (synchronous, no race condition)
+    if (migrationLockRef.current) {
+      return;
+    }
+
+    // CRITICAL FIX: Acquire lock immediately (before any async operations)
+    migrationLockRef.current = true;
+
     // Check for pending migration
     const anonymousUserId = sessionStorage.getItem('migrate-from');
 
     if (!anonymousUserId) {
+      // Release lock if no migration needed
+      migrationLockRef.current = false;
       return;
     }
 
-    // Prevent duplicate migrations
+    // CRITICAL FIX: Remove from sessionStorage IMMEDIATELY (before API call)
+    // This prevents concurrent migrations if effect runs twice
+    sessionStorage.removeItem('migrate-from');
+
+    // Prevent duplicate migrations (state update for UI)
     setIsMigrating(true);
 
     const performMigration = async () => {
@@ -68,8 +91,7 @@ export function useMigration() {
           `Welcome! Successfully migrated ${data.chatsMigrated || 0} chat${data.chatsMigrated === 1 ? '' : 's'}.`
         );
 
-        // Clean up migration state
-        sessionStorage.removeItem('migrate-from');
+        // Clean up remaining migration state (migrate-from already removed)
         sessionStorage.removeItem('migration-banner-dismissed');
 
         // Update local storage user ID to Google ID
@@ -93,9 +115,11 @@ export function useMigration() {
           error instanceof Error ? error.message : 'Failed to migrate chats. Please try again.'
         );
 
-        // Clean up migration state even on error to prevent retry loops
-        sessionStorage.removeItem('migrate-from');
+        // Clean up remaining migration state (migrate-from already removed)
+        sessionStorage.removeItem('migration-banner-dismissed');
 
+        // Release lock on error
+        migrationLockRef.current = false;
         setIsMigrating(false);
       }
     };
