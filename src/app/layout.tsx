@@ -6,6 +6,8 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import DebugPanel from "@/components/DebugPanel";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { WebVitals } from "@/components/WebVitals";
+import { WebVitalsHUD } from "@/components/WebVitalsHUD";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,6 +59,8 @@ export default function RootLayout({
               </ChatProvider>
             </NotificationProvider>
           </ErrorBoundary>
+          <WebVitals />
+          <WebVitalsHUD />
         </ThemeProvider>
       </body>
     </html>

@@ -25,7 +25,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
   const router = useRouter();
   const { state, createChat, deleteChat } = useChat();
   const { socket, isConnected, rateLimitInfo } = useWebSocket();
-  const [showResetModal, setShowResetModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,19 +76,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
     const newChatId = createChat(title);
     router.push(`/chat/${newChatId}`);
   }, [router, createChat]);
-
-  // Reset everything function
-  const handleResetEverything = () => {
-    // Clear vector database first
-    if (socket && isConnected && userId) {
-      socket.emit('reset-vector-db', { userId });
-      devLog('Reset vector database request sent');
-    }
-
-    // Clear all local data
-    localStorage.clear();
-    window.location.reload();
-  };
 
   // Generate new user function
   const handleNewUser = () => {
@@ -225,12 +211,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
         if (!isCollapsed) {
           searchInputRef.current?.focus();
         }
-      }
-
-      // Alt+R for reset everything
-      if (event.altKey && event.key === 'r' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-        event.preventDefault();
-        setShowResetModal(true);
       }
 
       // Esc to close modals or clear search
@@ -578,21 +558,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                         </button>
                       )}
 
-                      {/* Reset Everything */}
-                      <button
-                        onClick={() => {
-                          setShowResetModal(true);
-                          setShowSettingsMenu(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-200 hover:bg-red-900/30 transition-colors flex items-center gap-3"
-                      >
-                        <svg className="w-4 h-4 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <span>Reset Everything</span>
-                        <kbd className="ml-auto text-xs bg-red-800/40 text-red-200 px-2 py-0.5 rounded font-mono">Alt+R</kbd>
-                      </button>
-
                       {/* Login/Sign Up - Only show in guest mode at bottom */}
                       {!isAuthenticated && (
                         <>
@@ -671,18 +636,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
           </div>
         </div>
       </div>
-
-      {/* Reset Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showResetModal}
-        onClose={() => setShowResetModal(false)}
-        onConfirm={handleResetEverything}
-        title="Reset Everything"
-        message="This will delete all chats and clear your data. This cannot be undone."
-        confirmText="Reset Everything"
-        cancelText="Cancel"
-        isDestructive={true}
-      />
 
       {/* Delete Chat Confirmation Modal */}
       <ConfirmationModal

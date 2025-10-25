@@ -24,7 +24,21 @@ export default function Home() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const { hasApiKey, isLoading } = useApiKey();
-  const { rateLimitInfo } = useWebSocket();
+  const { rateLimitInfo, socket, isConnected } = useWebSocket();
+
+  // Reset everything function
+  const handleResetEverything = () => {
+    const userId = localStorage.getItem('gemini-chat-user-id');
+
+    // Clear vector database first
+    if (socket && isConnected && userId) {
+      socket.emit('reset-vector-db', { userId });
+    }
+
+    // Clear all local data
+    localStorage.clear();
+    window.location.reload();
+  };
 
   // Check for rate limiting
   useEffect(() => {
@@ -152,6 +166,7 @@ export default function Home() {
       <SettingsModal
         isOpen={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
+        onResetEverything={handleResetEverything}
       />
     </div>
   );
