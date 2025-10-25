@@ -20,9 +20,10 @@ interface SidebarProps {
   onOpenTerms?: () => void;
   onOpenUsageStats?: () => void;
   onOpenSettings?: () => void;
+  onOpenSignIn?: () => void;
 }
 
-export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings, onOpenSignIn }: SidebarProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { state, createChat, deleteChat } = useChat();
@@ -566,13 +567,12 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                       )}
 
                       {/* Login/Sign Up - Only show in guest mode at bottom */}
-                      {!isAuthenticated && (
+                      {!isAuthenticated && onOpenSignIn && (
                         <>
                           <div className="my-1 border-t border-blue-800"></div>
                           <button
                             onClick={() => {
-                              // TODO: Open login modal
-                              console.log('Login clicked');
+                              onOpenSignIn();
                               setShowSettingsMenu(false);
                             }}
                             className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
