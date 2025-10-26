@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import ChatInterface from '@/components/ChatInterface';
-import UserId from '@/components/UserId';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import AboutModal from '@/components/AboutModal';
 import ApiKeySetup from '@/components/ApiKeySetup';
@@ -103,8 +102,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col lg:ml-80">
         {/* Mobile header */}
         <div className="lg:hidden bg-blue-600 dark:bg-gray-800 border-b border-blue-700 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <UserId />
+          <div className="flex items-center justify-end">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 hover:bg-blue-700 dark:hover:bg-gray-700 rounded-md text-white"
