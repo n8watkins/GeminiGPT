@@ -136,8 +136,13 @@ serverLogger.info('🚀 Server starting with config', {
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
+// Track if Next.js app is ready
+let nextJsReady = false;
+
 /**
  * Try to start server on a port, incrementing if the port is in use
+ * CRITICAL: Server starts listening IMMEDIATELY for health checks,
+ * before Next.js is ready. This prevents Railway health check timeouts.
  */
 function startServer(currentPort, maxAttempts = 10) {
   if (maxAttempts <= 0) {
@@ -150,7 +155,20 @@ function startServer(currentPort, maxAttempts = 10) {
       const parsedUrl = parse(req.url, true);
       const { pathname } = parsedUrl;
 
-      // SECURITY: Apply security headers with Helmet
+      // CRITICAL: Handle health check FIRST, before any middleware or Next.js
+      // This ensures Railway health checks pass immediately, even during cold starts
+      if (pathname === '/healthz' || pathname === '/health') {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({
+          status: 'ok',
+          nextjs: nextJsReady ? 'ready' : 'initializing',
+          timestamp: new Date().toISOString()
+        }));
+        return;
+      }
+
+      // SECURITY: Apply security headers with Helmet for non-health-check requests
       // Note: Next.js handles some headers, but we add extra protection
       helmet({
         contentSecurityPolicy: {
@@ -179,11 +197,11 @@ function startServer(currentPort, maxAttempts = 10) {
         hidePoweredBy: true, // Remove X-Powered-By header
       })(req, res, () => {});
 
-      // Handle health check directly
-      if (pathname === '/healthz') {
-        res.statusCode = 200;
+      // Wait for Next.js to be ready before handling requests
+      if (!nextJsReady) {
+        res.statusCode = 503;
         res.setHeader('Content-Type', 'text/plain');
-        res.end('ok');
+        res.end('Service starting up, please wait...');
         return;
       }
 
@@ -235,9 +253,11 @@ function startServer(currentPort, maxAttempts = 10) {
       shutdownHandler.setServer(server, io, rateLimiter);
       shutdownHandler.registerHandlers();
 
-      serverLogger.info(`✅ Server ready on http://${displayHost}:${currentPort}`);
-      serverLogger.info(`✅ WebSocket server running on port ${currentPort}`);
+      serverLogger.info(`✅ Server listening on http://${displayHost}:${currentPort}`);
       serverLogger.info(`✅ Health check available at http://${displayHost}:${currentPort}/healthz`);
+      if (!nextJsReady) {
+        serverLogger.info('⏳ Next.js still initializing... (health checks will pass, page requests will wait)');
+      }
     }
   });
 
@@ -253,9 +273,15 @@ function startServer(currentPort, maxAttempts = 10) {
   });
 }
 
+// CRITICAL: Start server IMMEDIATELY (before Next.js is ready)
+// This allows Railway health checks to pass while the app initializes
+serverLogger.info('🚀 Starting HTTP server (health checks available immediately)...');
+startServer(port);
+
+// Prepare Next.js in parallel (doesn't block server startup)
 app.prepare().then(() => {
-  serverLogger.info('✅ Next.js app prepared successfully');
-  startServer(port);
+  nextJsReady = true;
+  serverLogger.info('✅ Next.js app prepared successfully - now accepting page requests');
 }).catch((err) => {
   serverLogger.error('Failed to prepare Next.js app', err);
   process.exit(1);
