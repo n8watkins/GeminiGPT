@@ -27,7 +27,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsCollapsed, onCollapsedChange, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings, onOpenSignIn }: SidebarProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { state, deleteChat } = useChat();
+  const { state, deleteChat, clearActiveChat } = useChat();
   const { isConnected, rateLimitInfo } = useWebSocket();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
@@ -77,10 +77,11 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
     };
   }, []);
 
-  // Handle new chat - navigate to root to start fresh
+  // Handle new chat - clear active chat and navigate to root
   const handleNewChat = useCallback(() => {
+    clearActiveChat();
     router.push('/');
-  }, [router]);
+  }, [clearActiveChat, router]);
 
   // Delete chat with confirmation
   const handleDeleteChat = (chatId: string) => {
