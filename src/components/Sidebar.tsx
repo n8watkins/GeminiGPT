@@ -444,8 +444,10 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
           <div ref={settingsMenuRef} className="border-t border-blue-800 dark:border-gray-700 p-3 bg-blue-950/30 dark:bg-gray-900/30 relative">
             {/* Account Menu - Shows for both collapsed and expanded states */}
             {showSettingsMenu && (
-              <div className={`absolute bottom-full mb-1 bg-blue-900 dark:bg-gray-800 rounded-lg shadow-xl border border-blue-700 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50 ${
-                isCollapsed ? 'left-full ml-2 min-w-64' : 'left-0 right-0 mx-3'
+              <div className={`absolute bg-blue-900 dark:bg-gray-800 rounded-lg shadow-xl border border-blue-700 dark:border-gray-700 overflow-hidden animate-in fade-in duration-200 z-50 ${
+                isCollapsed
+                  ? 'left-full bottom-0 ml-2 min-w-64 slide-in-from-left-2'
+                  : 'bottom-full left-0 right-0 mb-1 mx-3 slide-in-from-bottom-2'
               }`}>
                     {/* Menu Header */}
                     <div className="px-4 py-2.5 bg-blue-800/40 dark:bg-gray-700/40 border-b border-blue-700 dark:border-gray-600">
