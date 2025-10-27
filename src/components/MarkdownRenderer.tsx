@@ -51,6 +51,7 @@ export default function MarkdownRenderer({ content, isUser = false, isStreaming 
 
   // If streaming, show raw text with a blinking cursor for smooth streaming effect
   if (isStreaming) {
+    logger.debug('Rendering as streaming text', { contentLength: content.length, preview: content.substring(0, 50) });
     return (
       <div className={`markdown-content whitespace-pre-wrap ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
         {sanitizedContent}
@@ -58,6 +59,8 @@ export default function MarkdownRenderer({ content, isUser = false, isStreaming 
       </div>
     );
   }
+
+  logger.debug('Rendering as formatted markdown', { contentLength: content.length });
 
   return (
     <div className={`markdown-content ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
