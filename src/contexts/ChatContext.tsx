@@ -16,6 +16,7 @@ type ChatAction =
   | { type: 'CREATE_CHAT_WITH_MESSAGE'; payload: { title: string; id: string; content: string; attachments?: Attachment[] } }
   | { type: 'CREATE_CHAT_WITH_MESSAGES'; payload: { title: string; id: string; userMessage: string; assistantMessage: string; attachments?: Attachment[] } }
   | { type: 'SELECT_CHAT'; payload: { chatId: string } }
+  | { type: 'CLEAR_ACTIVE_CHAT' }
   | { type: 'SEND_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[] } }
   | { type: 'RECEIVE_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[]; messageId?: string } }
   | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { chatId: string; content: string; messageId: string } }
@@ -103,6 +104,13 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return {
         ...state,
         activeChatId: action.payload.chatId,
+      };
+    }
+
+    case 'CLEAR_ACTIVE_CHAT': {
+      return {
+        ...state,
+        activeChatId: null,
       };
     }
 
@@ -252,6 +260,7 @@ interface ChatContextType {
   state: ChatState;
   createChat: (title: string) => string;
   selectChat: (chatId: string) => void;
+  clearActiveChat: () => void;
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>;
   regenerateMessage: () => Promise<void>;
   deleteChat: (chatId: string) => void;
@@ -444,6 +453,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SELECT_CHAT', payload: { chatId } });
   }, []);
 
+  const clearActiveChat = useCallback(() => {
+    dispatch({ type: 'CLEAR_ACTIVE_CHAT' });
+  }, []);
+
   const sendMessage = async (content: string, attachments?: Attachment[]) => {
     let chatId = state.activeChatId;
     let chatHistoryBeforeCurrentMessage: Message[] = [];
@@ -631,6 +644,7 @@ My request: ${content}`;
         state,
         createChat,
         selectChat,
+        clearActiveChat,
         sendMessage,
         regenerateMessage,
         deleteChat,
