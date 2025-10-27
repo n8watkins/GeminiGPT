@@ -1,0 +1,67 @@
+{
+  "shareId": "430cb669-868e-4950-89c3-4ef8ddf39ee9",
+  "originalChatId": "96d1ea3c-eb1e-45f8-88e2-9c3a0f1c5511",
+  "title": "Test debug message: What is 2+2?",
+  "messages": [
+    {
+      "id": "671d84c6-c997-4a7d-a4a1-bf65d80c8ca6",
+      "content": "Test debug message: What is 2+2?",
+      "role": "user",
+      "timestamp": "2025-10-27T02:54:30.855Z",
+      "attachments": []
+    },
+    {
+      "id": "57b8923f-83bd-4ccd-ad6c-4fdad584a297",
+      "content": "4",
+      "role": "assistant",
+      "timestamp": "2025-10-27T02:54:31.449Z"
+    },
+    {
+      "id": "632d9036-f37c-4869-b8ed-f3f2ba6de972",
+      "content": ".",
+      "role": "assistant",
+      "timestamp": "2025-10-27T02:54:31.553Z"
+    },
+    {
+      "id": "0c5b88fc-3c4c-4ea3-949b-294d8cf7044a",
+      "content": "Test debug message: What is 2+2?",
+      "role": "user",
+      "timestamp": "2025-10-27T02:54:31.609Z",
+      "attachments": []
+    },
+    {
+      "id": "7f63d622-c76d-49cd-9710-25cf92e1d62d",
+      "content": "4.",
+      "role": "assistant",
+      "timestamp": "2025-10-27T02:54:32.246Z"
+    },
+    {
+      "id": "e79eaafa-b3f5-4f26-a448-9285669bda34",
+      "content": "Test debug message: What is 2+2?",
+      "role": "user",
+      "timestamp": "2025-10-27T02:54:41.344Z",
+      "attachments": []
+    },
+    {
+      "id": "02fe1c51-ff01-437f-82f3-b69e6eeca9cb",
+      "content": "4.",
+      "role": "assistant",
+      "timestamp": "2025-10-27T02:54:41.984Z"
+    },
+    {
+      "id": "840bc9b3-f5ea-4758-933f-45861e409d13",
+      "content": "Test debug message: What is 2+2?",
+      "role": "user",
+      "timestamp": "2025-10-27T02:55:48.294Z",
+      "attachments": []
+    },
+    {
+      "id": "6ae06320-a16b-4d3c-8956-7059b0994a83",
+      "content": "4.",
+      "role": "assistant",
+      "timestamp": "2025-10-27T02:55:48.867Z"
+    }
+  ],
+  "createdAt": "2025-10-27T03:40:02.944Z",
+  "sharedAt": "2025-10-27T03:40:02.944Z"
+}
