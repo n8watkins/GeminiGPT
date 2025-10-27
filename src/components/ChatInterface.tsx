@@ -494,7 +494,7 @@ export default function ChatInterface() {
         </div>
 
         {/* Input at Bottom */}
-        <div className="border-t border-blue-200 p-4 bg-white/80 backdrop-blur-sm">
+        <div className="border-t border-blue-200 dark:border-gray-700 p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
             {/* Error Message */}
             {errorMessage && (
@@ -631,7 +631,7 @@ function MessageBubble({
           className={`px-4 py-3 rounded-lg ${
             isUser
               ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white max-w-2xl ml-auto shadow-md'
-              : 'bg-white border border-blue-100 text-gray-800 w-full shadow-sm'
+              : 'bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 text-gray-800 dark:text-gray-100 w-full shadow-sm'
           }`}
         >
           {/* Attachments */}
@@ -641,13 +641,13 @@ function MessageBubble({
 
           {/* Message content with Markdown */}
           {message.content && (
-            <div className={`text-sm ${isUser ? 'text-white' : 'text-gray-800'}`}>
+            <div className={`text-sm ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}>
               <MarkdownRenderer content={message.content} isUser={isUser} />
             </div>
           )}
 
           <div className="flex items-center justify-between mt-2">
-            <p className={`text-xs ${isUser ? 'text-blue-100' : 'text-gray-500'}`}>
+            <p className={`text-xs ${isUser ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
               {formatTime(message.timestamp)}
             </p>
 
@@ -656,7 +656,7 @@ function MessageBubble({
               <button
                 onClick={onRegenerate}
                 disabled={isRegenerating}
-                className="ml-3 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 rounded transition-colors flex items-center gap-1 disabled:opacity-50"
+                className="ml-3 px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded transition-colors flex items-center gap-1 disabled:opacity-50"
                 title="Regenerate response"
               >
                 {isRegenerating ? (
