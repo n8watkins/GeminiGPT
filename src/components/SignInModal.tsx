@@ -65,7 +65,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                   Sign in with Google
                 </h2>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Keep your chats synced across all your devices
+                  Sync chats across devices
                 </p>
               </div>
             </div>
@@ -85,7 +85,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
             {/* Benefits Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                What you get with Google Sign-In
+                Benefits
               </h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
@@ -95,9 +95,9 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Sync Across Devices</p>
+                    <p className="font-medium text-gray-900 dark:text-white">Multi-Device Sync</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Access your chats from any device - desktop, mobile, or tablet
+                      Access chats from desktop, mobile, or tablet
                     </p>
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">Cloud Backup</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Your chat history is safely stored and never lost
+                      Chat history safely stored and never lost
                     </p>
                   </div>
                 </div>
@@ -123,9 +123,9 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">Seamless Migration</p>
+                    <p className="font-medium text-gray-900 dark:text-white">Auto-Migration</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      All your existing chats will be automatically transferred
+                      Existing chats transferred automatically
                     </p>
                   </div>
                 </div>
@@ -142,14 +142,10 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-gray-900 dark:text-white mb-1">
-                    About API Keys &amp; Security
+                    API Key Security
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Your API keys are <span className="font-semibold text-gray-900 dark:text-white">never stored in our cloud</span> for security.
-                    They remain on each device locally.
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    💡 This means you&apos;ll need to add your API key on each device you use, but your credentials stay completely secure and private.
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    API keys <span className="font-semibold text-gray-900 dark:text-white">never stored in cloud</span> — they stay local to each device for your security.
                   </p>
                 </div>
               </div>
@@ -165,8 +161,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-blue-900 dark:text-blue-300">
-                    <span className="font-semibold">Bring Your Own Key:</span> Add your own Gemini API key on any device to remove rate limits.
-                    Devices using the shared server key remain rate limited.
+                    <span className="font-semibold">Bring Your Own Key:</span> Add your Gemini API key to remove rate limits. Shared server key remains rate limited.
                   </p>
                 </div>
               </div>
@@ -198,8 +193,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
 
             {/* Privacy Note */}
             <p className="text-xs text-center text-gray-500 dark:text-gray-500">
-              By signing in, you agree to our Terms of Service and Privacy Policy.
-              We only use your Google account for authentication.
+              By signing in, you agree to our Terms of Service and Privacy Policy. Google account used for authentication only.
             </p>
           </div>
         </div>
