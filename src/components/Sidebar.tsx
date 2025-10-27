@@ -427,15 +427,15 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
           )}
 
           {/* Settings Button with Popup Menu */}
-          <div ref={settingsMenuRef} className="border-t border-blue-800 p-3 bg-blue-950/30 relative">
-            {!isCollapsed ? (
-              <>
-                {/* Account Menu - Positioned Above Button */}
-                {showSettingsMenu && (
-                  <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 bg-blue-900 rounded-lg shadow-xl border border-blue-700 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
+          <div ref={settingsMenuRef} className="border-t border-blue-800 dark:border-gray-700 p-3 bg-blue-950/30 dark:bg-gray-900/30 relative">
+            {/* Account Menu - Shows for both collapsed and expanded states */}
+            {showSettingsMenu && (
+              <div className={`absolute bottom-full mb-1 bg-blue-900 dark:bg-gray-800 rounded-lg shadow-xl border border-blue-700 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50 ${
+                isCollapsed ? 'left-full ml-2 min-w-64' : 'left-0 right-0 mx-3'
+              }`}>
                     {/* Menu Header */}
-                    <div className="px-4 py-2.5 bg-blue-800/40 border-b border-blue-700">
-                      <p className="text-xs font-semibold text-blue-300 uppercase tracking-wider">
+                    <div className="px-4 py-2.5 bg-blue-800/40 dark:bg-gray-700/40 border-b border-blue-700 dark:border-gray-600">
+                      <p className="text-xs font-semibold text-blue-300 dark:text-gray-300 uppercase tracking-wider">
                         {isAuthenticated ? 'Account' : 'Guest'}
                       </p>
                     </div>
@@ -448,9 +448,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                             onOpenApiKeySetup();
                             setShowSettingsMenu(false);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3"
                         >
-                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-blue-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                           </svg>
                           <div className="flex-1 flex items-center justify-between">
@@ -472,9 +472,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                             onOpenAbout();
                             setShowSettingsMenu(false);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3"
                         >
-                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-blue-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           <span>About</span>
@@ -488,9 +488,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                             onOpenTerms();
                             setShowSettingsMenu(false);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3"
                         >
-                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-blue-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                           <span>Terms & Privacy</span>
@@ -504,9 +504,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                             onOpenUsageStats();
                             setShowSettingsMenu(false);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3"
                         >
-                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-blue-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                           </svg>
                           <span>Usage Stats</span>
@@ -514,7 +514,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                       )}
 
                       {/* Divider */}
-                      <div className="my-1 border-t border-blue-800"></div>
+                      <div className="my-1 border-t border-blue-800 dark:border-gray-700"></div>
 
                       {/* Settings - Opens modal */}
                       {onOpenSettings && (
@@ -523,9 +523,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                             onOpenSettings();
                             setShowSettingsMenu(false);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3"
                         >
-                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-blue-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
@@ -534,7 +534,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                       )}
 
                       {/* Divider before authentication actions */}
-                      <div className="my-1 border-t border-blue-800"></div>
+                      <div className="my-1 border-t border-blue-800 dark:border-gray-700"></div>
 
                       {/* Login/Sign Up - Only show in guest mode */}
                       {!isAuthenticated && onOpenSignIn && (
@@ -543,9 +543,9 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                             onOpenSignIn();
                             setShowSettingsMenu(false);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                          className="w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3"
                         >
-                          <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-blue-300 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                           </svg>
                           <span>Login / Sign Up</span>
@@ -559,7 +559,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                             signOut();
                             setShowSettingsMenu(false);
                           }}
-                          className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-blue-800/50 transition-colors flex items-center gap-3"
+                          className="w-full px-4 py-2.5 text-left text-sm text-red-400 dark:text-red-400 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -571,52 +571,52 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                   </div>
                 )}
 
-                {/* Account Button */}
-                <button
-                  onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-                  className="w-full px-4 py-2.5 bg-blue-800/30 hover:bg-blue-800/50 text-blue-100 rounded-lg transition-colors flex items-center justify-between group border border-blue-700/40 hover:border-blue-600/60"
-                  title={isAuthenticated ? 'Account Menu' : 'Guest Menu'}
-                >
-                  <div className="flex items-center gap-2">
-                    {/* Avatar Icon */}
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium text-sm">{isAuthenticated ? 'Account' : 'Guest'}</span>
-                      {hasOwnApiKey && !isAuthenticated && (
-                        <span className="text-xs text-green-400">Using own key</span>
-                      )}
-                      {!hasOwnApiKey && !isAuthenticated && (
-                        <span className="text-xs text-blue-300">Rate limited</span>
-                      )}
-                      {isAuthenticated && hasOwnApiKey && (
-                        <span className="text-xs text-green-400">Unlimited</span>
-                      )}
-                      {isAuthenticated && !hasOwnApiKey && (
-                        <span className="text-xs text-blue-300">Cloud synced</span>
-                      )}
-                    </div>
+            {/* Account Button - Works for both collapsed and expanded states */}
+            {!isCollapsed ? (
+              <button
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                className="w-full px-4 py-2.5 bg-blue-800/30 dark:bg-gray-700/30 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 text-blue-100 dark:text-gray-100 rounded-lg transition-colors flex items-center justify-between group border border-blue-700/40 dark:border-gray-600/40 hover:border-blue-600/60 dark:hover:border-gray-500/60"
+                title={isAuthenticated ? 'Account Menu' : 'Guest Menu'}
+              >
+                <div className="flex items-center gap-2">
+                  {/* Avatar Icon */}
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
                   </div>
-                  <svg
-                    className={`w-4 h-4 text-blue-300 transition-transform flex-shrink-0 ${showSettingsMenu ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  </svg>
-                </button>
-              </>
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium text-sm">{isAuthenticated ? 'Account' : 'Guest'}</span>
+                    {hasOwnApiKey && !isAuthenticated && (
+                      <span className="text-xs text-green-400">Using own key</span>
+                    )}
+                    {!hasOwnApiKey && !isAuthenticated && (
+                      <span className="text-xs text-blue-300 dark:text-gray-400">Rate limited</span>
+                    )}
+                    {isAuthenticated && hasOwnApiKey && (
+                      <span className="text-xs text-green-400">Unlimited</span>
+                    )}
+                    {isAuthenticated && !hasOwnApiKey && (
+                      <span className="text-xs text-blue-300 dark:text-gray-400">Cloud synced</span>
+                    )}
+                  </div>
+                </div>
+                <svg
+                  className={`w-4 h-4 text-blue-300 dark:text-gray-400 transition-transform flex-shrink-0 ${showSettingsMenu ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </button>
             ) : (
               <button
                 onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-                className="w-full p-2 bg-blue-800/30 hover:bg-blue-800/50 rounded-lg transition-colors flex items-center justify-center border border-blue-700/40 hover:border-blue-600/60"
-                title={isAuthenticated ? 'Account' : 'Guest'}
+                className="w-full p-2 bg-blue-800/30 dark:bg-gray-700/30 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 rounded-lg transition-colors flex items-center justify-center border border-blue-700/40 dark:border-gray-600/40 hover:border-blue-600/60 dark:hover:border-gray-500/60"
+                title={isAuthenticated ? 'Account Menu' : 'Guest Menu'}
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center">
                   <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                   </svg>
