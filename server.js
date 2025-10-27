@@ -133,7 +133,7 @@ serverLogger.info('🚀 Server starting with config', {
   port
 });
 
-const app = next({ dev, hostname, port });
+const app = next({ dev, hostname, port, turbo: false }); // Disable Turbopack due to Next.js 16 bug
 const handle = app.getRequestHandler();
 
 // Track if Next.js app is ready
