@@ -23,6 +23,7 @@ export default function ChatInterface() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [waitingForFirstChat, setWaitingForFirstChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRefCentered = useRef<HTMLInputElement>(null);
   const inputRefBottom = useRef<HTMLInputElement>(null);
@@ -35,6 +36,15 @@ export default function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [activeChat?.messages]);
+
+  // Navigate to chat when it's created after sending first message
+  useEffect(() => {
+    if (waitingForFirstChat && state.activeChatId) {
+      chatLogger.debug('First chat created, navigating to it', { chatId: state.activeChatId });
+      router.push(`/chat/${state.activeChatId}`);
+      setWaitingForFirstChat(false);
+    }
+  }, [waitingForFirstChat, state.activeChatId, router]);
 
   // Auto-focus input when chat changes or on new empty chat
   useEffect(() => {
@@ -88,9 +98,9 @@ export default function ChatInterface() {
       await sendMessage(message, attachmentsToSend);
       chatLogger.debug('Message sent successfully');
 
-      // If there was no active chat before, navigate to the newly created chat
-      if (wasNoActiveChat && state.activeChatId) {
-        router.push(`/chat/${state.activeChatId}`);
+      // If there was no active chat before, wait for chat to be created then navigate
+      if (wasNoActiveChat) {
+        setWaitingForFirstChat(true);
       }
     } catch (error) {
       chatLogger.error('Error sending message', error);
@@ -98,6 +108,7 @@ export default function ChatInterface() {
       // Show user-friendly error message
       const errorMsg = error instanceof Error ? error.message : 'Failed to send message';
       setErrorMessage(errorMsg);
+      setWaitingForFirstChat(false);
 
       // Restore input and attachments if sending failed
       setInputValue(message);

@@ -27,7 +27,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsCollapsed, onCollapsedChange, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings, onOpenSignIn }: SidebarProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { state, createChat, deleteChat } = useChat();
+  const { state, deleteChat } = useChat();
   const { isConnected, rateLimitInfo } = useWebSocket();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
@@ -77,13 +77,10 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
     };
   }, []);
 
-  // Handle new chat - create a new empty chat and navigate to it
+  // Handle new chat - navigate to root to start fresh
   const handleNewChat = useCallback(() => {
-    const now = new Date();
-    const title = `Chat ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
-    const newChatId = createChat(title);
-    router.push(`/chat/${newChatId}`);
-  }, [router, createChat]);
+    router.push('/');
+  }, [router]);
 
   // Delete chat with confirmation
   const handleDeleteChat = (chatId: string) => {
