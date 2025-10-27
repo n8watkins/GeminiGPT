@@ -14,11 +14,8 @@ import { geminiLogOps } from '@/lib/database';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 GET /api/gemini-logs - Request received');
-
     // Get user session (for authenticated users)
     const session = await getServerSession(authOptions);
-    console.log('👤 Session:', session ? `User ID: ${session.user?.id}` : 'No session');
 
     // Extract query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -26,29 +23,22 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId'); // Get userId from query params
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50;
-    console.log('📊 Query params - chatId:', chatId, 'userId:', userId, 'limit:', limit);
 
     let logs;
 
     if (chatId) {
       // Filter by chat ID
-      console.log('🔍 Fetching logs by chat ID:', chatId);
       logs = geminiLogOps.getByChat(chatId, limit);
     } else if (session?.user?.id) {
       // Get logs for authenticated user
-      console.log('🔍 Fetching logs by authenticated user ID:', session.user.id);
       logs = geminiLogOps.getByUser(session.user.id, limit);
     } else if (userId) {
       // Get logs for anonymous user (from query param)
-      console.log('🔍 Fetching logs by anonymous user ID:', userId);
       logs = geminiLogOps.getByUser(userId, limit);
     } else {
       // No user ID available - return all recent logs
-      console.log('🔍 No user ID - fetching recent logs');
       logs = geminiLogOps.getRecent(limit);
     }
-
-    console.log('📦 Raw logs from database:', logs?.length || 0, 'logs');
 
     // Parse JSON strings back to objects for the client
     const parsedLogs = logs.map((log: any) => ({
@@ -60,15 +50,13 @@ export async function GET(request: NextRequest) {
       metadata: log.metadata ? JSON.parse(log.metadata) : {}
     }));
 
-    console.log('✅ Returning', parsedLogs.length, 'parsed logs');
-
     return NextResponse.json({
       success: true,
       logs: parsedLogs,
       count: parsedLogs.length
     });
   } catch (error) {
-    console.error('❌ Error fetching Gemini logs:', error);
+    console.error('Error fetching Gemini logs:', error);
     return NextResponse.json(
       {
         success: false,
