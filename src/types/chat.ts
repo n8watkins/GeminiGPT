@@ -13,6 +13,7 @@ export interface Message {
   role: 'user' | 'assistant';
   timestamp: Date;
   attachments?: Attachment[];
+  isStreaming?: boolean;
 }
 
 export interface Chat {
