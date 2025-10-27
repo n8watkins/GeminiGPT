@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useChat } from '@/contexts/ChatContext';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 interface DebugInfo {
   type: 'request' | 'response';
@@ -20,7 +21,9 @@ interface DebugInfo {
 export default function DebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [debugLogs, setDebugLogs] = useState<DebugInfo[]>([]);
-  const { socket } = useChat();
+  const [isTesting, setIsTesting] = useState(false);
+  const { sendMessage, getActiveChat } = useChat();
+  const { socket } = useWebSocket();
 
   useEffect(() => {
     if (!socket) return;
@@ -43,6 +46,24 @@ export default function DebugPanel() {
 
   const clearLogs = () => {
     setDebugLogs([]);
+  };
+
+  const testGeminiResponse = async () => {
+    setIsTesting(true);
+    try {
+      const activeChat = getActiveChat();
+      if (!activeChat) {
+        // If no active chat, create test message without attachments
+        await sendMessage('Test debug message: What is 2+2?', []);
+      } else {
+        // Send to active chat
+        await sendMessage('Test debug message: What is 2+2?', []);
+      }
+    } catch (error) {
+      console.error('Debug test failed:', error);
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   return (
@@ -68,30 +89,59 @@ export default function DebugPanel() {
       {isOpen && (
         <div className="fixed right-0 top-0 bottom-0 w-[600px] bg-gray-900 border-l border-gray-700 shadow-2xl z-40 flex flex-col">
           {/* Header */}
-          <div className="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
-              <h2 className="text-white font-semibold">Gemini Debug Panel</h2>
-              <span className="text-xs text-gray-400">({debugLogs.length} logs)</span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={clearLogs}
-                className="text-gray-400 hover:text-white px-3 py-1 text-sm rounded bg-gray-700 hover:bg-gray-600 transition-colors"
-              >
-                Clear
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-white"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <div className="bg-gray-800 border-b border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                 </svg>
-              </button>
+                <h2 className="text-white font-semibold">Debug Console</h2>
+                <span className="text-xs text-gray-400">({debugLogs.length} logs)</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={clearLogs}
+                  className="text-gray-400 hover:text-white px-3 py-1 text-sm rounded bg-gray-700 hover:bg-gray-600 transition-colors"
+                  title="Clear logs"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="text-gray-400 hover:text-white"
+                  title="Close debug console"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
+
+            {/* Test Gemini Response Button */}
+            <button
+              onClick={testGeminiResponse}
+              disabled={isTesting}
+              className="w-full px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg transition-all flex items-center justify-center gap-2 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Send a test message to Gemini"
+            >
+              {isTesting ? (
+                <>
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Test Gemini Response
+                </>
+              )}
+            </button>
           </div>
 
           {/* Logs Container */}
