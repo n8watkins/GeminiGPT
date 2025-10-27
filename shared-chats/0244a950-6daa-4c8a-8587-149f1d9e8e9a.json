@@ -1,0 +1,22 @@
+{
+  "shareId": "0244a950-6daa-4c8a-8587-149f1d9e8e9a",
+  "originalChatId": "e5d69c6b-35a1-4909-80f3-cbef5fdf90b8",
+  "title": "JavaScript Async/Await Explanation",
+  "messages": [
+    {
+      "id": "ff651671-3bc6-4b0d-9069-4de0b2023ccf",
+      "content": "Explain how async/await works in JavaScript",
+      "role": "user",
+      "timestamp": "2025-10-27T08:07:10.109Z",
+      "attachments": []
+    },
+    {
+      "id": "e885d109-c5ea-43c9-957b-418d21cf5a85",
+      "content": "`async/await` is a modern way to handle asynchronous operations in JavaScript, making asynchronous code look and behave more like synchronous code. It's built on top of Promises.\n\nHere's a breakdown:\n\n*   **`async` keyword:** You declare a function as `async` to indicate that it will perform asynchronous operations. An `async` function always implicitly returns a Promise. If the function returns a value, the Promise will resolve with that value. If it throws an error, the Promise will reject with that error.\n\n    ```javascript\n    async function fetchData() {\n      // ... asynchronous operations\n    }\n    ```\n\n*   **`await` keyword:** The `await` keyword can *only* be used inside an `async` function. It pauses the execution of the `async` function until the Promise it's waiting on settles (either resolves or rejects).\n\n    *   If the Promise resolves, `await` returns the resolved value.\n    *   If the Promise rejects, `await` throws the rejected value (which you can catch with `try...catch`).\n\n    ```javascript\n    async function fetchData() {\n      try {\n        const response = await fetch('https://api.example.com/data');\n        const data = await response.json();\n        console.log(data);\n      } catch (error) {\n        console.error('Error fetching data:', error);\n      }\n    }\n    ```\n\n**How it works together:**\n\nWhen an `async` function encounters an `await` expression, it temporarily suspends its execution, allowing other code to run. Once the awaited Promise settles, the `async` function resumes from where it left off, and the result of the Promise is available. This prevents \"callback hell\" and makes asynchronous code much more readable and maintainable.",
+      "role": "assistant",
+      "timestamp": "2025-10-27T08:07:10.109Z"
+    }
+  ],
+  "createdAt": "2025-10-27T08:08:15.892Z",
+  "sharedAt": "2025-10-27T08:08:15.892Z"
+}

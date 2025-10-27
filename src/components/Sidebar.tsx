@@ -291,7 +291,13 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
               <>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <h1 className="text-xl font-bold">GeminiGPT</h1>
+                    <h1
+                      className="text-xl font-bold cursor-pointer hover:text-blue-200 transition-colors select-none"
+                      onClick={handleNewChat}
+                      title="Go to home"
+                    >
+                      GeminiGPT
+                    </h1>
                     <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-800/30 rounded-lg border border-blue-700/40">
                       {connectionIndicator.dot}
                       <span className={`text-xs font-medium ${connectionIndicator.color} transition-colors duration-300`}>
