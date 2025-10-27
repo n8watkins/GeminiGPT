@@ -295,7 +295,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 // Utility function to parse title from Gemini's response
 function parseTitleFromResponse(response: string): { title: string; content: string } {
-  const titleRegex = /^TITLE:\s*(.+?)\s*---\s*/s;
+  const titleRegex = /^(.+?)\s*---\s*/s;
   const match = response.match(titleRegex);
 
   if (match) {
@@ -366,7 +366,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
           // If the streamed message had a title prefix, we need to update the message content
           // to show only the actual response without the title
-          if (streamingMsg && fullResponse.includes('TITLE:')) {
+          if (streamingMsg && fullResponse.includes('---')) {
             // Replace the message content to show only the actual response without title
             dispatch({
               type: 'REPLACE_MESSAGE_CONTENT',
@@ -520,7 +520,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
       // Add instruction to Gemini to provide a title
       messageToSend = `Please provide a short, descriptive title (3-6 words) for this conversation based on my request, then answer my question. Format your response as:
-TITLE: [your suggested title]
+[your suggested title]
 ---
 [your response to my question]
 

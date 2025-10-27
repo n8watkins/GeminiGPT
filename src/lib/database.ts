@@ -129,6 +129,28 @@ function createTables() {
     )
   `);
 
+  // Gemini API Logs table - for debugging and monitoring
+  db!.exec(`
+    CREATE TABLE IF NOT EXISTS gemini_logs (
+      id TEXT PRIMARY KEY,
+      chat_id TEXT,
+      user_id TEXT,
+      request_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      response_timestamp DATETIME,
+      duration_ms INTEGER,
+      request_data TEXT NOT NULL,
+      response_data TEXT,
+      error_data TEXT,
+      status TEXT CHECK (status IN ('pending', 'success', 'error')),
+      model_name TEXT,
+      token_count INTEGER,
+      function_calls TEXT DEFAULT '[]',
+      metadata TEXT DEFAULT '{}',
+      FOREIGN KEY (chat_id) REFERENCES chats (id) ON DELETE SET NULL,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+    )
+  `);
+
   // Create indexes for better performance
   db!.exec(`
     CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
@@ -141,6 +163,10 @@ function createTables() {
     CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages (user_id);
     CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages (timestamp);
     CREATE INDEX IF NOT EXISTS idx_attachments_message_id ON attachments (message_id);
+    CREATE INDEX IF NOT EXISTS idx_gemini_logs_chat_id ON gemini_logs (chat_id);
+    CREATE INDEX IF NOT EXISTS idx_gemini_logs_user_id ON gemini_logs (user_id);
+    CREATE INDEX IF NOT EXISTS idx_gemini_logs_timestamp ON gemini_logs (request_timestamp);
+    CREATE INDEX IF NOT EXISTS idx_gemini_logs_status ON gemini_logs (status);
   `);
 }
 
@@ -458,6 +484,139 @@ const messageOps = {
 };
 
 /**
+ * Gemini API logs operations
+ */
+const geminiLogOps = {
+  /**
+   * Create a new Gemini API log entry (request sent)
+   */
+  create: (logId: string, chatId: string | null, userId: string | null, requestData: Record<string, unknown>, metadata: Record<string, unknown> = {}) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      INSERT INTO gemini_logs (id, chat_id, user_id, request_data, status, metadata)
+      VALUES (?, ?, ?, ?, 'pending', ?)
+    `);
+    return stmt.run(logId, chatId, userId, JSON.stringify(requestData), JSON.stringify(metadata));
+  },
+
+  /**
+   * Update log entry with response (success)
+   */
+  updateSuccess: (logId: string, responseData: Record<string, unknown>, durationMs: number, tokenCount: number | null = null, functionCalls: unknown[] = []) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      UPDATE gemini_logs
+      SET response_data = ?,
+          response_timestamp = CURRENT_TIMESTAMP,
+          duration_ms = ?,
+          status = 'success',
+          token_count = ?,
+          function_calls = ?
+      WHERE id = ?
+    `);
+    return stmt.run(JSON.stringify(responseData), durationMs, tokenCount, JSON.stringify(functionCalls), logId);
+  },
+
+  /**
+   * Update log entry with error
+   */
+  updateError: (logId: string, errorData: Record<string, unknown>, durationMs: number) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      UPDATE gemini_logs
+      SET error_data = ?,
+          response_timestamp = CURRENT_TIMESTAMP,
+          duration_ms = ?,
+          status = 'error'
+      WHERE id = ?
+    `);
+    return stmt.run(JSON.stringify(errorData), durationMs, logId);
+  },
+
+  /**
+   * Get logs for a specific chat
+   */
+  getByChat: (chatId: string, limit: number = 50) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT * FROM gemini_logs
+      WHERE chat_id = ?
+      ORDER BY request_timestamp DESC
+      LIMIT ?
+    `);
+    return stmt.all(chatId, limit);
+  },
+
+  /**
+   * Get logs for a specific user
+   */
+  getByUser: (userId: string, limit: number = 100) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT * FROM gemini_logs
+      WHERE user_id = ?
+      ORDER BY request_timestamp DESC
+      LIMIT ?
+    `);
+    return stmt.all(userId, limit);
+  },
+
+  /**
+   * Get recent logs (for debugging)
+   */
+  getRecent: (limit: number = 50) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT * FROM gemini_logs
+      ORDER BY request_timestamp DESC
+      LIMIT ?
+    `);
+    return stmt.all(limit);
+  },
+
+  /**
+   * Delete old logs (for cleanup)
+   */
+  deleteOlderThan: (days: number) => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      DELETE FROM gemini_logs
+      WHERE request_timestamp < datetime('now', '-' || ? || ' days')
+    `);
+    return stmt.run(days);
+  },
+
+  /**
+   * Get log statistics
+   */
+  getStats: (chatId?: string, userId?: string) => {
+    const db = getDatabase();
+    let query = `
+      SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success_count,
+        SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as error_count,
+        AVG(duration_ms) as avg_duration,
+        SUM(token_count) as total_tokens
+      FROM gemini_logs
+    `;
+
+    const params: (string | number)[] = [];
+
+    if (chatId) {
+      query += ' WHERE chat_id = ?';
+      params.push(chatId);
+    } else if (userId) {
+      query += ' WHERE user_id = ?';
+      params.push(userId);
+    }
+
+    const stmt = db.prepare(query);
+    return stmt.get(...params);
+  }
+};
+
+/**
  * Database statistics
  */
 const stats = {
@@ -470,7 +629,7 @@ const stats = {
       JOIN messages m ON a.message_id = m.id
       WHERE m.user_id = ?
     `).get(userId);
-    
+
     return {
       chats: (chatCount as { count: number }).count,
       messages: (messageCount as { count: number }).count,
@@ -524,6 +683,7 @@ export {
   userOps,
   chatOps,
   messageOps,
+  geminiLogOps,
   stats,
   migration,
   DB_PATH
