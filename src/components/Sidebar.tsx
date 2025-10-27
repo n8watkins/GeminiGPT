@@ -257,6 +257,15 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
 
   return (
     <>
+      {/* Backdrop for mobile when sidebar is open */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          onClick={onToggle}
+          aria-hidden="true"
+        />
+      )}
+
       <div
         className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 dark:from-gray-800 dark:to-gray-900 text-white transform transition-all duration-300 ease-in-out z-50 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -305,7 +314,7 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
               <div className="flex flex-col items-center gap-3">
                 <button
                   onClick={() => setIsCollapsed(false)}
-                  className="p-2 hover:bg-blue-800 rounded transition-colors"
+                  className="p-2 hover:bg-blue-800 dark:hover:bg-gray-700 rounded transition-colors"
                   aria-label="Expand sidebar (Alt+B)"
                   title="Expand sidebar (Alt+B)"
                 >
@@ -314,6 +323,16 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
                   </svg>
                 </button>
                 {connectionIndicator.dot}
+                <button
+                  onClick={handleNewChat}
+                  className="p-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 rounded transition-colors"
+                  aria-label="New Chat (Alt+N)"
+                  title="New Chat (Alt+N)"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
               </div>
             )}
 
