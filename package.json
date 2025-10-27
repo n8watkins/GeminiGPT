@@ -28,9 +28,12 @@
     "deploy": "bash deploy-to-production.sh"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
     "@lancedb/lancedb": "^0.22.2",
+    "@mui/material": "^7.3.4",
     "@sentry/nextjs": "^10.20.0",
     "@sentry/node": "^10.20.0",
     "@types/better-sqlite3": "^7.6.13",
