@@ -11,9 +11,10 @@ import { logger } from '@/lib/logger';
 interface MarkdownRendererProps {
   content: string;
   isUser?: boolean;
+  isStreaming?: boolean;
 }
 
-export default function MarkdownRenderer({ content, isUser = false }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, isUser = false, isStreaming = false }: MarkdownRendererProps) {
   // Sanitize content to prevent XSS attacks
   const sanitizedContent = useMemo(() => {
     if (!content || typeof content !== 'string') {
@@ -47,6 +48,16 @@ export default function MarkdownRenderer({ content, isUser = false }: MarkdownRe
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|ftp):)/i,
     });
   }, [content]);
+
+  // If streaming, show raw text with a blinking cursor for smooth streaming effect
+  if (isStreaming) {
+    return (
+      <div className={`markdown-content whitespace-pre-wrap ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+        {sanitizedContent}
+        <span className="inline-block w-2 h-4 ml-0.5 bg-current animate-pulse"></span>
+      </div>
+    );
+  }
 
   return (
     <div className={`markdown-content ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>

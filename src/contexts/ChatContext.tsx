@@ -148,6 +148,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         role: 'assistant',
         timestamp: new Date(),
         attachments,
+        isStreaming: false, // Default to not streaming unless explicitly set
       };
 
       return {
@@ -175,7 +176,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
                 ...chat,
                 messages: chat.messages.map(msg =>
                   msg.id === messageId
-                    ? { ...msg, content: msg.content + content }
+                    ? { ...msg, content: msg.content + content, isStreaming: true }
                     : msg
                 ),
                 updatedAt: new Date(),
@@ -208,7 +209,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
 
     case 'COMPLETE_STREAMING_MESSAGE': {
       const { chatId, messageId } = action.payload;
-      
+
       return {
         ...state,
         chats: state.chats.map(chat =>
@@ -217,7 +218,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
                 ...chat,
                 messages: chat.messages.map(msg =>
                   msg.id === messageId
-                    ? { ...msg, timestamp: new Date() }
+                    ? { ...msg, timestamp: new Date(), isStreaming: false }
                     : msg
                 ),
                 updatedAt: new Date(),
@@ -413,13 +414,25 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           streamingMsg = { id: newMessageId, content: data.message };
           streamingMessages.set(data.chatId, streamingMsg);
 
-          // Add message with first chunk to chat, with explicit message ID
+          // Add message with first chunk to chat, with explicit message ID and isStreaming flag
+          // We need to override the RECEIVE_MESSAGE action to set isStreaming: true for this case
+          // So we'll need to add the streaming state directly in the message
           dispatch({
             type: 'RECEIVE_MESSAGE',
             payload: {
               chatId: data.chatId,
               content: data.message,
               attachments: data.attachments,
+              messageId: newMessageId,
+            },
+          });
+
+          // Immediately mark as streaming with an UPDATE
+          dispatch({
+            type: 'UPDATE_STREAMING_MESSAGE',
+            payload: {
+              chatId: data.chatId,
+              content: '',
               messageId: newMessageId,
             },
           });

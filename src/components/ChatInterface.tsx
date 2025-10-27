@@ -643,7 +643,7 @@ function MessageBubble({
           {/* Message content with Markdown */}
           {message.content && (
             <div className={`text-sm ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}>
-              <MarkdownRenderer content={message.content} isUser={isUser} />
+              <MarkdownRenderer content={message.content} isUser={isUser} isStreaming={message.isStreaming} />
             </div>
           )}
 
