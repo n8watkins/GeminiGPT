@@ -40,11 +40,15 @@ export default function ChatInterface() {
   // Navigate to chat when it's created after sending first message
   useEffect(() => {
     if (waitingForFirstChat && state.activeChatId) {
-      chatLogger.debug('First chat created, navigating to it', { chatId: state.activeChatId });
-      router.push(`/chat/${state.activeChatId}`);
-      setWaitingForFirstChat(false);
+      // Verify the chat actually exists in the chats array before navigating
+      const chatExists = state.chats.some(chat => chat.id === state.activeChatId);
+      if (chatExists) {
+        chatLogger.debug('First chat created, navigating to it', { chatId: state.activeChatId });
+        router.push(`/chat/${state.activeChatId}`);
+        setWaitingForFirstChat(false);
+      }
     }
-  }, [waitingForFirstChat, state.activeChatId, router]);
+  }, [waitingForFirstChat, state.activeChatId, state.chats, router]);
 
   // Auto-focus input when chat changes or on new empty chat
   useEffect(() => {
