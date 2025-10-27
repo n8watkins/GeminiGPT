@@ -320,6 +320,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // Track pending first messages (messages sent before chat is created)
   const pendingFirstMessages = useRef<Map<string, { userMessage: string; attachments?: Attachment[] }>>(new Map());
 
+  // Track streaming messages by chatId - MUST be a ref to persist across re-renders
+  const streamingMessages = useRef<Map<string, { id: string; content: string }>>(new Map());
+
   // Load state from localStorage on mount
   useEffect(() => {
     // Clear storage if quota exceeded
@@ -341,13 +344,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // Setup WebSocket message handlers
   useEffect(() => {
-    // Track streaming messages by chatId
-    const streamingMessages = new Map<string, { id: string; content: string }>();
-
     const handleWebSocketMessage = (data: WebSocketMessage) => {
       if (data.isComplete) {
         // Streaming complete - finalize the message
-        const streamingMsg = streamingMessages.get(data.chatId);
+        const streamingMsg = streamingMessages.current.get(data.chatId);
         const pendingMsg = pendingFirstMessages.current.get(data.chatId);
 
         if (pendingMsg) {
@@ -394,7 +394,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
               messageId: streamingMsg.id,
             },
           });
-          streamingMessages.delete(data.chatId);
+          streamingMessages.current.delete(data.chatId);
         } else if (data.message && data.message.trim()) {
           // Fallback: if no streaming happened, add complete message
           dispatch({
@@ -408,13 +408,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // Streaming chunk received
-        let streamingMsg = streamingMessages.get(data.chatId);
+        let streamingMsg = streamingMessages.current.get(data.chatId);
 
         if (!streamingMsg) {
           // First chunk - create new message with isStreaming: true
           const newMessageId = uuidv4();
           streamingMsg = { id: newMessageId, content: data.message };
-          streamingMessages.set(data.chatId, streamingMsg);
+          streamingMessages.current.set(data.chatId, streamingMsg);
 
           chatLogger.debug('Creating new streaming message', { chatId: data.chatId, messageId: newMessageId, contentLength: data.message.length });
 
