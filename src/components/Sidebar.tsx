@@ -91,12 +91,10 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
 
   const confirmDeleteChat = () => {
     if (chatToDelete) {
-      const wasActiveChat = chatToDelete === state.activeChatId;
       deleteChat(chatToDelete);
-      // Navigate to root if we deleted the active chat
-      if (wasActiveChat) {
-        router.push('/');
-      }
+      // Always clear active chat and navigate to root after deletion
+      clearActiveChat();
+      router.push('/');
       setChatToDelete(null);
     }
   };
