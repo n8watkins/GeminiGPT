@@ -20,6 +20,7 @@ type ChatAction =
   | { type: 'SEND_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[] } }
   | { type: 'RECEIVE_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[]; messageId?: string } }
   | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { chatId: string; content: string; messageId: string } }
+  | { type: 'REPLACE_MESSAGE_CONTENT'; payload: { chatId: string; content: string; messageId: string } }
   | { type: 'COMPLETE_STREAMING_MESSAGE'; payload: { chatId: string; messageId: string } }
   | { type: 'LOAD_STATE'; payload: ChatState }
   | { type: 'DELETE_CHAT'; payload: { chatId: string } }
@@ -165,7 +166,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
 
     case 'UPDATE_STREAMING_MESSAGE': {
       const { chatId, content, messageId } = action.payload;
-      
+
       return {
         ...state,
         chats: state.chats.map(chat =>
@@ -175,6 +176,27 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
                 messages: chat.messages.map(msg =>
                   msg.id === messageId
                     ? { ...msg, content: msg.content + content }
+                    : msg
+                ),
+                updatedAt: new Date(),
+              }
+            : chat
+        ),
+      };
+    }
+
+    case 'REPLACE_MESSAGE_CONTENT': {
+      const { chatId, content, messageId } = action.payload;
+
+      return {
+        ...state,
+        chats: state.chats.map(chat =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                messages: chat.messages.map(msg =>
+                  msg.id === messageId
+                    ? { ...msg, content }
                     : msg
                 ),
                 updatedAt: new Date(),
@@ -328,24 +350,39 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const pendingMsg = pendingFirstMessages.current.get(data.chatId);
 
         if (pendingMsg) {
-          // This is a first message - create the chat now with both user and assistant messages
+          // This is a first message - update the title if we got one from Gemini
           const fullResponse = streamingMsg ? streamingMsg.content : (data.fullResponse ?? data.message);
           const { title, content } = parseTitleFromResponse(fullResponse);
 
+          // Update the chat title with AI-generated title
           dispatch({
-            type: 'CREATE_CHAT_WITH_MESSAGES',
+            type: 'UPDATE_CHAT_TITLE',
             payload: {
-              id: data.chatId,
+              chatId: data.chatId,
               title,
-              userMessage: pendingMsg.userMessage,
-              assistantMessage: content,
-              attachments: pendingMsg.attachments,
             },
           });
 
+          // If the streamed message had a title prefix, we need to update the message content
+          // to show only the actual response without the title
+          if (streamingMsg && fullResponse.includes('TITLE:')) {
+            // Replace the message content to show only the actual response without title
+            dispatch({
+              type: 'REPLACE_MESSAGE_CONTENT',
+              payload: {
+                chatId: data.chatId,
+                content: content,
+                messageId: streamingMsg.id,
+              },
+            });
+            // Reset the streaming message content
+            streamingMsg.content = content;
+          }
+
           pendingFirstMessages.current.delete(data.chatId);
-          streamingMessages.delete(data.chatId);
-        } else if (streamingMsg) {
+        }
+
+        if (streamingMsg) {
           // Message already exists from streaming, just mark as complete
           dispatch({
             type: 'COMPLETE_STREAMING_MESSAGE',
@@ -368,52 +405,36 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // Streaming chunk received
-        const pendingMsg = pendingFirstMessages.current.get(data.chatId);
+        let streamingMsg = streamingMessages.get(data.chatId);
 
-        // Don't create streaming messages for pending first messages yet
-        // We'll create the chat with full messages when complete
-        if (!pendingMsg) {
-          let streamingMsg = streamingMessages.get(data.chatId);
+        if (!streamingMsg) {
+          // First chunk - create new message with the first chunk content
+          const newMessageId = uuidv4();
+          streamingMsg = { id: newMessageId, content: data.message };
+          streamingMessages.set(data.chatId, streamingMsg);
 
-          if (!streamingMsg) {
-            // First chunk - create new message with the first chunk content
-            const newMessageId = uuidv4();
-            streamingMsg = { id: newMessageId, content: data.message };
-            streamingMessages.set(data.chatId, streamingMsg);
-
-            // Add message with first chunk to chat, with explicit message ID
-            dispatch({
-              type: 'RECEIVE_MESSAGE',
-              payload: {
-                chatId: data.chatId,
-                content: data.message,
-                attachments: data.attachments,
-                messageId: newMessageId,
-              },
-            });
-          } else {
-            // Subsequent chunk - update existing message
-            dispatch({
-              type: 'UPDATE_STREAMING_MESSAGE',
-              payload: {
-                chatId: data.chatId,
-                content: data.message,
-                messageId: streamingMsg.id,
-              },
-            });
-
-            streamingMsg.content += data.message;
-          }
+          // Add message with first chunk to chat, with explicit message ID
+          dispatch({
+            type: 'RECEIVE_MESSAGE',
+            payload: {
+              chatId: data.chatId,
+              content: data.message,
+              attachments: data.attachments,
+              messageId: newMessageId,
+            },
+          });
         } else {
-          // For pending messages, accumulate the chunks
-          let streamingMsg = streamingMessages.get(data.chatId);
-          if (!streamingMsg) {
-            const newMessageId = uuidv4();
-            streamingMsg = { id: newMessageId, content: data.message };
-            streamingMessages.set(data.chatId, streamingMsg);
-          } else {
-            streamingMsg.content += data.message;
-          }
+          // Subsequent chunk - update existing message
+          dispatch({
+            type: 'UPDATE_STREAMING_MESSAGE',
+            payload: {
+              chatId: data.chatId,
+              content: data.message,
+              messageId: streamingMsg.id,
+            },
+          });
+
+          streamingMsg.content += data.message;
         }
       }
     };
@@ -463,12 +484,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     let messageToSend = content;
     let isFirstMessage = false;
 
-    // If no active chat, prepare for first message (don't create chat yet)
+    // If no active chat, create one immediately with user's message as temporary title
     if (!chatId) {
       chatId = uuidv4();
       isFirstMessage = true;
 
-      // Store pending message info
+      // Create chat immediately with user's question as title
+      const tempTitle = generateChatTitle(content);
+      dispatch({
+        type: 'CREATE_CHAT_WITH_MESSAGE',
+        payload: { title: tempTitle, id: chatId, content, attachments }
+      });
+
+      // Mark this chat for title update when Gemini responds
       pendingFirstMessages.current.set(chatId, {
         userMessage: content,
         attachments,
