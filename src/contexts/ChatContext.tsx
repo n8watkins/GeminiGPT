@@ -492,10 +492,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     let messageToSend = content;
     let isFirstMessage = false;
 
-    // If no active chat, create one immediately with user's message as temporary title
-    if (!chatId) {
+    // Check if the active chat actually exists (handle race conditions/deleted chats)
+    const activeChat = chatId ? state.chats.find(chat => chat.id === chatId) : null;
+
+    // If no active chat OR active chat doesn't exist, create one immediately
+    if (!chatId || !activeChat) {
       chatId = uuidv4();
       isFirstMessage = true;
+
+      chatLogger.debug('Creating new chat for message', {
+        reason: !chatId ? 'no active chat' : 'active chat not found',
+        previousChatId: state.activeChatId
+      });
 
       // Create chat immediately with user's question as title
       const tempTitle = generateChatTitle(content);
@@ -521,12 +529,6 @@ My request: ${content}`;
       // No chat history for first message
       chatHistoryBeforeCurrentMessage = [];
     } else {
-      // Get current chat messages BEFORE dispatching (to avoid race condition)
-      const activeChat = state.chats.find(chat => chat.id === chatId);
-      if (!activeChat) {
-        throw new Error('Active chat not found');
-      }
-
       // Get the chat history BEFORE the current message
       // This is what we'll send to Gemini as context
       chatHistoryBeforeCurrentMessage = activeChat.messages;
