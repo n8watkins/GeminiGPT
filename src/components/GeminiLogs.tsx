@@ -47,7 +47,7 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
   const [selectedLog, setSelectedLog] = useState<GeminiLog | null>(null);
   const [filter, setFilter] = useState<'all' | 'success' | 'error'>('all');
   const { getActiveChat } = useChat();
-  const userId = useUserId();
+  const { userId } = useUserId(); // Fix: destructure userId from the hook
 
   const activeChat = getActiveChat();
   const activeChatId = activeChat?.id;
