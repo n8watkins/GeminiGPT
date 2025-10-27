@@ -277,29 +277,79 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
               </div>
             )}
 
-            {/* Request Data */}
+            {/* Full Request History */}
             <div>
-              <div className="text-xs text-gray-400 mb-2">Request</div>
-              <div className="bg-gray-800 rounded p-3 text-xs font-mono text-gray-300 max-h-40 overflow-y-auto">
-                <div className="mb-2">
-                  <span className="text-gray-500">History Length:</span> {selectedLog.request_data?.historyLength || 0}
-                </div>
-                <div className="mb-2">
-                  <span className="text-gray-500">Parts:</span> {selectedLog.request_data?.partsCount || 0}
-                </div>
-                <div className="text-white whitespace-pre-wrap">
-                  {selectedLog.request_data?.parts?.[0]?.text || 'No text content'}
-                </div>
+              <div className="text-xs text-gray-400 mb-2">
+                Full Request History ({selectedLog.request_data?.historyLength || 0} messages)
+              </div>
+              <div className="bg-gray-800 rounded p-3 text-xs font-mono max-h-96 overflow-y-auto">
+                {selectedLog.request_data?.history && selectedLog.request_data.history.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedLog.request_data.history.map((msg: any, idx: number) => (
+                      <div key={idx} className={`p-2 rounded ${msg.role === 'user' ? 'bg-blue-900/30' : 'bg-green-900/30'}`}>
+                        <div className="text-xs font-semibold mb-1 text-gray-400">
+                          {msg.role === 'user' ? '👤 User' : '🤖 Model'}
+                        </div>
+                        {msg.parts?.map((part: any, pIdx: number) => (
+                          <div key={pIdx} className="text-white whitespace-pre-wrap mb-1">
+                            {part.text || ''}
+                            {part.inlineData && (
+                              <div className="text-purple-400 text-xs mt-1">
+                                📎 {part.inlineData.mimeType} ({part.inlineData.size ? `${part.inlineData.size} bytes` : 'inline data'})
+                              </div>
+                            )}
+                            {part.functionCall && (
+                              <div className="text-yellow-400 text-xs mt-1">
+                                🔧 Function: {part.functionCall.name}
+                              </div>
+                            )}
+                            {part.functionResponse && (
+                              <div className="text-green-400 text-xs mt-1">
+                                ✅ Function Response
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No history available</div>
+                )}
+              </div>
+            </div>
+
+            {/* Current Request Parts */}
+            <div>
+              <div className="text-xs text-gray-400 mb-2">
+                Current Request ({selectedLog.request_data?.partsCount || 0} parts)
+              </div>
+              <div className="bg-gray-800 rounded p-3 text-xs font-mono text-white max-h-60 overflow-y-auto">
+                {selectedLog.request_data?.parts && selectedLog.request_data.parts.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedLog.request_data.parts.map((part: any, idx: number) => (
+                      <div key={idx} className="whitespace-pre-wrap">
+                        {part.text || ''}
+                        {part.inlineData && (
+                          <div className="text-purple-400 text-xs mt-1">
+                            📎 {part.inlineData.mimeType}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No parts available</div>
+                )}
               </div>
             </div>
 
             {/* Response Data */}
             {selectedLog.response_data && (
               <div>
-                <div className="text-xs text-gray-400 mb-2">Response</div>
-                <div className="bg-gray-800 rounded p-3 text-xs font-mono text-white max-h-60 overflow-y-auto whitespace-pre-wrap">
-                  {selectedLog.response_data.text?.substring(0, 1000) || 'No response text'}
-                  {selectedLog.response_data.text?.length > 1000 && '...'}
+                <div className="text-xs text-gray-400 mb-2">Full Response</div>
+                <div className="bg-gray-800 rounded p-3 text-xs font-mono text-white max-h-96 overflow-y-auto whitespace-pre-wrap">
+                  {selectedLog.response_data.text || 'No response text'}
                 </div>
               </div>
             )}
