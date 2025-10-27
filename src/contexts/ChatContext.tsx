@@ -18,7 +18,7 @@ type ChatAction =
   | { type: 'SELECT_CHAT'; payload: { chatId: string } }
   | { type: 'CLEAR_ACTIVE_CHAT' }
   | { type: 'SEND_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[] } }
-  | { type: 'RECEIVE_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[]; messageId?: string } }
+  | { type: 'RECEIVE_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[]; messageId?: string; isStreaming?: boolean } }
   | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { chatId: string; content: string; messageId: string } }
   | { type: 'REPLACE_MESSAGE_CONTENT'; payload: { chatId: string; content: string; messageId: string } }
   | { type: 'COMPLETE_STREAMING_MESSAGE'; payload: { chatId: string; messageId: string } }
@@ -141,14 +141,14 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
     }
 
     case 'RECEIVE_MESSAGE': {
-      const { chatId, content, attachments, messageId } = action.payload;
+      const { chatId, content, attachments, messageId, isStreaming } = action.payload;
       const newMessage: Message = {
         id: messageId || uuidv4(),
         content,
         role: 'assistant',
         timestamp: new Date(),
         attachments,
-        isStreaming: false, // Default to not streaming unless explicitly set
+        isStreaming: isStreaming !== undefined ? isStreaming : false, // Use provided value or default to false
       };
 
       return {
@@ -385,6 +385,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         if (streamingMsg) {
           // Message already exists from streaming, just mark as complete
+          chatLogger.debug('Completing streaming message', { chatId: data.chatId, messageId: streamingMsg.id, totalLength: streamingMsg.content.length });
+
           dispatch({
             type: 'COMPLETE_STREAMING_MESSAGE',
             payload: {
@@ -409,14 +411,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         let streamingMsg = streamingMessages.get(data.chatId);
 
         if (!streamingMsg) {
-          // First chunk - create new message with the first chunk content
+          // First chunk - create new message with isStreaming: true
           const newMessageId = uuidv4();
           streamingMsg = { id: newMessageId, content: data.message };
           streamingMessages.set(data.chatId, streamingMsg);
 
-          // Add message with first chunk to chat, with explicit message ID and isStreaming flag
-          // We need to override the RECEIVE_MESSAGE action to set isStreaming: true for this case
-          // So we'll need to add the streaming state directly in the message
+          chatLogger.debug('Creating new streaming message', { chatId: data.chatId, messageId: newMessageId, contentLength: data.message.length });
+
+          // Add message with first chunk and isStreaming: true
           dispatch({
             type: 'RECEIVE_MESSAGE',
             payload: {
@@ -424,20 +426,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
               content: data.message,
               attachments: data.attachments,
               messageId: newMessageId,
-            },
-          });
-
-          // Immediately mark as streaming with an UPDATE
-          dispatch({
-            type: 'UPDATE_STREAMING_MESSAGE',
-            payload: {
-              chatId: data.chatId,
-              content: '',
-              messageId: newMessageId,
+              isStreaming: true, // Mark as streaming from the start
             },
           });
         } else {
           // Subsequent chunk - update existing message
+          chatLogger.debug('Updating streaming message', { chatId: data.chatId, messageId: streamingMsg.id, chunkLength: data.message.length, totalLength: streamingMsg.content.length + data.message.length });
+
           dispatch({
             type: 'UPDATE_STREAMING_MESSAGE',
             payload: {
