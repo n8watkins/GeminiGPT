@@ -15,28 +15,37 @@ import { getSessionUserId } from '@/lib/userId';
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 GET /api/gemini-logs - Request received');
+
     // Get user session (for authenticated users)
     const session = await getServerSession(authOptions);
+    console.log('👤 Session:', session ? `User ID: ${session.user?.id}` : 'No session');
 
     // Get session user ID (works for both authenticated and anonymous users)
     const sessionUserId = getSessionUserId();
+    console.log('🔑 Session User ID:', sessionUserId);
 
     // Extract query parameters
     const searchParams = request.nextUrl.searchParams;
     const chatId = searchParams.get('chatId');
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50;
+    console.log('📊 Query params - chatId:', chatId, 'limit:', limit);
 
     let logs;
 
     if (chatId) {
       // Filter by chat ID
+      console.log('🔍 Fetching logs by chat ID:', chatId);
       logs = geminiLogOps.getByChat(chatId, limit);
     } else {
       // Get all logs for user (either authenticated or anonymous session user)
       const userId = session?.user?.id || sessionUserId;
+      console.log('🔍 Fetching logs by user ID:', userId);
       logs = geminiLogOps.getByUser(userId, limit);
     }
+
+    console.log('📦 Raw logs from database:', logs?.length || 0, 'logs');
 
     // Parse JSON strings back to objects for the client
     const parsedLogs = logs.map((log: any) => ({
@@ -48,13 +57,15 @@ export async function GET(request: NextRequest) {
       metadata: log.metadata ? JSON.parse(log.metadata) : {}
     }));
 
+    console.log('✅ Returning', parsedLogs.length, 'parsed logs');
+
     return NextResponse.json({
       success: true,
       logs: parsedLogs,
       count: parsedLogs.length
     });
   } catch (error) {
-    console.error('Error fetching Gemini logs:', error);
+    console.error('❌ Error fetching Gemini logs:', error);
     return NextResponse.json(
       {
         success: false,

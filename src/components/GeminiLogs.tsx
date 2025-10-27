@@ -65,19 +65,25 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
       }
       params.append('limit', '50');
 
+      console.log('🔍 Fetching Gemini logs with params:', params.toString());
       const response = await fetch(`/api/gemini-logs?${params.toString()}`);
+      console.log('📡 Gemini logs response status:', response.status);
       const data = await response.json();
+      console.log('📦 Gemini logs data:', data);
 
       if (data.success) {
         let filteredLogs = data.logs;
         if (filter !== 'all') {
           filteredLogs = filteredLogs.filter((log: GeminiLog) => log.status === filter);
         }
+        console.log('✅ Setting logs:', filteredLogs.length, 'logs');
         setLogs(filteredLogs);
       } else {
+        console.error('❌ Failed to fetch logs:', data.error);
         setError(data.error || 'Failed to fetch logs');
       }
     } catch (err) {
+      console.error('❌ Error fetching logs:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
