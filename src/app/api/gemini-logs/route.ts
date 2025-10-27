@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { geminiLogOps } from '@/lib/database';
-import { getSessionUserId } from '@/lib/userId';
 
 /**
  * GET /api/gemini-logs
@@ -21,16 +20,13 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     console.log('👤 Session:', session ? `User ID: ${session.user?.id}` : 'No session');
 
-    // Get session user ID (works for both authenticated and anonymous users)
-    const sessionUserId = getSessionUserId();
-    console.log('🔑 Session User ID:', sessionUserId);
-
     // Extract query parameters
     const searchParams = request.nextUrl.searchParams;
     const chatId = searchParams.get('chatId');
+    const userId = searchParams.get('userId'); // Get userId from query params
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50;
-    console.log('📊 Query params - chatId:', chatId, 'limit:', limit);
+    console.log('📊 Query params - chatId:', chatId, 'userId:', userId, 'limit:', limit);
 
     let logs;
 
@@ -38,11 +34,18 @@ export async function GET(request: NextRequest) {
       // Filter by chat ID
       console.log('🔍 Fetching logs by chat ID:', chatId);
       logs = geminiLogOps.getByChat(chatId, limit);
-    } else {
-      // Get all logs for user (either authenticated or anonymous session user)
-      const userId = session?.user?.id || sessionUserId;
-      console.log('🔍 Fetching logs by user ID:', userId);
+    } else if (session?.user?.id) {
+      // Get logs for authenticated user
+      console.log('🔍 Fetching logs by authenticated user ID:', session.user.id);
+      logs = geminiLogOps.getByUser(session.user.id, limit);
+    } else if (userId) {
+      // Get logs for anonymous user (from query param)
+      console.log('🔍 Fetching logs by anonymous user ID:', userId);
       logs = geminiLogOps.getByUser(userId, limit);
+    } else {
+      // No user ID available - return all recent logs
+      console.log('🔍 No user ID - fetching recent logs');
+      logs = geminiLogOps.getRecent(limit);
     }
 
     console.log('📦 Raw logs from database:', logs?.length || 0, 'logs');
@@ -85,12 +88,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const sessionUserId = getSessionUserId();
 
     const body = await request.json();
-    const { chatId } = body;
+    const { chatId, userId: bodyUserId } = body;
 
-    const userId = session?.user?.id || sessionUserId;
+    const userId = session?.user?.id || bodyUserId;
     const stats = geminiLogOps.getStats(chatId, userId);
 
     return NextResponse.json({

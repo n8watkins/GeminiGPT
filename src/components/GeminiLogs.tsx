@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useChat } from '@/contexts/ChatContext';
+import { useUserId } from '@/hooks/useUserId';
 
 interface GeminiLog {
   id: string;
@@ -46,13 +47,15 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
   const [selectedLog, setSelectedLog] = useState<GeminiLog | null>(null);
   const [filter, setFilter] = useState<'all' | 'success' | 'error'>('all');
   const { getActiveChat } = useChat();
+  const userId = useUserId();
 
   const activeChat = getActiveChat();
   const effectiveChatId = chatId || activeChat?.id;
 
   useEffect(() => {
     fetchLogs();
-  }, [effectiveChatId, filter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveChatId, filter, userId]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -62,6 +65,9 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
       const params = new URLSearchParams();
       if (effectiveChatId) {
         params.append('chatId', effectiveChatId);
+      }
+      if (userId) {
+        params.append('userId', userId);
       }
       params.append('limit', '50');
 
