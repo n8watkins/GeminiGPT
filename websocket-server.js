@@ -9,7 +9,7 @@ const { processDocumentAttachment } = require('./documentProcessor');
 const { wsLogger, geminiLogger, securityLogger } = require('./lib/logger');
 
 // Import database for Gemini logging
-const { initializeDatabase, geminiLogOps } = require('./src/lib/database.ts');
+const { initializeDatabase, geminiLogOps } = require('./lib/database.cjs');
 const { GeminiLogger } = require('./lib/geminiLogger');
 
 // Initialize database and Gemini logger
