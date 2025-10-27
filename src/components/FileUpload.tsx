@@ -111,29 +111,28 @@ export default function FileUpload({ onFilesSelected, disabled = false }: FileUp
         onDragLeave={handleDragLeave}
         disabled={disabled}
         className={`
-          p-2 rounded-md transition-colors
-          ${isDragOver 
-            ? 'bg-blue-100 border-blue-300' 
-            : 'hover:bg-gray-100 border-gray-200'
+          px-3 py-2 rounded-lg transition-colors border
+          ${isDragOver
+            ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600'
+            : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600'
           }
-          ${disabled 
-            ? 'opacity-50 cursor-not-allowed' 
+          ${disabled
+            ? 'opacity-50 cursor-not-allowed'
             : 'cursor-pointer'
           }
-          border-2 border-dashed
         `}
         title="Upload images or files (drag & drop supported)"
       >
-        <svg 
-          className="w-5 h-5 text-gray-500" 
-          fill="none" 
-          stroke="currentColor" 
+        <svg
+          className="w-5 h-5 text-gray-500 dark:text-gray-400"
+          fill="none"
+          stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
             d="M12 6v6m0 0v6m0-6h6m-6 0H6"
           />
         </svg>
