@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useChat } from '@/contexts/ChatContext';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { getSessionUserId, generateUserId } from '@/lib/userId';
 import { Chat } from '@/types/chat';
 import ConfirmationModal from './ConfirmationModal';
 import { RATE_LIMIT_THRESHOLDS, DEBOUNCE_DELAY } from '@/lib/constants';
@@ -31,8 +30,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, DEBOUNCE_DELAY.SEARCH);
-  const [userId, setUserId] = useState('');
-  const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [hasOwnApiKey, setHasOwnApiKey] = useState(false);
@@ -42,12 +39,8 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
   // Compute authentication status from session
   const isAuthenticated = status === 'authenticated' && !!session?.user;
 
-  // Set userId after mount to avoid hydration mismatch
+  // Check if user has their own API key
   useEffect(() => {
-    setUserId(getSessionUserId());
-    setMounted(true);
-
-    // Check if user has their own API key
     const checkApiKey = () => {
       const storedApiKey = localStorage.getItem('gemini-api-key');
       setHasOwnApiKey(!!storedApiKey);
@@ -76,21 +69,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
     const newChatId = createChat(title);
     router.push(`/chat/${newChatId}`);
   }, [router, createChat]);
-
-  // Generate new user function
-  const handleNewUser = () => {
-    // Generate a new user ID
-    const newUserId = generateUserId();
-
-    // Store it in localStorage
-    localStorage.setItem('gemini-chat-user-id', newUserId);
-
-    // No need to remove chat state - it's user-specific now
-    // Each user has their own storage key: gemini-chat-app-{userId}
-
-    // Reload the page to start fresh with the new user
-    window.location.reload();
-  };
 
   // Delete chat with confirmation
   const handleDeleteChat = (chatId: string) => {
@@ -341,28 +319,6 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
 
             {!isCollapsed && (
               <div className="animate-in fade-in slide-in-from-left-2 duration-300">
-                {/* User ID Display with New User Button */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-800/50 rounded-lg flex-1 min-w-0">
-                    <svg className="w-4 h-4 text-blue-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-xs text-blue-200 font-mono truncate" suppressHydrationWarning>
-                      {mounted ? userId : ''}
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleNewUser}
-                    className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex-shrink-0 group"
-                    aria-label="Generate new user (starts fresh session)"
-                    title="Generate new user (starts fresh session)"
-                  >
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                  </button>
-                </div>
-
                 {/* Rate Limit Display - Memoized */}
                 {rateLimitDisplay}
 
