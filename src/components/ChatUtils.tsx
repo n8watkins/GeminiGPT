@@ -147,7 +147,7 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
         {/* Quick Action Pills */}
         <button
           onClick={shareChat}
-          className="px-3 py-1.5 text-xs bg-green-50 hover:bg-green-100 text-green-700 rounded-full transition-colors flex items-center gap-1.5 border border-green-200 font-medium"
+          className="px-3 py-1.5 text-xs bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-800/40 text-green-700 dark:text-green-300 rounded-full transition-colors flex items-center gap-1.5 border border-green-200 dark:border-green-700 font-medium"
           title="Share this chat"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +158,7 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
 
         <button
           onClick={() => setShowDownloadModal(true)}
-          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full transition-colors flex items-center gap-1.5 border border-blue-200 font-medium"
+          className="px-3 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-full transition-colors flex items-center gap-1.5 border border-blue-200 dark:border-blue-700 font-medium"
           title="Download chat"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,14 +186,14 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
           <div
             ref={shareModalRef}
             tabIndex={-1}
-            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800">Share Chat</h3>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Share Chat</h3>
               <button
                 onClick={() => setShowShareModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 aria-label="Close share dialog"
                 title="Close"
               >
@@ -205,12 +205,12 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
 
             {isGeneratingLink ? (
               <div className="py-8 text-center">
-                <div className="w-12 h-12 mx-auto mb-4 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-600">Generating share link...</p>
+                <div className="w-12 h-12 mx-auto mb-4 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-gray-600 dark:text-gray-300">Generating share link...</p>
               </div>
             ) : shareUrl ? (
               <div>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                   Anyone with this link can view this chat (read-only):
                 </p>
                 <div className="flex items-center gap-2 mb-4">
@@ -218,14 +218,14 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
                     type="text"
                     value={shareUrl}
                     readOnly
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-700"
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                   />
                   <button
                     onClick={copyShareUrl}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       copied
-                        ? 'bg-green-600 text-white'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-green-600 dark:bg-green-700 text-white hover:bg-green-700 dark:hover:bg-green-600'
+                        : 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
                     }`}
                   >
                     {copied ? (
@@ -245,13 +245,13 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
                     href={shareUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium text-center transition-colors"
+                    className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium text-center transition-colors"
                   >
                     Open Link
                   </a>
                   <button
                     onClick={() => setShowShareModal(false)}
-                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    className="flex-1 px-4 py-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
                   >
                     Done
                   </button>
@@ -281,14 +281,14 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
           <div
             ref={downloadModalRef}
             tabIndex={-1}
-            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800">Download Chat</h3>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Download Chat</h3>
               <button
                 onClick={() => setShowDownloadModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 aria-label="Close download dialog"
                 title="Close"
               >
@@ -298,41 +298,41 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
               </button>
             </div>
 
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               Choose your preferred download format:
             </p>
 
             <div className="space-y-3">
               <button
                 onClick={exportChat}
-                className="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors flex items-center gap-3 border border-blue-200"
+                className="w-full px-4 py-3 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-lg transition-colors flex items-center gap-3 border border-blue-200 dark:border-blue-700"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div className="text-left flex-1">
                   <div className="font-medium">JSON Format</div>
-                  <div className="text-xs text-gray-600">Machine-readable format with full metadata</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Machine-readable format with full metadata</div>
                 </div>
               </button>
 
               <button
                 onClick={exportAsMarkdown}
-                className="w-full px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors flex items-center gap-3 border border-blue-200"
+                className="w-full px-4 py-3 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-lg transition-colors flex items-center gap-3 border border-blue-200 dark:border-blue-700"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div className="text-left flex-1">
                   <div className="font-medium">Markdown Format</div>
-                  <div className="text-xs text-gray-600">Human-readable format for easy sharing</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">Human-readable format for easy sharing</div>
                 </div>
               </button>
             </div>
 
             <button
               onClick={() => setShowDownloadModal(false)}
-              className="w-full mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+              className="w-full mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors"
             >
               Cancel
             </button>
