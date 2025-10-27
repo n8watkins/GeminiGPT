@@ -111,7 +111,7 @@ export default function FileUpload({ onFilesSelected, disabled = false }: FileUp
         onDragLeave={handleDragLeave}
         disabled={disabled}
         className={`
-          px-3 py-2 rounded-lg transition-colors border
+          px-4 py-2 rounded-lg transition-colors border
           ${isDragOver
             ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-600'
             : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600'
