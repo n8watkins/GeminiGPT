@@ -15,22 +15,35 @@ interface MarkdownRendererProps {
 }
 
 export default function MarkdownRenderer({ content, isUser = false, isStreaming = false }: MarkdownRendererProps) {
-  // Sanitize content to prevent XSS attacks
+  // Validate content
+  if (!content || typeof content !== 'string') {
+    logger.warn('MarkdownRenderer received invalid content', { type: typeof content });
+    return null;
+  }
+
+  // DEBUG: Log if content contains [object Object]
+  if (content.includes('[object Object]')) {
+    logger.error('MarkdownRenderer received content with [object Object]', {
+      contentType: typeof content,
+      contentLength: content.length,
+      preview: content.substring(0, 500)
+    });
+  }
+
+  // If streaming, show raw text WITHOUT sanitization to avoid HTML entities
+  // The text is already safe because it comes from the Gemini API
+  if (isStreaming) {
+    logger.debug('Rendering as streaming text', { contentLength: content.length, preview: content.substring(0, 50) });
+    return (
+      <div className={`markdown-content whitespace-pre-wrap ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+        {content}
+        <span className="inline-block w-2 h-4 ml-0.5 bg-current animate-pulse"></span>
+      </div>
+    );
+  }
+
+  // Only sanitize when rendering as markdown (after streaming completes)
   const sanitizedContent = useMemo(() => {
-    if (!content || typeof content !== 'string') {
-      logger.warn('MarkdownRenderer received invalid content', { type: typeof content });
-      return '';
-    }
-
-    // DEBUG: Log if content contains [object Object]
-    if (content.includes('[object Object]')) {
-      logger.error('MarkdownRenderer received content with [object Object]', {
-        contentType: typeof content,
-        contentLength: content.length,
-        preview: content.substring(0, 500)
-      });
-    }
-
     // Sanitize with DOMPurify to prevent XSS
     return DOMPurify.sanitize(content, {
       ALLOWED_TAGS: [
@@ -48,17 +61,6 @@ export default function MarkdownRenderer({ content, isUser = false, isStreaming 
       ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|ftp):)/i,
     });
   }, [content]);
-
-  // If streaming, show raw text with a blinking cursor for smooth streaming effect
-  if (isStreaming) {
-    logger.debug('Rendering as streaming text', { contentLength: content.length, preview: content.substring(0, 50) });
-    return (
-      <div className={`markdown-content whitespace-pre-wrap ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
-        {sanitizedContent}
-        <span className="inline-block w-2 h-4 ml-0.5 bg-current animate-pulse"></span>
-      </div>
-    );
-  }
 
   logger.debug('Rendering as formatted markdown', { contentLength: content.length });
 
