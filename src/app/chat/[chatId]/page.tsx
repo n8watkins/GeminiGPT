@@ -72,7 +72,7 @@ export default function ChatPage() {
         onOpenSettings={() => setSettingsModalOpen(true)}
       />
 
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-96'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out delay-75 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-96'}`}>
         {/* Mobile header */}
         <div className="lg:hidden bg-blue-600 border-b border-blue-700 p-4">
           <div className="flex items-center justify-between">

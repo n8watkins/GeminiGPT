@@ -281,7 +281,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
       )}
 
       <div
-        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 dark:from-gray-800 dark:to-gray-900 text-white transform transition-all duration-300 ease-in-out z-50 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 dark:from-gray-800 dark:to-gray-900 text-white transform transition-all duration-500 ease-in-out z-50 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'w-20' : 'w-96'}`}
       >
@@ -351,7 +351,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
             )}
 
             {!isCollapsed && (
-              <div className="animate-in fade-in slide-in-from-left-2 duration-300">
+              <div className="animate-in fade-in slide-in-from-left-2 duration-500">
                 {/* Rate Limit Display - Memoized */}
                 {rateLimitDisplay}
 
@@ -407,7 +407,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
 
           {/* Chat List */}
           {!isCollapsed && (
-            <div className="flex-1 overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-300">
+            <div className="flex-1 overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-500">
             {state.chats.length === 0 ? (
               <div className="p-4 text-center text-gray-400">
                 <p>No chats yet. Create your first chat!</p>
