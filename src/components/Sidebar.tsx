@@ -440,6 +440,9 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
           </div>
           )}
 
+          {/* Spacer for collapsed sidebar - pushes avatar button to bottom */}
+          {isCollapsed && <div className="flex-1"></div>}
+
           {/* Settings Button with Popup Menu */}
           <div ref={settingsMenuRef} className="border-t border-blue-800 dark:border-gray-700 p-3 bg-blue-950/30 dark:bg-gray-900/30 relative">
             {/* Account Menu - Shows for both collapsed and expanded states */}
