@@ -13,6 +13,8 @@ import { useDebounce } from '@/lib/hooks/useDebounce';
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  isCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
   onOpenAbout?: () => void;
   onOpenApiKeySetup?: () => void;
   onOpenTerms?: () => void;
@@ -21,7 +23,7 @@ interface SidebarProps {
   onOpenSignIn?: () => void;
 }
 
-export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings, onOpenSignIn }: SidebarProps) {
+export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsCollapsed, onCollapsedChange, onOpenAbout, onOpenApiKeySetup, onOpenTerms, onOpenUsageStats, onOpenSettings, onOpenSignIn }: SidebarProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { state, createChat, deleteChat } = useChat();
@@ -30,11 +32,23 @@ export default function Sidebar({ isOpen, onToggle, onOpenAbout, onOpenApiKeySet
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, DEBOUNCE_DELAY.SEARCH);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalIsCollapsed, setInternalIsCollapsed] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [hasOwnApiKey, setHasOwnApiKey] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Use external collapsed state if provided, otherwise use internal
+  const isCollapsed = externalIsCollapsed !== undefined ? externalIsCollapsed : internalIsCollapsed;
+
+  // Helper to update collapsed state
+  const setIsCollapsed = (value: boolean) => {
+    if (onCollapsedChange) {
+      onCollapsedChange(value);
+    } else {
+      setInternalIsCollapsed(value);
+    }
+  };
 
   // Compute authentication status from session
   const isAuthenticated = status === 'authenticated' && !!session?.user;

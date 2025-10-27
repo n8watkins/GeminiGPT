@@ -19,6 +19,7 @@ export default function ChatPage() {
   const { state, selectChat } = useChat();
   const { rateLimitInfo, socket, isConnected } = useWebSocket();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
@@ -62,6 +63,8 @@ export default function ChatPage() {
       <Sidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        isCollapsed={sidebarCollapsed}
+        onCollapsedChange={setSidebarCollapsed}
         onOpenAbout={() => setAboutModalOpen(true)}
         onOpenApiKeySetup={() => setApiKeyModalOpen(true)}
         onOpenTerms={() => setTermsModalOpen(true)}
@@ -69,7 +72,7 @@ export default function ChatPage() {
         onOpenSettings={() => setSettingsModalOpen(true)}
       />
 
-      <div className="flex-1 flex flex-col lg:ml-80">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-96'}`}>
         {/* Mobile header */}
         <div className="lg:hidden bg-blue-600 border-b border-blue-700 p-4">
           <div className="flex items-center justify-between">
