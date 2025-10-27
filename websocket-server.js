@@ -8,6 +8,21 @@ const { processDocumentAttachment } = require('./documentProcessor');
 // Import logger
 const { wsLogger, geminiLogger, securityLogger } = require('./lib/logger');
 
+// Import database for Gemini logging
+const { initializeDatabase, geminiLogOps } = require('./src/lib/database.ts');
+const { GeminiLogger } = require('./lib/geminiLogger');
+
+// Initialize database and Gemini logger
+try {
+  initializeDatabase();
+  wsLogger.info('✅ Database initialized for Gemini logging');
+} catch (error) {
+  wsLogger.error('❌ Failed to initialize database:', error);
+}
+
+const geminiApiLogger = new GeminiLogger(geminiLogOps);
+wsLogger.info('✅ Gemini API logger initialized');
+
 // 🆕 Import prompts module (V3 Architecture)
 const { buildToolsArray } = require('./lib/websocket/prompts');
 
@@ -49,14 +64,14 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const tools = buildToolsArray();
 geminiLogger.info(`✅ Loaded ${tools[0].function_declarations.length} function tools from prompts module`);
 
-// Initialize GeminiService with function handlers
+// Initialize GeminiService with function handlers and API logger
 const geminiService = new GeminiService(genAI, tools, {
   get_stock_price: async (args) => await getStockPrice(args.symbol),
   get_weather: async (args) => await getWeather(args.location),
   get_time: async (args) => await getTime(args.location),
   search_web: async (args) => await getGeneralSearch(args.query),
   search_chat_history: async (args, context) => await searchChatHistory(context.userId, args.query)
-});
+}, geminiApiLogger);
 
 // 🆕 V3 Architecture: MessagePipeline orchestrates all services
 const { MessagePipeline } = require('./lib/websocket/services/MessagePipeline');

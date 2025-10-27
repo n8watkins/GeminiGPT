@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useChat } from '@/contexts/ChatContext';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import GeminiLogs from './GeminiLogs';
 
 interface DebugInfo {
   type: 'request' | 'response';
@@ -16,6 +17,7 @@ interface DebugInfo {
   hadFunctionCalls?: boolean;
   functionNames?: string[];
   manualFunctionTriggered?: boolean;
+  logId?: string;
 }
 
 interface Position {
@@ -191,7 +193,7 @@ export default function DebugPanel() {
 
       {/* Fixed Side Panel for Logs */}
       {showLogsPanel && (
-        <div className="fixed right-0 top-0 bottom-0 w-[500px] bg-gray-900 border-l border-gray-700 shadow-2xl z-[9998] flex flex-col">
+        <div className="fixed right-0 top-0 bottom-0 w-[900px] bg-gray-900 border-l border-gray-700 shadow-2xl z-[9998] flex flex-col">
           {/* Header */}
           <div className="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -247,58 +249,8 @@ export default function DebugPanel() {
           </div>
 
           {/* Logs Container */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {debugLogs.length === 0 ? (
-              <div className="text-center text-gray-500 py-12">
-                <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <p className="text-sm font-medium">No logs yet</p>
-                <p className="text-xs mt-1">Send a message or test Gemini to see debug info</p>
-              </div>
-            ) : (
-              debugLogs.map((log, index) => (
-                <div
-                  key={index}
-                  className={`rounded-lg p-3 border ${
-                    log.type === 'request'
-                      ? 'bg-blue-900/20 border-blue-700/50'
-                      : 'bg-green-900/20 border-green-700/50'
-                  }`}
-                >
-                  {/* Log Header */}
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                        log.type === 'request'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-green-600 text-white'
-                      }`}
-                    >
-                      {log.type === 'request' ? '→ REQUEST' : '← RESPONSE'}
-                    </span>
-                    <span className="text-xs text-gray-400">{formatTime(log.timestamp)}</span>
-                  </div>
-
-                  {/* Content */}
-                  {log.type === 'request' && (
-                    <div className="bg-gray-800/50 rounded p-2">
-                      <p className="text-xs text-gray-400 mb-1">User Message:</p>
-                      <p className="text-sm text-white font-mono break-words">{log.message}</p>
-                    </div>
-                  )}
-
-                  {log.type === 'response' && (
-                    <div className="bg-gray-800/50 rounded p-2">
-                      <p className="text-xs text-gray-400 mb-1">AI Response:</p>
-                      <p className="text-sm text-white font-mono break-words max-h-40 overflow-y-auto">
-                        {log.response}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
+          <div className="flex-1 overflow-hidden">
+            <GeminiLogs />
           </div>
         </div>
       )}
