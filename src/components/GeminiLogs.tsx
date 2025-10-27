@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useChat } from '@/contexts/ChatContext';
 import { useUserId } from '@/hooks/useUserId';
 
@@ -52,12 +52,7 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
   const activeChat = getActiveChat();
   const effectiveChatId = chatId || activeChat?.id;
 
-  useEffect(() => {
-    fetchLogs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveChatId, filter, userId]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -94,7 +89,11 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [effectiveChatId, filter, userId]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('en-US', {
