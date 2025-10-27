@@ -12,7 +12,6 @@ import RateLimitModal from '@/components/RateLimitModal';
 import SettingsModal from '@/components/SettingsModal';
 import { MigrationBanner } from '@/components/MigrationBanner';
 import { SignInModal } from '@/components/SignInModal';
-import DebugPanel from '@/components/DebugPanel';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useMigration } from '@/hooks/useMigration';
@@ -186,9 +185,6 @@ export default function Home() {
         isOpen={signInModalOpen}
         onClose={() => setSignInModalOpen(false)}
       />
-
-      {/* Debug Console */}
-      <DebugPanel />
     </div>
   );
 }
