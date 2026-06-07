@@ -1,10 +1,11 @@
 /**
- * Gemini Response Tests
+ * Gemini Response Diagnostic (manual)
  *
- * Test suite to verify that the Gemini API correctly handles various types of
- * legitimate queries without false-positive safety filter blocks.
+ * Standalone script that verifies the live Gemini API handles legitimate
+ * queries without false-positive safety filter blocks. This hits the real API,
+ * so it is NOT part of the automated `npm test` run.
  *
- * Run with: node tests/gemini-responses.test.js
+ * Run with: node tests/manual/gemini-responses-check.js
  *
  * IMPORTANT: Requires GEMINI_API_KEY environment variable
  */
