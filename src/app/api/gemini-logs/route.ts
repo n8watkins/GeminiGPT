@@ -49,13 +49,13 @@ export async function GET(request: NextRequest) {
     console.log('[API] Raw logs from DB:', logs?.length || 0);
 
     // Parse JSON strings back to objects for the client
-    const parsedLogs = logs.map((log: any) => ({
+    const parsedLogs = (logs as Array<Record<string, unknown>>).map((log) => ({
       ...log,
-      request_data: log.request_data ? JSON.parse(log.request_data) : null,
-      response_data: log.response_data ? JSON.parse(log.response_data) : null,
-      error_data: log.error_data ? JSON.parse(log.error_data) : null,
-      function_calls: log.function_calls ? JSON.parse(log.function_calls) : [],
-      metadata: log.metadata ? JSON.parse(log.metadata) : {}
+      request_data: log.request_data ? JSON.parse(log.request_data as string) : null,
+      response_data: log.response_data ? JSON.parse(log.response_data as string) : null,
+      error_data: log.error_data ? JSON.parse(log.error_data as string) : null,
+      function_calls: log.function_calls ? JSON.parse(log.function_calls as string) : [],
+      metadata: log.metadata ? JSON.parse(log.metadata as string) : {}
     }));
 
     console.log('[API] Returning', parsedLogs.length, 'parsed logs');
