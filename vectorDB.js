@@ -9,8 +9,9 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Database path
-const DB_PATH = path.join(__dirname, 'data/lancedb');
+// Database path. Defaults to the project's data/ dir; override with LANCEDB_PATH
+// to point at a persistent volume in production (mirrors DATABASE_PATH for SQLite).
+const DB_PATH = process.env.LANCEDB_PATH || path.join(__dirname, 'data/lancedb');
 
 // Ensure data directory exists
 if (!fs.existsSync(path.dirname(DB_PATH))) {
