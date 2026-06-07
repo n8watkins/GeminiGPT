@@ -89,8 +89,11 @@ The project was left mid-debug with every quality gate failing. Fixes, in order:
 ### 🟡 Tech debt (non-blocking)
 - [ ] **Duplicate modules** — root `searchService.js` / `vectorDB.js` /
       `documentProcessor.js` (used by `websocket-server.js`) duplicate the
-      `src/lib/*.ts` equivalents. Consolidating is a behavior-affecting refactor
-      that was deliberately left out of the stabilization pass.
+      `src/lib/*.ts` equivalents, and `lib/database.cjs` duplicates the schema in
+      `src/lib/database.ts` (the two must be kept in sync by hand). The path/
+      schema *bug* this caused is fixed (shared DB file + idempotent migration),
+      but consolidating the modules is a behavior-affecting refactor left out of
+      the stabilization pass.
 - [ ] **Test coverage** — the WebSocket message pipeline currently has no
       deterministic automated test (the old one was deleted as never-passing).
       Consider an integration test with a mocked Gemini client.
