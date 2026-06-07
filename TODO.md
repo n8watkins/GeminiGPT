@@ -240,7 +240,7 @@ Once all critical tasks are complete:
 - 📖 [Production Checklist](docs/PRODUCTION_CHECKLIST.md)
 - 🚀 [Railway Deployment Guide](docs/deployment/RAILWAY.md)
 - 🔒 [Security Architecture](docs/SECURITY.md)
-- 📊 [Code Review Report](CODE_REVIEW_REPORT.md)
+- 📊 [Code Review Report](docs/archive/CODE_REVIEW_REPORT.md)
 
 ---
 
