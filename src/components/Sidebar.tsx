@@ -191,7 +191,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
       // Alt+B for toggle sidebar collapse
       if (event.altKey && event.key === 'b' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
         event.preventDefault();
-        setIsCollapsed(prev => !prev);
+        setIsCollapsed(!isCollapsed);
       }
 
       // Alt+F for search focus
