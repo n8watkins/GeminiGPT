@@ -1,16 +1,14 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import { logger } from './logger';
 
-// Get __dirname equivalent for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Database path
-const DB_PATH = path.join(__dirname, '../../data/chat.db');
+// Database path — anchored to the working directory (project root) so the
+// Next.js server and the standalone WebSocket server always open the SAME
+// file. Deriving it from import.meta.url breaks once this module is bundled
+// into .next/server, which would point reads at a different (empty) database.
+const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data/chat.db');
 
 // Ensure data directory exists
 if (!fs.existsSync(path.dirname(DB_PATH))) {
@@ -150,6 +148,24 @@ function createTables() {
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
     )
   `);
+
+  // Migrate legacy `users` tables that pre-date the OAuth columns. CREATE TABLE
+  // IF NOT EXISTS never alters an existing table, so older databases are missing
+  // these columns and the email index below would fail with "no such column".
+  const userColumns = new Set(
+    (db!.prepare('PRAGMA table_info(users)').all() as Array<{ name: string }>).map((c) => c.name)
+  );
+  const ensureUserColumn = (name: string, definition: string) => {
+    if (!userColumns.has(name)) {
+      db!.exec(`ALTER TABLE users ADD COLUMN ${definition}`);
+    }
+  };
+  ensureUserColumn('email', 'email TEXT');
+  ensureUserColumn('name', 'name TEXT');
+  ensureUserColumn('image', 'image TEXT');
+  ensureUserColumn('google_id', 'google_id TEXT');
+  ensureUserColumn('account_type', "account_type TEXT DEFAULT 'anonymous'");
+  ensureUserColumn('migrated_from', 'migrated_from TEXT');
 
   // Create indexes for better performance
   db!.exec(`

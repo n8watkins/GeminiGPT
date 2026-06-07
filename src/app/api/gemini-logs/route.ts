@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
     const chatId = searchParams.get('chatId');
     const userId = searchParams.get('userId'); // Get userId from query params
     const limitParam = searchParams.get('limit');
-    const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50;
+    const parsedLimit = parseInt(limitParam ?? '', 10);
+    const limit = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(parsedLimit, 1), 100)
+      : 50;
 
     let logs;
 
