@@ -350,9 +350,10 @@ rate limiting plus a hard quota/budget cap on the key in Google Cloud.
 - **Google Generative AI**: Gemini API integration
 
 ### **Infrastructure**
-- **Railway**: Backend hosting with persistent volumes
-- **Vercel**: Frontend hosting and CDN
-- **Google Cloud**: AI and search APIs
+- **Single Node service** (`server.js`): serves Next.js + the WebSocket server together
+- **Hosting**: any platform that runs a long-lived Node process (Render, Fly.io,
+  Railway, a VM) — see [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md)
+- **Google Cloud**: Gemini AI + (optional) Custom Search APIs
 
 ## 🎯 Code Quality & Best Practices
 
