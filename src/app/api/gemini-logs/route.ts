@@ -24,29 +24,21 @@ export async function GET(request: NextRequest) {
     const limitParam = searchParams.get('limit');
     const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50;
 
-    console.log('[API] GET /api/gemini-logs - Params:', { chatId, userId, limit, hasSession: !!session });
-
     let logs;
 
     if (chatId) {
       // Filter by chat ID
-      console.log('[API] Querying by chatId:', chatId);
       logs = geminiLogOps.getByChat(chatId, limit);
     } else if (session?.user?.id) {
       // Get logs for authenticated user
-      console.log('[API] Querying by session userId:', session.user.id);
       logs = geminiLogOps.getByUser(session.user.id, limit);
     } else if (userId) {
       // Get logs for anonymous user (from query param)
-      console.log('[API] Querying by anonymous userId:', userId);
       logs = geminiLogOps.getByUser(userId, limit);
     } else {
       // No user ID available - return all recent logs
-      console.log('[API] No userId, fetching recent logs');
       logs = geminiLogOps.getRecent(limit);
     }
-
-    console.log('[API] Raw logs from DB:', logs?.length || 0);
 
     // Parse JSON strings back to objects for the client
     const parsedLogs = (logs as Array<Record<string, unknown>>).map((log) => ({
@@ -57,8 +49,6 @@ export async function GET(request: NextRequest) {
       function_calls: log.function_calls ? JSON.parse(log.function_calls as string) : [],
       metadata: log.metadata ? JSON.parse(log.metadata as string) : {}
     }));
-
-    console.log('[API] Returning', parsedLogs.length, 'parsed logs');
 
     return NextResponse.json({
       success: true,

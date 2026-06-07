@@ -78,7 +78,6 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
   const fetchLogs = useCallback(async () => {
     // Prevent fetching if we don't have a userId yet
     if (!userId) {
-      console.log('[GeminiLogs] No userId yet, skipping fetch');
       return;
     }
 
@@ -95,28 +94,14 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
       }
       params.append('limit', '50');
 
-      console.log('[GeminiLogs] Fetching logs with:', {
-        effectiveChatId,
-        userId,
-        url: `/api/gemini-logs?${params.toString()}`
-      });
-
       const response = await fetch(`/api/gemini-logs?${params.toString()}`);
       const data = await response.json();
-
-      console.log('[GeminiLogs] Response:', {
-        success: data.success,
-        count: data.count,
-        logsLength: data.logs?.length,
-        firstLog: data.logs?.[0]
-      });
 
       if (data.success) {
         let filteredLogs = data.logs;
         if (filter !== 'all') {
           filteredLogs = filteredLogs.filter((log: GeminiLog) => log.status === filter);
         }
-        console.log('[GeminiLogs] Setting', filteredLogs.length, 'logs');
         setLogs(filteredLogs);
       } else {
         console.error('[GeminiLogs] Error:', data.error);
