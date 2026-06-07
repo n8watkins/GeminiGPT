@@ -107,6 +107,7 @@ export function getApiKeyFingerprint(key: string | null | undefined): string | n
 
   // Node.js environment - use crypto module
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- conditional Node-only require; top-level import would break browser bundling
     const crypto = require('crypto');
     const hash = crypto.createHash('sha256').update(key).digest('hex');
     // Use first 16 chars for better collision resistance than 8

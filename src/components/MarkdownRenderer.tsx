@@ -15,6 +15,30 @@ interface MarkdownRendererProps {
 }
 
 export default function MarkdownRenderer({ content, isUser = false, isStreaming = false }: MarkdownRendererProps) {
+  // Sanitize with DOMPurify to prevent XSS. Computed unconditionally (hooks
+  // must run in the same order every render); the guard skips the work for the
+  // streaming/invalid paths that don't use the sanitized output.
+  const sanitizedContent = useMemo(() => {
+    if (isStreaming || !content || typeof content !== 'string') {
+      return '';
+    }
+    return DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'em', 'u', 's', 'code', 'pre',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'a', 'blockquote', 'hr',
+        'table', 'thead', 'tbody', 'tr', 'td', 'th',
+        'div', 'span', 'img'
+      ],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'src', 'alt', 'title'],
+      ALLOW_DATA_ATTR: false,
+      ALLOW_UNKNOWN_PROTOCOLS: false,
+      SAFE_FOR_TEMPLATES: true,
+      // Explicit protocol whitelist to prevent javascript:, data:, vbscript:, etc.
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|ftp):)/i,
+    });
+  }, [content, isStreaming]);
+
   // Validate content
   if (!content || typeof content !== 'string') {
     logger.warn('MarkdownRenderer received invalid content', { type: typeof content });
@@ -41,26 +65,6 @@ export default function MarkdownRenderer({ content, isUser = false, isStreaming 
       </div>
     );
   }
-
-  // Only sanitize when rendering as markdown (after streaming completes)
-  const sanitizedContent = useMemo(() => {
-    // Sanitize with DOMPurify to prevent XSS
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: [
-        'p', 'br', 'strong', 'em', 'u', 's', 'code', 'pre',
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'ul', 'ol', 'li', 'a', 'blockquote', 'hr',
-        'table', 'thead', 'tbody', 'tr', 'td', 'th',
-        'div', 'span', 'img'
-      ],
-      ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'src', 'alt', 'title'],
-      ALLOW_DATA_ATTR: false,
-      ALLOW_UNKNOWN_PROTOCOLS: false,
-      SAFE_FOR_TEMPLATES: true,
-      // Explicit protocol whitelist to prevent javascript:, data:, vbscript:, etc.
-      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|ftp):)/i,
-    });
-  }, [content]);
 
   logger.debug('Rendering as formatted markdown', { contentLength: content.length });
 

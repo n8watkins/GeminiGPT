@@ -12,14 +12,14 @@ interface GeminiLog {
   response_timestamp: string | null;
   duration_ms: number | null;
   request_data: {
-    history: any[];
-    parts: any[];
+    history: GeminiHistoryMessage[];
+    parts: GeminiPart[];
     historyLength: number;
     partsCount: number;
   };
   response_data: {
     text: string;
-    candidates: any[];
+    candidates: unknown[];
     usageMetadata?: {
       totalTokenCount?: number;
     };
@@ -32,8 +32,30 @@ interface GeminiLog {
   status: 'pending' | 'success' | 'error';
   model_name: string | null;
   token_count: number | null;
-  function_calls: any[];
-  metadata: any;
+  function_calls: GeminiFunctionCall[];
+  metadata: Record<string, unknown> | null;
+}
+
+interface GeminiPart {
+  text?: string;
+  inlineData?: {
+    mimeType?: string;
+    size?: number;
+  };
+  functionCall?: {
+    name?: string;
+  };
+  functionResponse?: unknown;
+}
+
+interface GeminiHistoryMessage {
+  role?: string;
+  parts?: GeminiPart[];
+}
+
+interface GeminiFunctionCall {
+  name?: string;
+  args?: unknown;
 }
 
 interface GeminiLogsProps {
@@ -166,7 +188,7 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
             {['all', 'success', 'error'].map((f) => (
               <button
                 key={f}
-                onClick={() => setFilter(f as any)}
+                onClick={() => setFilter(f as 'all' | 'success' | 'error')}
                 className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                   filter === f
                     ? 'bg-purple-600 text-white'
@@ -313,12 +335,12 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
               <div className="bg-gray-800 rounded p-3 text-xs font-mono max-h-96 overflow-y-auto">
                 {selectedLog.request_data?.history && selectedLog.request_data.history.length > 0 ? (
                   <div className="space-y-3">
-                    {selectedLog.request_data.history.map((msg: any, idx: number) => (
+                    {selectedLog.request_data.history.map((msg, idx) => (
                       <div key={idx} className={`p-2 rounded ${msg.role === 'user' ? 'bg-blue-900/30' : 'bg-green-900/30'}`}>
                         <div className="text-xs font-semibold mb-1 text-gray-400">
                           {msg.role === 'user' ? '👤 User' : '🤖 Model'}
                         </div>
-                        {msg.parts?.map((part: any, pIdx: number) => (
+                        {msg.parts?.map((part, pIdx) => (
                           <div key={pIdx} className="text-white whitespace-pre-wrap mb-1">
                             {part.text || ''}
                             {part.inlineData && (
@@ -331,7 +353,7 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
                                 🔧 Function: {part.functionCall.name}
                               </div>
                             )}
-                            {part.functionResponse && (
+                            {!!part.functionResponse && (
                               <div className="text-green-400 text-xs mt-1">
                                 ✅ Function Response
                               </div>
@@ -355,7 +377,7 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
               <div className="bg-gray-800 rounded p-3 text-xs font-mono text-white max-h-60 overflow-y-auto">
                 {selectedLog.request_data?.parts && selectedLog.request_data.parts.length > 0 ? (
                   <div className="space-y-2">
-                    {selectedLog.request_data.parts.map((part: any, idx: number) => (
+                    {selectedLog.request_data.parts.map((part, idx) => (
                       <div key={idx} className="whitespace-pre-wrap">
                         {part.text || ''}
                         {part.inlineData && (
@@ -403,7 +425,7 @@ export default function GeminiLogs({ chatId }: GeminiLogsProps) {
               <div>
                 <div className="text-xs text-gray-400 mb-2">Function Calls</div>
                 <div className="space-y-2">
-                  {selectedLog.function_calls.map((fc: any, idx: number) => (
+                  {selectedLog.function_calls.map((fc, idx) => (
                     <div key={idx} className="bg-yellow-900/20 border border-yellow-700 rounded p-2">
                       <div className="text-yellow-400 font-semibold text-xs">{fc.name}</div>
                       <div className="text-yellow-200 text-xs mt-1">

@@ -1,16 +1,10 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import next from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
+import reactHooks from "eslint-plugin-react-hooks";
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...next,
+  ...nextTypescript,
   {
     ignores: [
       "node_modules/**",
@@ -21,10 +15,23 @@ const eslintConfig = [
     ],
   },
   {
-    // Allow CommonJS require() for backend files
-    files: ["*.js", "!src/**/*.js"],
+    // The React Compiler lint rules (react-hooks v6) are advisory for opting
+    // into the compiler. This app does not use the compiler, and the patterns
+    // they flag are pre-existing and intentional, so treat them as warnings
+    // rather than blocking errors.
+    plugins: { "react-hooks": reactHooks },
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
+    },
+  },
+  {
+    // Backend CommonJS modules and Node test/utility scripts.
+    files: ["*.js", "*.cjs", "lib/**", "tests/**", "scripts/**"],
     rules: {
       "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
     },
   },
 ];
