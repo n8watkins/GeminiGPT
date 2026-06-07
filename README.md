@@ -293,168 +293,22 @@ node tests/performance/test-attachment-flow.js
 
 ## 🚀 Deployment
 
-This application can be deployed to various platforms. The recommended approach is to deploy as a single full-stack application since the backend and frontend are tightly integrated.
+This is a **single Node service** (Next.js + WebSocket server in `server.js`) — deploy
+it as **one service, single replica**. It is *not* serverless-compatible, so Vercel /
+Netlify cannot host it.
 
-### **Deployment Options**
+**Fastest free option:** Render (free web service, ephemeral storage — fine for a demo,
+since the app rebuilds its DB on boot and supports anonymous users).
+**Free + persistent:** Oracle Cloud Always Free VM. **Easiest paid:** Railway / Fly.io.
 
-#### **Option 1: Railway (Recommended - Full-Stack)**
+Because of **BYOK** (visitors use their own Gemini key), a public demo costs you ~nothing.
+If you add a server fallback key for a frictionless demo, cap it with the built-in per-IP
+rate limiting plus a hard quota/budget cap on the key in Google Cloud.
 
-Railway provides the easiest deployment with persistent storage for both SQLite and LanceDB.
+👉 **Full instructions, host comparison, env vars, and a time roadmap:
+[`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md).** Current readiness:
+[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
 
-1. **Prepare for Deployment**
-   ```bash
-   # Ensure your code is committed to Git
-   git add .
-   git commit -m "Prepare for deployment"
-   git push origin main
-   ```
-
-2. **Deploy to Railway**
-   - Go to [Railway.app](https://railway.app/)
-   - Click "New Project" → "Deploy from GitHub repo"
-   - Select your repository
-   - Railway will auto-detect the Node.js app
-
-3. **Configure Environment Variables**
-
-   Add these in Railway dashboard under "Variables":
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key
-   GOOGLE_SEARCH_API_KEY=your_search_api_key
-   GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
-   NODE_ENV=production
-   PORT=1337
-   ```
-
-4. **Add Persistent Volume**
-   - Go to "Settings" → "Volumes"
-   - Add volume at mount path: `/app/data`
-   - This ensures your chat history persists across deployments
-
-5. **Deploy**
-   - Railway will automatically build and deploy
-   - Your app will be available at: `https://your-app.up.railway.app`
-
-#### **Option 2: Vercel (Frontend) + Railway (Backend)**
-
-For a split deployment with Vercel handling the frontend:
-
-**Backend (Railway):**
-1. Follow steps above for Railway
-2. Note your Railway backend URL
-
-**Frontend (Vercel):**
-1. Go to [Vercel](https://vercel.com/)
-2. Import your GitHub repository
-3. Add environment variable:
-   ```env
-   NEXT_PUBLIC_WS_URL=wss://your-railway-app.up.railway.app
-   GEMINI_API_KEY=your_gemini_api_key
-   ```
-4. Deploy
-
-#### **Option 3: Self-Hosted (VPS/Cloud)**
-
-For deployment on your own server (AWS, DigitalOcean, etc.):
-
-1. **Install Node.js on your server**
-   ```bash
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   ```
-
-2. **Clone and build the app**
-   ```bash
-   git clone https://github.com/yourusername/geminigpt.git
-   cd geminigpt
-   npm install
-   npm run build
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   # Create .env.local with your production values
-   nano .env.local
-   ```
-
-4. **Use PM2 for process management**
-   ```bash
-   npm install -g pm2
-   pm2 start server.js --name geminigpt
-   pm2 save
-   pm2 startup
-   ```
-
-5. **Set up Nginx as reverse proxy** (optional)
-   ```nginx
-   server {
-       listen 80;
-       server_name your-domain.com;
-
-       location / {
-           proxy_pass http://localhost:1337;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-       }
-   }
-   ```
-
-#### **Option 4: Docker**
-
-Deploy using Docker and Docker Compose:
-
-1. **Create `Dockerfile`**
-   ```dockerfile
-   FROM node:18-alpine
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm install
-   COPY . .
-   RUN npm run build
-   EXPOSE 1337
-   CMD ["npm", "run", "dev"]
-   ```
-
-2. **Create `docker-compose.yml`**
-   ```yaml
-   version: '3.8'
-   services:
-     geminigpt:
-       build: .
-       ports:
-         - "1337:1337"
-       environment:
-         - GEMINI_API_KEY=${GEMINI_API_KEY}
-         - GOOGLE_SEARCH_API_KEY=${GOOGLE_SEARCH_API_KEY}
-         - GOOGLE_SEARCH_ENGINE_ID=${GOOGLE_SEARCH_ENGINE_ID}
-       volumes:
-         - ./data:/app/data
-   ```
-
-3. **Deploy**
-   ```bash
-   docker-compose up -d
-   ```
-
-### **Post-Deployment Checklist**
-
-- [ ] App is accessible at the deployment URL
-- [ ] WebSocket connection works (check browser console)
-- [ ] Chat creation and messages work
-- [ ] File upload works (if using persistent storage)
-- [ ] Cross-chat search works (vector database)
-- [ ] Environment variables are set correctly
-- [ ] SSL/HTTPS is configured (for production)
-
-### **Important Notes**
-
-- **Persistent Storage**: Ensure `/data` directory persists to save chat history
-- **WebSocket Support**: Your hosting platform must support WebSocket connections
-- **API Keys**: Never commit API keys to Git - use environment variables
-- **CORS**: If deploying frontend and backend separately, configure CORS properly
 
 ## 🎨 Quality of Life Features
 

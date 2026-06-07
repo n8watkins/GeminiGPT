@@ -69,14 +69,26 @@ The project was left mid-debug with every quality gate failing. Fixes, in order:
 
 ## What's left to be production-ready
 
+> **Deployment plan & hosting options:** see [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
+> (free-host comparison, env vars, cost control, time roadmap). Recommended path:
+> **Render free tier** (ephemeral, ~1 h to a live URL).
+>
+> **Phase 0 deploy-prep is done** (DB path/schema unified, `DATABASE_PATH` /
+> `LANCEDB_PATH` overrides for volumes, accurate `deploy-to-production.sh`, guide +
+> status docs). What's left is below.
+
 ### 🔴 Required before any public deploy
 - [ ] **Rotate exposed API keys.** Per `../TODO.md`, Gemini and Google Search keys
       were once committed to git history. Revoke and reissue them, update
-      `.env.local` and the host (Railway) env vars.
-- [ ] **Set production env vars on the host** — `GEMINI_API_KEY`, `NODE_ENV=production`,
-      and `TRUST_PROXY=true` (needed for rate limiting behind Railway's proxy).
-- [ ] **Smoke-test the deployed instance** — share link, CSRF, rate-limit 429,
-      chat round-trip, file upload (checklist in `../TODO.md`).
+      `.env.local` and the host's env vars.
+- [ ] **Set production env vars on the host** — `GEMINI_API_KEY` (optional with
+      BYOK), `NODE_ENV=production`, `TRUST_PROXY=true`, and
+      `NEXT_PUBLIC_RAILWAY_URL`/`PRODUCTION_URL` (server refuses to start in
+      production without one).
+- [ ] **Deploy to a host** (Render click-through — see the guide) and point the
+      health check at `/healthz`.
+- [ ] **Smoke-test the deployed instance** — anonymous chat round-trip, share
+      link, CSRF, rate-limit 429, file upload.
 
 ### 🟠 Recommended hardening
 - [ ] **Database persistence & backups** — confirm Railway volume mounts for the
