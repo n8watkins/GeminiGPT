@@ -135,8 +135,7 @@ mounted at `/data` → set `DATABASE_PATH=/data/chat.db` → add env vars → de
 
 - [ ] **Rotate the leaked Gemini + Google Search keys** (they were in git history).
 - [ ] Env vars set (esp. `NEXT_PUBLIC_RAILWAY_URL`/`PRODUCTION_URL`, `TRUST_PROXY=true`).
-- [ ] **Cost guard:** confirm Gemini key quota/billing limits so a shared demo
-      link can't run up a bill. (`ECHO_MODE` exists for a no-API demo mode.)
+- [ ] **Cost guard** (see §7).
 - [ ] Health check returns 200 at `/healthz`.
 - [ ] Smoke test: send a message and get a streamed reply; create a share link;
       send 60+ requests/min and confirm a 429.
@@ -165,3 +164,27 @@ Estimates assume focused work and that the [stabilization pass](./PROJECT_STATUS
 
 For a portfolio project, Phases 0–2 are the target — a working live demo with a
 clean README beats additional features.
+
+---
+
+## 7. Cost control (how not to pay for Gemini usage)
+
+The app is **BYOK (Bring Your Own API Key)** and this is fully wired: the browser
+sends each visitor's own Gemini key over the socket, and `GeminiService` uses a
+per-key client instance. The server-side `GEMINI_API_KEY` is only a **fallback**.
+
+What this means for a public demo:
+
+- **Pure BYOK (zero cost to you):** don't set a server `GEMINI_API_KEY`. Visitors
+  paste their own free key (Google gives free credits). Downside: a recruiter has
+  to grab a key first — friction.
+- **Frictionless demo (you provide a fallback key):** set a server
+  `GEMINI_API_KEY` so visitors can chat immediately. To keep the bill bounded:
+  1. **Hard ceiling — set a quota/budget cap on that key in Google Cloud / AI
+     Studio.** This is the only true spend limit; do this regardless.
+  2. **Throttle — lower `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_PER_HOUR`** for a
+     public link (defaults are a generous 60/500 per IP).
+  3. Keep `TRUST_PROXY=true` so the rate limiter sees real client IPs.
+
+> Note: there is **no `ECHO_MODE`** despite a stale mention in some older docs —
+> it is referenced but not implemented. Don't rely on it.
