@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const rawHistory = Array.isArray(body.chatHistory) ? body.chatHistory : [];
 
     // Use Gemini 2.5 Flash
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
     
     // Convert chat history to Gemini format
     const history = rawHistory

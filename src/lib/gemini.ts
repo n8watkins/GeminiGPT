@@ -12,7 +12,7 @@ export async function generateResponse(messages: Message[]): Promise<string> {
     
     /* 
     // REAL GEMINI API (commented out for echo testing)
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
     
     // Convert messages to the format expected by Gemini
     const history = messages.slice(0, -1).map(msg => ({

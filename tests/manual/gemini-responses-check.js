@@ -73,7 +73,7 @@ async function testQuery(genAI, testCase) {
   console.log(`Query: "${testCase.query}"`);
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: testCase.query }] }],
       generationConfig: { maxOutputTokens: 200 } // Keep responses short for testing
