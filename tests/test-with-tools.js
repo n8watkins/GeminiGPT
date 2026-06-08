@@ -44,7 +44,7 @@ async function testWithTools() {
   console.log(`✅ Loaded ${tools[0].function_declarations.length} function tools`);
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.1-flash-lite',
     tools: tools,
     safetySettings: safetySettings
   });

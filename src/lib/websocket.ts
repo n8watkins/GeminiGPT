@@ -23,7 +23,7 @@ export function setupWebSocketServer(server: HTTPServer) {
         socket.emit('typing', { chatId, isTyping: true });
 
         // Real Gemini 2.5 Flash integration
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
         
         // Convert chat history to Gemini format
         const history = chatHistory.map((msg: { role: string; content: string }) => ({

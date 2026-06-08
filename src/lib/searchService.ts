@@ -295,7 +295,7 @@ async function searchChatHistory(userId: string, query: string) {
         throw new Error('GEMINI_API_KEY environment variable is required');
       }
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
       
       // Prepare context from search results
       const contextMessages = results.slice(0, 5).map((result: any, index: number) => {
