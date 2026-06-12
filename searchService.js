@@ -205,17 +205,18 @@ async function getGeneralSearch(query) {
  * Search through user's chat history using vector similarity
  * @param {string} userId - User ID to search within
  * @param {string} query - Search query
+ * @param {string|null} apiKey - Optional visitor-provided API key for the query embedding (BYOK)
  * @returns {Promise<string>} - Formatted search results
  */
-async function searchChatHistory(userId, query) {
+async function searchChatHistory(userId, query, apiKey = null) {
   try {
     console.log(`Searching chat history for user ${userId} with query: ${query}`);
-    
+
     // Import the vector database functions
     const { searchChats } = require('./vectorDB');
-    
+
     // Search for similar messages
-    const results = await searchChats(userId, query, 5);
+    const results = await searchChats(userId, query, 5, { apiKey });
     
     if (results.length === 0) {
       return `🔍 **Chat History Search for "${query}"**\n\n` +

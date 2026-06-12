@@ -184,7 +184,7 @@ describe('searchChatHistory', () => {
 
     const result = await searchChatHistory('USER-1', 'deployment');
 
-    expect(mockSearchChats).toHaveBeenCalledWith('USER-1', 'deployment', 5);
+    expect(mockSearchChats).toHaveBeenCalledWith('USER-1', 'deployment', 5, { apiKey: null });
     expect(result).toContain('Chat History Search for "deployment"');
     expect(result).toContain('Deploy chat');
     expect(result).toContain('We discussed deployment last week');
