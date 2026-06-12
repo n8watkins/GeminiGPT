@@ -42,7 +42,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
-    "apache-arrow": "^21.1.0",
+    "apache-arrow": "18.1.0",
     "axios": "^1.13.0",
     "better-sqlite3": "^12.4.1",
     "dompurify": "^3.3.0",
