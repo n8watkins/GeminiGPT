@@ -235,33 +235,9 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
 
   // Connection status indicator with text label - memoized to prevent re-renders
   const connectionIndicator = useMemo(() => {
-    const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
-    const isRailwayConfigured = railwayUrl && !railwayUrl.includes('your-app-name');
-    const isProduction = typeof window !== 'undefined' &&
-      window.location.hostname !== 'localhost' &&
-      window.location.hostname !== '127.0.0.1' &&
-      window.location.hostname !== '[::1]';
-
-    if (isProduction) {
-      if (isRailwayConfigured) {
-        return {
-          dot: <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}></div>,
-          label: isConnected ? 'Railway' : 'Disconnected',
-          color: isConnected ? 'text-green-400' : 'text-red-400'
-        };
-      } else {
-        return {
-          dot: <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50 animate-pulse"></div>,
-          label: 'Not Configured',
-          color: 'text-yellow-400'
-        };
-      }
-    }
-
-    // Local development
     return {
       dot: <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${isConnected ? 'bg-green-500 shadow-lg shadow-green-500/50' : 'bg-red-500 shadow-lg shadow-red-500/50'}`}></div>,
-      label: isConnected ? 'Local Server' : 'Disconnected',
+      label: isConnected ? 'Connected' : 'Disconnected',
       color: isConnected ? 'text-green-400' : 'text-red-400'
     };
   }, [isConnected]);

@@ -97,7 +97,7 @@ function setupWebSocketServer(server) {
   const isProduction = process.env.NODE_ENV === 'production';
   const allowedOrigins = isProduction
     ? [
-        process.env.NEXT_PUBLIC_RAILWAY_URL,
+        process.env.NEXT_PUBLIC_APP_URL,
         process.env.PRODUCTION_URL
       ].filter(Boolean)
     : [];
