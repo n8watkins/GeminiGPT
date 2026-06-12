@@ -5,18 +5,28 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useChat } from '@/contexts/ChatContext';
 import { useWebSocket } from '@/hooks/useWebSocket';
-import { Message, Attachment } from '@/types/chat';
+import { useApiKey } from '@/hooks/useApiKey';
+import { useUsageInfo, isPoolExhausted } from '@/hooks/useUsageInfo';
+import { Message, Attachment, RetrievalSource } from '@/types/chat';
 import AttachmentDisplay from './AttachmentDisplay';
 import FileUpload from './FileUpload';
 import ChatUtils from './ChatUtils';
 import MarkdownRenderer from './MarkdownRenderer';
+import PoolExhaustedNotice from './PoolExhaustedNotice';
 import { chatLogger, fileLogger } from '@/lib/logger';
 import { validateFile } from '@/lib/fileValidation';
 
 export default function ChatInterface() {
   const router = useRouter();
-  const { getActiveChat, sendMessage, regenerateMessage, state } = useChat();
+  const { getActiveChat, sendMessage, regenerateMessage, state, poolExhausted, poolNoticeDismissed, dismissPoolNotice } = useChat();
   const { typingStates } = useWebSocket();
+  const { hasApiKey } = useApiKey();
+  const usage = useUsageInfo();
+
+  // Show the BYOK upgrade prompt when the shared demo key is out of budget
+  // (POOL_EXHAUSTED message-error, or usage-info reporting no capacity left)
+  const showPoolNotice =
+    !hasApiKey && !poolNoticeDismissed && (poolExhausted || isPoolExhausted(usage));
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -357,6 +367,11 @@ export default function ChatInterface() {
 
             {/* Centered Input Form */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-blue-200 dark:border-gray-600 p-4">
+              {/* Demo pool exhausted - offer BYOK */}
+              {showPoolNotice && (
+                <PoolExhaustedNotice usage={usage} onDismiss={dismissPoolNotice} />
+              )}
+
               {/* Error Message */}
               {errorMessage && (
                 <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg flex items-start space-x-2">
@@ -497,6 +512,11 @@ export default function ChatInterface() {
         {/* Input at Bottom */}
         <div className="border-t border-blue-200 dark:border-gray-700 p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
+            {/* Demo pool exhausted - offer BYOK */}
+            {showPoolNotice && (
+              <PoolExhaustedNotice usage={usage} onDismiss={dismissPoolNotice} />
+            )}
+
             {/* Error Message */}
             {errorMessage && (
               <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
@@ -603,6 +623,40 @@ export default function ChatInterface() {
   );
 }
 
+/**
+ * "Recalled from <chat>" chip for a cross-chat memory source.
+ * Hover shows the snippet; click expands it inline.
+ */
+function CitationChip({ source }: { source: RetrievalSource }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="max-w-full">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        title={source.snippet}
+        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors max-w-full"
+      >
+        <span aria-hidden>📎</span>
+        <span className="truncate">Recalled from {source.chatTitle || 'another chat'}</span>
+        <svg
+          className={`w-3 h-3 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="mt-1 px-3 py-2 text-xs rounded-lg bg-purple-50/70 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900 text-gray-600 dark:text-gray-300 italic">
+          &ldquo;{source.snippet}&rdquo;
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface MessageBubbleProps {
   message: Message;
   isLastMessage?: boolean;
@@ -644,6 +698,18 @@ function MessageBubble({
           {message.content && (
             <div className={`text-sm ${isUser ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}>
               <MarkdownRenderer content={message.content} isUser={isUser} isStreaming={message.isStreaming} />
+            </div>
+          )}
+
+          {/* Cross-chat memory citations (retrieval-info contract) */}
+          {!isUser && message.sources && message.sources.length > 0 && (
+            <div
+              className="mt-2 pt-2 border-t border-blue-100 dark:border-gray-700 flex flex-wrap gap-1.5"
+              data-testid="message-citations"
+            >
+              {message.sources.map((source, index) => (
+                <CitationChip key={`${source.chatId}-${index}`} source={source} />
+              ))}
             </div>
           )}
 
