@@ -537,53 +537,6 @@ My request: ${content}`;
       dispatch({ type: 'SEND_MESSAGE', payload: { chatId, content, attachments } });
     }
 
-    // Check if Railway is configured (regardless of where we're running)
-    const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
-    const isRailwayConfigured = railwayUrl && !railwayUrl.includes('your-app-name');
-    const isProduction = typeof window !== 'undefined' &&
-      window.location.hostname !== 'localhost' &&
-      window.location.hostname !== '127.0.0.1' &&
-      window.location.hostname !== '[::1]';
-
-    if (isProduction && !isRailwayConfigured) {
-      // In production without Railway configured, simulate a response
-      chatLogger.info('Production mode: Railway not configured, simulating AI response');
-
-      // Simulate AI response after a delay
-      setTimeout(() => {
-        if (chatId) {
-          const simulatedResponse = "I'm running in production mode. To enable real AI responses, please deploy the WebSocket server to Railway and configure the NEXT_PUBLIC_RAILWAY_URL environment variable.";
-
-          if (isFirstMessage) {
-            // Create chat for first message
-            const title = "Production Mode";
-            dispatch({
-              type: 'CREATE_CHAT_WITH_MESSAGES',
-              payload: {
-                id: chatId,
-                title,
-                userMessage: content,
-                assistantMessage: simulatedResponse,
-                attachments,
-              },
-            });
-            pendingFirstMessages.current.delete(chatId);
-          } else {
-            dispatch({
-              type: 'RECEIVE_MESSAGE',
-              payload: {
-                chatId: chatId,
-                content: simulatedResponse,
-                attachments: [],
-              },
-            });
-          }
-        }
-      }, 1000);
-
-      return;
-    }
-
     if (!isConnected) {
       chatLogger.error('Cannot send message: Not connected to server');
       throw new Error('Not connected to server. Please check your connection.');

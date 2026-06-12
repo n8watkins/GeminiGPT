@@ -29,7 +29,7 @@ function validateEnvironment() {
   const optional = {
     GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY,
     GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID,
-    NEXT_PUBLIC_RAILWAY_URL: process.env.NEXT_PUBLIC_RAILWAY_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     PRODUCTION_URL: process.env.PRODUCTION_URL
   };
 
@@ -43,9 +43,9 @@ function validateEnvironment() {
     }
   }
 
-  // Validate API key format
-  if (required.GEMINI_API_KEY && !required.GEMINI_API_KEY.startsWith('AIzaSy')) {
-    warnings.push('GEMINI_API_KEY does not match expected format (should start with AIzaSy)');
+  // Validate API key format ('AIza' classic keys or newer 'AQ.' AI Studio keys)
+  if (required.GEMINI_API_KEY && !required.GEMINI_API_KEY.startsWith('AIzaSy') && !required.GEMINI_API_KEY.startsWith('AQ.')) {
+    warnings.push('GEMINI_API_KEY does not match expected format (should start with AIzaSy or AQ.)');
   }
 
   // Check optional variables
@@ -57,8 +57,8 @@ function validateEnvironment() {
 
   // Production-specific validation
   if (process.env.NODE_ENV === 'production') {
-    if (!process.env.NEXT_PUBLIC_RAILWAY_URL && !process.env.PRODUCTION_URL) {
-      missing.push('NEXT_PUBLIC_RAILWAY_URL or PRODUCTION_URL (required for CORS in production)');
+    if (!process.env.NEXT_PUBLIC_APP_URL && !process.env.PRODUCTION_URL) {
+      missing.push('NEXT_PUBLIC_APP_URL or PRODUCTION_URL (required for CORS in production)');
     }
   }
 
@@ -119,14 +119,6 @@ const hostname = process.env.HOSTNAME || '0.0.0.0'; // Railway uses 0.0.0.0
 // Railway provides PORT env var. In dev with no PORT set, pick a random high port
 // to avoid conflicts with other local servers (this machine runs several).
 let port = parseInt(process.env.PORT) || (dev ? 10000 + Math.floor(Math.random() * 50000) : 3000);
-
-// Railway specific configuration
-if (process.env.RAILWAY_ENVIRONMENT) {
-  serverLogger.info('🚂 Running on Railway', {
-    environment: process.env.RAILWAY_ENVIRONMENT,
-    domain: process.env.RAILWAY_PUBLIC_DOMAIN
-  });
-}
 
 serverLogger.info('🚀 Server starting with config', {
   NODE_ENV: process.env.NODE_ENV,

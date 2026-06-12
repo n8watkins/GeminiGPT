@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const isProduction = process.env.NODE_ENV === 'production';
     const allowedOrigins = isProduction
       ? [
-          process.env.NEXT_PUBLIC_RAILWAY_URL,
+          process.env.NEXT_PUBLIC_APP_URL,
           process.env.PRODUCTION_URL,
           process.env.NEXTAUTH_URL
         ].filter(Boolean)

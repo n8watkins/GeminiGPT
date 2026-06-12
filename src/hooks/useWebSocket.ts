@@ -49,36 +49,19 @@ export function useWebSocket() {
     let wsUrl: string;
 
     if (typeof window !== 'undefined') {
-      const railwayUrl = process.env.NEXT_PUBLIC_RAILWAY_URL || '';
-      const isLocalhost = window.location.hostname === 'localhost' ||
-                         window.location.hostname === '127.0.0.1' ||
-                         window.location.hostname === '[::1]';
-      const isProduction = window.location.protocol === 'https:';
+      // The server runs Next.js and Socket.IO on one port, so the WebSocket
+      // target is the page's own origin. NEXT_PUBLIC_APP_URL can override it
+      // if the socket server is ever hosted separately.
+      const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+      wsUrl = configuredUrl || window.location.origin;
 
-      if (railwayUrl && !railwayUrl.includes('your-app-name')) {
-        // Railway URL is configured - use it
-        wsUrl = railwayUrl;
-
-        // CRITICAL: Validate Railway URL uses HTTPS/WSS in production
-        if (isProduction && !wsUrl.startsWith('https://') && !wsUrl.startsWith('wss://')) {
-          wsLogger.error('SECURITY ERROR: Production requires HTTPS/WSS connection', { wsUrl });
-          throw new Error('Security violation: WSS required in production. Configure NEXT_PUBLIC_RAILWAY_URL with https://');
-        }
-
-        wsLogger.info('Connecting to Railway WebSocket server', { wsUrl, isProduction });
-      } else {
-        // Railway not configured - fall back to localhost
-        if (isProduction && !isLocalhost) {
-          // Production environment without proper configuration
-          wsLogger.error('SECURITY ERROR: Production deployment without WSS configuration');
-          throw new Error('Production deployment requires NEXT_PUBLIC_RAILWAY_URL with https:// URL');
-        }
-
-        // Server runs Next.js and Socket.IO on the same port, so connect to
-        // the page's own origin (the dev port is randomized — see server.js)
-        wsUrl = window.location.origin;
-        wsLogger.info('Development mode: connecting to same origin', { wsUrl, isLocalhost });
+      // CRITICAL: A secure page must not downgrade to an insecure socket
+      if (window.location.protocol === 'https:' && wsUrl.startsWith('http://')) {
+        wsLogger.error('SECURITY ERROR: insecure WebSocket target on a secure page', { wsUrl });
+        throw new Error('Security violation: WSS required in production. Use an https:// NEXT_PUBLIC_APP_URL');
       }
+
+      wsLogger.info('Connecting to WebSocket server', { wsUrl });
     } else {
       wsUrl = '';
     }
