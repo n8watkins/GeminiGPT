@@ -55,6 +55,11 @@ const vectorIndexer = new VectorIndexer(addMessage);
 const { ChatRetriever } = require('./lib/websocket/services/ChatRetriever');
 const chatRetriever = new ChatRetriever(searchChats);
 
+// Shared-pool usage tracking: counts pool-key requests (gemini_logs.key_class)
+// against the daily demo budget and feeds the live usage meter.
+const { UsageTracker } = require('./lib/websocket/services/UsageTracker');
+const usageTracker = new UsageTracker(geminiLogOps);
+
 // REMOVED: Pre-emptive pattern matching
 // Now letting Gemini decide when to search chat history via function calling
 
@@ -84,7 +89,8 @@ const messagePipeline = new MessagePipeline(
   attachmentHandler,
   geminiService,
   vectorIndexer,
-  chatRetriever
+  chatRetriever,
+  usageTracker
 );
 
 /**
@@ -183,6 +189,14 @@ function setupWebSocketServer(server) {
       userId: socket.data.authenticatedUserId || 'anonymous'
     };
     wsLogger.info('✅ Client connected', logContext);
+
+    // Send a usage snapshot so the pool meter is populated immediately.
+    // Anonymous users' IDs are only known per-message, so `user` may be null.
+    try {
+      socket.emit('usage-info', usageTracker.buildUsageInfo(socket.data.authenticatedUserId || null));
+    } catch (error) {
+      wsLogger.error('Failed to send usage snapshot on connect', { socketId: socket.id, error: error.message });
+    }
 
     // Handle connection errors
     socket.on('error', (error) => {

@@ -144,6 +144,7 @@ function createTables() {
       token_count INTEGER,
       function_calls TEXT DEFAULT '[]',
       metadata TEXT DEFAULT '{}',
+      key_class TEXT CHECK (key_class IN ('pool', 'byok')),
       FOREIGN KEY (chat_id) REFERENCES chats (id) ON DELETE SET NULL,
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
     )
@@ -167,6 +168,16 @@ function createTables() {
   ensureUserColumn('account_type', "account_type TEXT DEFAULT 'anonymous'");
   ensureUserColumn('migrated_from', 'migrated_from TEXT');
 
+  // Migrate legacy `gemini_logs` tables that pre-date the key-class column
+  // (pool = shared server key, byok = visitor-provided key). Same pattern as
+  // the users migration above. Keep this in sync with lib/database.cjs.
+  const geminiLogColumns = new Set(
+    (db!.prepare('PRAGMA table_info(gemini_logs)').all() as Array<{ name: string }>).map((c) => c.name)
+  );
+  if (!geminiLogColumns.has('key_class')) {
+    db!.exec("ALTER TABLE gemini_logs ADD COLUMN key_class TEXT CHECK (key_class IN ('pool', 'byok'))");
+  }
+
   // Create indexes for better performance
   db!.exec(`
     CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
@@ -183,6 +194,7 @@ function createTables() {
     CREATE INDEX IF NOT EXISTS idx_gemini_logs_user_id ON gemini_logs (user_id);
     CREATE INDEX IF NOT EXISTS idx_gemini_logs_timestamp ON gemini_logs (request_timestamp);
     CREATE INDEX IF NOT EXISTS idx_gemini_logs_status ON gemini_logs (status);
+    CREATE INDEX IF NOT EXISTS idx_gemini_logs_key_class ON gemini_logs (key_class, request_timestamp);
   `);
 }
 
@@ -508,11 +520,46 @@ const geminiLogOps = {
    */
   create: (logId: string, chatId: string | null, userId: string | null, requestData: Record<string, unknown>, metadata: Record<string, unknown> = {}) => {
     const db = getDatabase();
+
+    // Key class: was this request served by the shared server key ('pool')
+    // or a visitor-provided key ('byok')? Callers pass it via metadata.keyClass.
+    const keyClass = metadata.keyClass === 'byok' ? 'byok' : metadata.keyClass === 'pool' ? 'pool' : null;
+
     const stmt = db.prepare(`
-      INSERT INTO gemini_logs (id, chat_id, user_id, request_data, status, metadata)
-      VALUES (?, ?, ?, ?, 'pending', ?)
+      INSERT INTO gemini_logs (id, chat_id, user_id, request_data, status, key_class, metadata)
+      VALUES (?, ?, ?, ?, 'pending', ?, ?)
     `);
-    return stmt.run(logId, chatId, userId, JSON.stringify(requestData), JSON.stringify(metadata));
+    return stmt.run(logId, chatId, userId, JSON.stringify(requestData), keyClass, JSON.stringify(metadata));
+  },
+
+  /**
+   * Count today's (UTC) requests served by the shared pool key.
+   * request_timestamp is stored by SQLite's CURRENT_TIMESTAMP, which is UTC,
+   * so comparing against date('now') gives a UTC day window.
+   */
+  countPoolRequestsToday: (): number => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT COUNT(*) AS used FROM gemini_logs
+      WHERE key_class = 'pool' AND request_timestamp >= date('now')
+    `);
+    return (stmt.get() as { used: number }).used;
+  },
+
+  /**
+   * Today's (UTC) request/token totals for one user. Falls back to the raw
+   * user ID stored in metadata when the FK column is NULL (anonymous users
+   * whose IDs only live in the browser).
+   */
+  getUserUsageToday: (userId: string): { requests: number; tokens: number } => {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      SELECT COUNT(*) AS requests, COALESCE(SUM(token_count), 0) AS tokens
+      FROM gemini_logs
+      WHERE COALESCE(user_id, json_extract(metadata, '$.rawUserId')) = ?
+        AND request_timestamp >= date('now')
+    `);
+    return stmt.get(userId) as { requests: number; tokens: number };
   },
 
   /**
