@@ -32,6 +32,8 @@ the vector DB. The README should read as a first-person learning journal
 - BYOK users must get **full cross-chat memory** (embeddings via their key).
 - Keep the explicit search tool alongside auto-retrieval.
 - Skipped (for now): hybrid keyword+vector search, window chunking, reranking.
+- **Keep the first-run About/API-key modals** — owner likes the design; they
+  explain the project. Improvements welcome, removal is not.
 
 ## Interface contracts (agents build against these)
 
