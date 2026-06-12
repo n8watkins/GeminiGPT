@@ -5,9 +5,6 @@ try {
   // Will be logged after logger is imported
 }
 
-// Initialize Sentry FIRST (before other imports)
-const Sentry = require('./sentry.server.config');
-
 // Import logger
 const { serverLogger, securityLogger } = require('./lib/logger');
 
@@ -205,21 +202,6 @@ function startServer(currentPort, maxAttempts = 10) {
 
       await handle(req, res, parsedUrl);
     } catch (err) {
-      // MONITORING: Capture exception in Sentry (if configured)
-      if (Sentry.captureException) {
-        Sentry.captureException(err, {
-          contexts: {
-            request: {
-              method: req.method,
-              url: req.url,
-              headers: {
-                'user-agent': req.headers['user-agent'],
-              },
-            },
-          },
-        });
-      }
-
       serverLogger.error('Error occurred handling request', {
         url: req.url,
         error: err.message,
