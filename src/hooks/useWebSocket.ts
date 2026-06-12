@@ -74,12 +74,13 @@ export function useWebSocket() {
           throw new Error('Production deployment requires NEXT_PUBLIC_RAILWAY_URL with https:// URL');
         }
 
-        // Only allow HTTP for localhost
-        wsUrl = isLocalhost ? 'http://localhost:1337' : 'https://localhost:1337';
-        wsLogger.info('Development mode: connecting to localhost', { wsUrl, isLocalhost });
+        // Server runs Next.js and Socket.IO on the same port, so connect to
+        // the page's own origin (the dev port is randomized — see server.js)
+        wsUrl = window.location.origin;
+        wsLogger.info('Development mode: connecting to same origin', { wsUrl, isLocalhost });
       }
     } else {
-      wsUrl = 'http://localhost:1337';
+      wsUrl = '';
     }
 
     wsLogger.debug('Initializing WebSocket connection', { wsUrl });
