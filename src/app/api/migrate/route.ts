@@ -27,23 +27,25 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
 
-    // Get expected origins from environment
-    const allowedOrigins = process.env.NODE_ENV === 'production'
+    // Get expected origins from environment. In dev the server port is
+    // randomized (see server.js), so any localhost origin is accepted.
+    const isProduction = process.env.NODE_ENV === 'production';
+    const allowedOrigins = isProduction
       ? [
           process.env.NEXT_PUBLIC_RAILWAY_URL,
           process.env.PRODUCTION_URL,
           process.env.NEXTAUTH_URL
         ].filter(Boolean)
-      : [
-          'http://localhost:3000',
-          'http://127.0.0.1:3000',
-          'http://localhost:1337',
-          'http://127.0.0.1:1337'
-        ];
+      : [];
+    const devOriginPattern = /^http:\/\/(localhost|127\.0\.0\.1):\d+/;
 
     // Validate origin or referer matches allowed origins
-    const isValidOrigin = origin && allowedOrigins.some(allowed => origin.startsWith(allowed as string));
-    const isValidReferer = referer && allowedOrigins.some(allowed => referer.startsWith(allowed as string));
+    const matchesAllowed = (value: string) =>
+      isProduction
+        ? allowedOrigins.some(allowed => value.startsWith(allowed as string))
+        : devOriginPattern.test(value);
+    const isValidOrigin = origin && matchesAllowed(origin);
+    const isValidReferer = referer && matchesAllowed(referer);
 
     if (!isValidOrigin && !isValidReferer) {
       console.error('🚨 CSRF attempt detected', { origin, referer, allowedOrigins });
