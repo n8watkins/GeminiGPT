@@ -1,0 +1,38 @@
+# Render Blueprint — deploys GeminiGPT as a single free web service.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# NOTE: the URLs below must match the service name. If you rename the
+# service (or the name is taken), update PRODUCTION_URL and
+# NEXT_PUBLIC_RAILWAY_URL to the URL Render actually assigns.
+services:
+  - type: web
+    name: geminigpt-n8
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "true"
+      # Public URL — used for CORS and the client WebSocket target.
+      # NEXT_PUBLIC_* is baked into the client bundle at build time.
+      - key: PRODUCTION_URL
+        value: https://geminigpt-n8.onrender.com
+      - key: NEXT_PUBLIC_RAILWAY_URL
+        value: https://geminigpt-n8.onrender.com
+      # Server fallback Gemini key for the frictionless demo (optional —
+      # leave unset for pure BYOK). Set in the Render dashboard, never here.
+      - key: GEMINI_API_KEY
+        sync: false
+      # Tighter public-demo limits (defaults are 60/min, 500/hour per IP)
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "20"
+      - key: RATE_LIMIT_PER_HOUR
+        value: "150"
+      - key: NEXTAUTH_SECRET
+        generateValue: true
