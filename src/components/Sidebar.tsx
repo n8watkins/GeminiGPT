@@ -7,6 +7,8 @@ import { useChat } from '@/contexts/ChatContext';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { Chat } from '@/types/chat';
 import ConfirmationModal from './ConfirmationModal';
+import SidebarUsageMeter from './UsageMeter';
+import { API_KEY_CHANGED_EVENT } from '@/hooks/useApiKey';
 import { RATE_LIMIT_THRESHOLDS, DEBOUNCE_DELAY } from '@/lib/constants';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import Tooltip from '@mui/material/Tooltip';
@@ -63,7 +65,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
 
     checkApiKey();
 
-    // Listen for storage changes (API key updates)
+    // Listen for storage changes (API key updates from other tabs)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'gemini-api-key') {
         checkApiKey();
@@ -71,9 +73,12 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
     };
 
     window.addEventListener('storage', handleStorageChange);
+    // Same-tab updates (wizard / pool-exhausted notice / settings)
+    window.addEventListener(API_KEY_CHANGED_EVENT, checkApiKey);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(API_KEY_CHANGED_EVENT, checkApiKey);
     };
   }, []);
 
@@ -331,6 +336,9 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
 
             {!isCollapsed && (
               <div className="animate-in fade-in slide-in-from-left-2 duration-500">
+                {/* Usage meter: demo-pool capacity (or own-key usage for BYOK) */}
+                <SidebarUsageMeter hasOwnKey={hasOwnApiKey} />
+
                 {/* Rate Limit Display - Memoized */}
                 {rateLimitDisplay}
 
@@ -638,7 +646,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                       <span className="text-xs text-green-400">Using own key</span>
                     )}
                     {!hasOwnApiKey && !isAuthenticated && (
-                      <span className="text-xs text-blue-300 dark:text-gray-400">Rate limited</span>
+                      <span className="text-xs text-blue-300 dark:text-gray-400">Shared demo key</span>
                     )}
                     {isAuthenticated && hasOwnApiKey && (
                       <span className="text-xs text-green-400">Unlimited</span>

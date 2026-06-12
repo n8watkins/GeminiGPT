@@ -101,7 +101,7 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
     setConfirmDialog({
       isOpen: true,
       title: 'Remove API Key',
-      message: "Are you sure you want to remove your API key? You won't be able to use the chat without one.",
+      message: "Are you sure you want to remove your API key? You'll switch back to the shared demo key (subject to its remaining capacity).",
       confirmLabel: 'Remove Key',
       variant: 'danger',
       onConfirm: () => {
@@ -141,7 +141,7 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                🔑 Welcome to GeminiGPT!
+                🔑 Bring Your Own Key
               </h2>
               <button
                 onClick={handleSkip}
@@ -155,7 +155,8 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
 
             <div className="space-y-4 text-gray-700 dark:text-gray-300">
               <p className="text-lg">
-                This app uses <strong>your own Google Gemini API key</strong> - no signup required!
+                GeminiGPT works out of the box on a <strong>shared demo key</strong> &mdash; adding your own
+                free Google Gemini API key is optional, but gives you unlimited usage that&apos;s all yours.
               </p>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -224,7 +225,7 @@ export default function ApiKeySetup({ isOpen, onClose, onKeySaved, onOpenTerms }
                   onClick={handleSkip}
                   className="px-6 py-3 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 transition"
                 >
-                  Skip for now
+                  Keep using demo key
                 </button>
               </div>
             </div>

@@ -12,9 +12,11 @@ import RateLimitModal from '@/components/RateLimitModal';
 import SettingsModal from '@/components/SettingsModal';
 import { MigrationBanner } from '@/components/MigrationBanner';
 import { SignInModal } from '@/components/SignInModal';
+import OnboardingWizard from '@/components/OnboardingWizard';
 import { useApiKey } from '@/hooks/useApiKey';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useMigration } from '@/hooks/useMigration';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -26,9 +28,11 @@ export default function Home() {
   const [rateLimitModalOpen, setRateLimitModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [signInModalOpen, setSignInModalOpen] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const { hasApiKey, isLoading } = useApiKey();
+  const { hasApiKey } = useApiKey();
   const { rateLimitInfo, socket, isConnected } = useWebSocket();
+  // First-run two-step wizard (replaces the old stacked About + ApiKeySetup
+  // modals). No API key is required to start chatting - pool key by default.
+  const { showWizard, completeOnboarding } = useOnboarding();
 
   // Handle automatic migration when user signs in
   useMigration();
@@ -56,36 +60,6 @@ export default function Home() {
       }
     }
   }, [rateLimitInfo, hasApiKey]);
-
-  useEffect(() => {
-    // Only run once on mount
-    if (isLoading || hasInitialized) return;
-
-    // Check when the About modal was last shown
-    const lastShownTimestamp = localStorage.getItem('geminigpt-about-last-shown');
-    const now = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
-    // Show About modal if:
-    // 1. Never shown before (null)
-    // 2. Last shown more than 24 hours ago
-    const shouldShowAbout = !lastShownTimestamp || (now - parseInt(lastShownTimestamp)) > twentyFourHours;
-
-    if (shouldShowAbout) {
-      // Show About modal and update timestamp
-      setAboutModalOpen(true);
-      localStorage.setItem('geminigpt-about-last-shown', now.toString());
-    }
-    // Note: Don't auto-show API key modal here
-    // It will only show when About modal closes (if user has no key)
-    // Or when user explicitly opens it from sidebar
-
-    setHasInitialized(true);
-  }, [isLoading, hasInitialized, hasApiKey]);
-
-  // For testing - remove this after verifying modal works
-  // Uncomment the line below to force modal to show
-  // setAboutModalOpen(true);
 
   return (
     <div className="h-screen flex bg-blue-50 dark:bg-gray-900">
@@ -128,7 +102,10 @@ export default function Home() {
         <KeyboardShortcuts />
       </div>
 
-      {/* About Modal */}
+      {/* First-run onboarding wizard - renders over the live chat UI */}
+      <OnboardingWizard isOpen={showWizard} onComplete={completeOnboarding} />
+
+      {/* About Modal (reachable later from the sidebar) */}
       <AboutModal
         isOpen={aboutModalOpen}
         onClose={() => setAboutModalOpen(false)}
