@@ -116,7 +116,10 @@ const helmet = require('helmet');
 const { setupWebSocketServer } = require('./websocket-server');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = process.env.HOSTNAME || '0.0.0.0'; // Railway uses 0.0.0.0
+// Bind address. NOT process.env.HOSTNAME — container platforms (Render,
+// Docker) set HOSTNAME to the container ID, which binds the wrong interface
+// and makes the platform proxy 502. Use BIND_HOST to override explicitly.
+const hostname = process.env.BIND_HOST || '0.0.0.0';
 // Railway provides PORT env var. In dev with no PORT set, pick a random high port
 // to avoid conflicts with other local servers (this machine runs several).
 let port = parseInt(process.env.PORT) || (dev ? 10000 + Math.floor(Math.random() * 50000) : 3000);
