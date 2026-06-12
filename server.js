@@ -22,11 +22,12 @@ const shutdownHandler = new ShutdownHandler();
  * CRITICAL: Validate required environment variables before starting server
  */
 function validateEnvironment() {
-  const required = {
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY
-  };
+  const required = {};
 
   const optional = {
+    // BYOK: visitors supply their own Gemini key in the browser, so the
+    // server-side key is only a fallback for the frictionless demo.
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY,
     GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
@@ -44,7 +45,7 @@ function validateEnvironment() {
   }
 
   // Validate API key format ('AIza' classic keys or newer 'AQ.' AI Studio keys)
-  if (required.GEMINI_API_KEY && !required.GEMINI_API_KEY.startsWith('AIzaSy') && !required.GEMINI_API_KEY.startsWith('AQ.')) {
+  if (optional.GEMINI_API_KEY && !optional.GEMINI_API_KEY.startsWith('AIzaSy') && !optional.GEMINI_API_KEY.startsWith('AQ.')) {
     warnings.push('GEMINI_API_KEY does not match expected format (should start with AIzaSy or AQ.)');
   }
 
