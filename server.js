@@ -116,7 +116,9 @@ const { setupWebSocketServer } = require('./websocket-server');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0'; // Railway uses 0.0.0.0
-let port = parseInt(process.env.PORT) || 3000; // Railway provides PORT env var, default to 3000
+// Railway provides PORT env var. In dev with no PORT set, pick a random high port
+// to avoid conflicts with other local servers (this machine runs several).
+let port = parseInt(process.env.PORT) || (dev ? 10000 + Math.floor(Math.random() * 50000) : 3000);
 
 // Railway specific configuration
 if (process.env.RAILWAY_ENVIRONMENT) {
