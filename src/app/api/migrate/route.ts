@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]/route';
+import { auth } from '@/lib/auth';
 import { userOps } from '@/lib/database';
 
 /**
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is authenticated
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user?.id) {
       return NextResponse.json(

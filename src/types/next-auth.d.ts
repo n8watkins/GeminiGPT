@@ -1,3 +1,7 @@
+// The import makes this file a module, so the `declare module` blocks below
+// AUGMENT next-auth's own types instead of replacing them (required for v5).
+import type {} from "next-auth"
+
 declare module "next-auth" {
   /**
    * Extends the built-in session types to include user ID

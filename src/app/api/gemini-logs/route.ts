@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { auth } from '@/lib/auth';
 import { geminiLogOps } from '@/lib/database';
 
 /**
@@ -15,7 +14,7 @@ import { geminiLogOps } from '@/lib/database';
 export async function GET(request: NextRequest) {
   try {
     // Get user session (for authenticated users)
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     // Extract query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -78,7 +77,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     const body = await request.json();
     const { chatId, userId: bodyUserId } = body;
