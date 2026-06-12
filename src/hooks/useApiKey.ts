@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { validateGeminiApiKey, sanitizeApiKeyForLogging } from '@/lib/apiKeyValidation';
 
+/**
+ * Fired on window whenever the API key is saved/removed in THIS tab, so
+ * every useApiKey() instance (and the sidebar meter) stays in sync without
+ * relying on the cross-tab-only 'storage' event.
+ */
+export const API_KEY_CHANGED_EVENT = 'gemini-api-key-changed';
+
 export function useApiKey() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,6 +49,17 @@ export function useApiKey() {
     } finally {
       setIsLoading(false);
     }
+
+    // Stay in sync when another component in this tab saves/removes the key
+    const handleKeyChanged = () => {
+      try {
+        setApiKey(localStorage.getItem('gemini-api-key'));
+      } catch {
+        setApiKey(null);
+      }
+    };
+    window.addEventListener(API_KEY_CHANGED_EVENT, handleKeyChanged);
+    return () => window.removeEventListener(API_KEY_CHANGED_EVENT, handleKeyChanged);
   }, []);
 
   const saveApiKey = (key: string) => {
@@ -63,6 +81,7 @@ export function useApiKey() {
       localStorage.setItem('gemini-api-key', trimmedKey);
       setApiKey(trimmedKey);
       setLastKeyChangeTime(now);
+      window.dispatchEvent(new Event(API_KEY_CHANGED_EVENT));
       logger.info('API key saved', { keyPreview: sanitizeApiKeyForLogging(trimmedKey) });
     } catch (error) {
       logger.error('Failed to save API key', { error });
@@ -74,6 +93,7 @@ export function useApiKey() {
     try {
       localStorage.removeItem('gemini-api-key');
       setApiKey(null);
+      window.dispatchEvent(new Event(API_KEY_CHANGED_EVENT));
       logger.info('API key removed');
     } catch (error) {
       logger.error('Failed to remove API key', { error });

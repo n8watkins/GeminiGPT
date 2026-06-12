@@ -1,11 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Socket } from 'socket.io-client';
-import { Chat, Message, ChatState, Attachment } from '@/types/chat';
+import { Chat, Message, ChatState, Attachment, RetrievalSource } from '@/types/chat';
 import { saveChatState, loadChatState, generateChatTitle, clearStorageIfNeeded } from '@/lib/storage';
-import { useWebSocket, WebSocketMessage } from '@/hooks/useWebSocket';
+import { useWebSocket, WebSocketMessage, RetrievalInfo, MessageErrorInfo, ALL_CHATS } from '@/hooks/useWebSocket';
 import { getSessionUserId } from '@/lib/userId';
 import { useNotification } from '@/contexts/NotificationContext';
 import { chatLogger } from '@/lib/logger';
@@ -18,7 +18,8 @@ type ChatAction =
   | { type: 'SELECT_CHAT'; payload: { chatId: string } }
   | { type: 'CLEAR_ACTIVE_CHAT' }
   | { type: 'SEND_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[] } }
-  | { type: 'RECEIVE_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[]; messageId?: string; isStreaming?: boolean } }
+  | { type: 'RECEIVE_MESSAGE'; payload: { chatId: string; content: string; attachments?: Attachment[]; messageId?: string; isStreaming?: boolean; sources?: RetrievalSource[] } }
+  | { type: 'ATTACH_MESSAGE_SOURCES'; payload: { chatId: string; messageId: string; sources: RetrievalSource[] } }
   | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { chatId: string; content: string; messageId: string } }
   | { type: 'REPLACE_MESSAGE_CONTENT'; payload: { chatId: string; content: string; messageId: string } }
   | { type: 'COMPLETE_STREAMING_MESSAGE'; payload: { chatId: string; messageId: string } }
@@ -141,7 +142,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
     }
 
     case 'RECEIVE_MESSAGE': {
-      const { chatId, content, attachments, messageId, isStreaming } = action.payload;
+      const { chatId, content, attachments, messageId, isStreaming, sources } = action.payload;
       const newMessage: Message = {
         id: messageId || uuidv4(),
         content,
@@ -149,6 +150,7 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         timestamp: new Date(),
         attachments,
         isStreaming: isStreaming !== undefined ? isStreaming : false, // Use provided value or default to false
+        sources,
       };
 
       return {
@@ -159,6 +161,26 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
                 ...chat,
                 messages: [...chat.messages, newMessage],
                 updatedAt: new Date(),
+              }
+            : chat
+        ),
+      };
+    }
+
+    case 'ATTACH_MESSAGE_SOURCES': {
+      const { chatId, messageId, sources } = action.payload;
+
+      return {
+        ...state,
+        chats: state.chats.map(chat =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                messages: chat.messages.map(msg =>
+                  msg.id === messageId
+                    ? { ...msg, sources }
+                    : msg
+                ),
               }
             : chat
         ),
@@ -289,6 +311,11 @@ interface ChatContextType {
   deleteChat: (chatId: string) => void;
   getActiveChat: () => Chat | null;
   socket: Socket | null; // Expose socket for debug panel
+  /** True once a message-error with code POOL_EXHAUSTED arrived */
+  poolExhausted: boolean;
+  /** User dismissed the pool-exhausted notice for this session */
+  poolNoticeDismissed: boolean;
+  dismissPoolNotice: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -313,15 +340,36 @@ function parseTitleFromResponse(response: string): { title: string; content: str
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
-  const { socket, isConnected, sendMessage: sendWebSocketMessage, onMessage, onTyping, removeMessageHandler, removeTypingHandler } = useWebSocket();
+  const {
+    socket,
+    isConnected,
+    sendMessage: sendWebSocketMessage,
+    onMessage,
+    onTyping,
+    onRetrievalInfo,
+    onMessageError,
+    removeMessageHandler,
+    removeTypingHandler,
+    removeRetrievalHandler,
+    removeMessageErrorHandler,
+  } = useWebSocket();
   const { showError } = useNotification();
   const { apiKey } = useApiKey();
+
+  // POOL_EXHAUSTED handling: flipped by the message-error contract event
+  const [poolExhausted, setPoolExhausted] = useState(false);
+  const [poolNoticeDismissed, setPoolNoticeDismissed] = useState(false);
 
   // Track pending first messages (messages sent before chat is created)
   const pendingFirstMessages = useRef<Map<string, { userMessage: string; attachments?: Attachment[] }>>(new Map());
 
   // Track streaming messages by chatId - MUST be a ref to persist across re-renders
   const streamingMessages = useRef<Map<string, { id: string; content: string }>>(new Map());
+
+  // Cross-chat memory citations: `retrieval-info` arrives BEFORE the
+  // assistant message starts streaming, so stash sources per chatId and
+  // attach them when the assistant message is created.
+  const pendingSources = useRef<Map<string, RetrievalSource[]>>(new Map());
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -397,15 +445,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           streamingMessages.current.delete(data.chatId);
         } else if (data.message && data.message.trim()) {
           // Fallback: if no streaming happened, add complete message
+          const sources = pendingSources.current.get(data.chatId);
+          pendingSources.current.delete(data.chatId);
           dispatch({
             type: 'RECEIVE_MESSAGE',
             payload: {
               chatId: data.chatId,
               content: data.fullResponse ?? data.message,
               attachments: data.attachments,
+              sources,
             },
           });
         }
+
+        // Any stashed sources that never found a message are stale now
+        pendingSources.current.delete(data.chatId);
       } else {
         // Streaming chunk received
         let streamingMsg = streamingMessages.current.get(data.chatId);
@@ -418,6 +472,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
           chatLogger.debug('Creating new streaming message', { chatId: data.chatId, messageId: newMessageId, contentLength: data.message.length });
 
+          // Attach any cross-chat memory sources that arrived via retrieval-info
+          const sources = pendingSources.current.get(data.chatId);
+          pendingSources.current.delete(data.chatId);
+
           // Add message with first chunk and isStreaming: true
           dispatch({
             type: 'RECEIVE_MESSAGE',
@@ -427,6 +485,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
               attachments: data.attachments,
               messageId: newMessageId,
               isStreaming: true, // Mark as streaming from the start
+              sources,
             },
           });
         } else {
@@ -471,6 +530,64 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       });
     };
   }, [state.chats, onMessage, onTyping, removeMessageHandler, removeTypingHandler]);
+
+  // Wildcard handlers for the new backend contracts. Registered once for all
+  // chats (the payload carries its own chatId), so they also cover messages
+  // sent before the chat exists in state.
+  useEffect(() => {
+    // Contract: retrieval-info { chatId, sources: [{ chatId, chatTitle, snippet, score }] }
+    onRetrievalInfo(ALL_CHATS, (data: RetrievalInfo) => {
+      chatLogger.debug('Retrieval info for chat', { chatId: data.chatId, sources: data.sources.length });
+      if (data.sources.length === 0) return;
+
+      const streamingMsg = streamingMessages.current.get(data.chatId);
+      if (streamingMsg) {
+        // Assistant message already streaming - attach citations directly
+        dispatch({
+          type: 'ATTACH_MESSAGE_SOURCES',
+          payload: { chatId: data.chatId, messageId: streamingMsg.id, sources: data.sources },
+        });
+      } else {
+        // Normal case: retrieval-info precedes the stream; attach on creation
+        pendingSources.current.set(data.chatId, data.sources);
+      }
+    });
+
+    // Contract: message-error with code 'POOL_EXHAUSTED' when the shared demo
+    // key budget is used up.
+    onMessageError(ALL_CHATS, (data: MessageErrorInfo) => {
+      if (data.chatId) {
+        // The response is not coming; drop any half-finished streaming state
+        const streamingMsg = streamingMessages.current.get(data.chatId);
+        if (streamingMsg) {
+          dispatch({
+            type: 'COMPLETE_STREAMING_MESSAGE',
+            payload: { chatId: data.chatId, messageId: streamingMsg.id },
+          });
+          streamingMessages.current.delete(data.chatId);
+        }
+        pendingSources.current.delete(data.chatId);
+      }
+
+      if (data.code === 'POOL_EXHAUSTED') {
+        chatLogger.warn('Shared demo pool exhausted', { chatId: data.chatId });
+        setPoolExhausted(true);
+        setPoolNoticeDismissed(false); // Re-surface the notice on a fresh failure
+      } else {
+        showError(data.error || data.message || 'Something went wrong generating a response.');
+      }
+    });
+
+    return () => {
+      removeRetrievalHandler(ALL_CHATS);
+      removeMessageErrorHandler(ALL_CHATS);
+    };
+  }, [onRetrievalInfo, onMessageError, removeRetrievalHandler, removeMessageErrorHandler, showError]);
+
+  const dismissPoolNotice = useCallback(() => {
+    setPoolExhausted(false);
+    setPoolNoticeDismissed(true);
+  }, []);
 
   const createChat = useCallback((title: string): string => {
     const newChatId = uuidv4();
@@ -641,6 +758,9 @@ My request: ${content}`;
         deleteChat,
         getActiveChat,
         socket, // Expose socket for debug panel
+        poolExhausted,
+        poolNoticeDismissed,
+        dismissPoolNotice,
       }}
     >
       {children}

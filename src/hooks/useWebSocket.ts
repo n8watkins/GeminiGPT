@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { io, Socket } from 'socket.io-client';
-import { Attachment, Message } from '@/types/chat';
+import { Attachment, Message, RetrievalSource } from '@/types/chat';
+import { publishUsageInfo } from '@/hooks/useUsageInfo';
 import { wsLogger } from '@/lib/logger';
 
 export interface WebSocketMessage {
@@ -19,6 +20,29 @@ interface TypingIndicator {
   chatId: string;
   isTyping: boolean;
 }
+
+/**
+ * Contract: `retrieval-info` arrives before the message-response stream for
+ * a message that used cross-chat memory.
+ */
+export interface RetrievalInfo {
+  chatId: string;
+  sources: RetrievalSource[];
+}
+
+/**
+ * Contract: message-error path. `code: 'POOL_EXHAUSTED'` means the shared
+ * demo key ran out of budget and the user should add their own key.
+ */
+export interface MessageErrorInfo {
+  chatId?: string;
+  code?: string;
+  error?: string;
+  message?: string;
+}
+
+/** Register a handler under this key to receive events for every chat. */
+export const ALL_CHATS = '*';
 
 export interface RateLimitInfo {
   remaining: {
@@ -43,6 +67,8 @@ export function useWebSocket() {
   const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitInfo | null>(null);
   const messageHandlers = useRef<Map<string, (data: WebSocketMessage) => void>>(new Map());
   const typingHandlers = useRef<Map<string, (data: TypingIndicator) => void>>(new Map());
+  const retrievalHandlers = useRef<Map<string, (data: RetrievalInfo) => void>>(new Map());
+  const messageErrorHandlers = useRef<Map<string, (data: MessageErrorInfo) => void>>(new Map());
 
   useEffect(() => {
     // CRITICAL SECURITY: Enforce WSS (WebSocket Secure) in production
@@ -175,6 +201,36 @@ export function useWebSocket() {
         setRateLimitInfo(data);
       });
 
+      // Contract: { pool: { used, budget, resetAt, available }, user: { requests, tokens } }
+      newSocket.on('usage-info', (data: unknown) => {
+        wsLogger.debug('Usage info received', data as object);
+        publishUsageInfo(data);
+      });
+
+      // Contract: arrives BEFORE the message-response stream when cross-chat
+      // memory was used. Dispatch to the chat-specific handler, falling back
+      // to the wildcard handler registered by ChatContext.
+      newSocket.on('retrieval-info', (data: RetrievalInfo) => {
+        wsLogger.debug('Retrieval info received', { chatId: data?.chatId, sourceCount: data?.sources?.length });
+        if (!data?.chatId || !Array.isArray(data.sources)) return;
+        const handler = retrievalHandlers.current.get(data.chatId) || retrievalHandlers.current.get(ALL_CHATS);
+        if (handler) {
+          handler(data);
+        }
+      });
+
+      // Contract: standard error path; code 'POOL_EXHAUSTED' signals that the
+      // shared demo key budget is used up.
+      newSocket.on('message-error', (data: MessageErrorInfo) => {
+        wsLogger.warn('Message error received', { chatId: data?.chatId, code: data?.code });
+        const handler =
+          (data?.chatId && messageErrorHandlers.current.get(data.chatId)) ||
+          messageErrorHandlers.current.get(ALL_CHATS);
+        if (handler) {
+          handler(data ?? {});
+        }
+      });
+
       setSocket(newSocket);
       wsLogger.debug('WebSocket client setup complete');
 
@@ -223,6 +279,22 @@ export function useWebSocket() {
     typingHandlers.current.delete(chatId);
   };
 
+  const onRetrievalInfo = (chatId: string, handler: (data: RetrievalInfo) => void) => {
+    retrievalHandlers.current.set(chatId, handler);
+  };
+
+  const removeRetrievalHandler = (chatId: string) => {
+    retrievalHandlers.current.delete(chatId);
+  };
+
+  const onMessageError = (chatId: string, handler: (data: MessageErrorInfo) => void) => {
+    messageErrorHandlers.current.set(chatId, handler);
+  };
+
+  const removeMessageErrorHandler = (chatId: string) => {
+    messageErrorHandlers.current.delete(chatId);
+  };
+
   return {
     socket,
     isConnected,
@@ -231,7 +303,11 @@ export function useWebSocket() {
     sendMessage,
     onMessage,
     onTyping,
+    onRetrievalInfo,
+    onMessageError,
     removeMessageHandler,
-    removeTypingHandler
+    removeTypingHandler,
+    removeRetrievalHandler,
+    removeMessageErrorHandler
   };
 }
