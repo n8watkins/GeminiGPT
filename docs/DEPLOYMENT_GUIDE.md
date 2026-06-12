@@ -90,7 +90,6 @@ Set these on whichever host you choose (names from `.env.example`):
 
 **Optional**
 - `GOOGLE_SEARCH_API_KEY` + `GOOGLE_SEARCH_ENGINE_ID` (web/stock/weather tools)
-- `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` (error tracking)
 - `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_PER_HOUR` (defaults 60 / 500)
 - `DATABASE_PATH` — absolute path to the SQLite file; **set this to your volume
   mount** when using persistent storage (e.g. `/data/chat.db`)
@@ -155,7 +154,7 @@ Estimates assume focused work and that the [stabilization pass](./PROJECT_STATUS
 | **1 — First deploy** | Render free path → live URL + env vars + healthcheck | **~1 h** |
 | _1-alt — persistent_ | Oracle VM instead: provision, Node, pm2, Caddy/Cloudflare TLS | **3–4 h** |
 | **2 — Demo polish** | Verify anonymous chat works end-to-end; add a cost/rate guard; rewrite `README` (what it is, live demo link, screenshot/GIF, stack, run-locally) | **2–3 h** |
-| **3 — Optional polish** | Wire Sentry; one WebSocket integration test; clear the 12 advisory lint warnings | **3–5 h** |
+| **3 — Optional polish** | One WebSocket integration test; clear the 12 advisory lint warnings | **3–5 h** |
 
 **Bottom line:**
 - **Working free live demo (ephemeral):** ~**half a day** (Phases 0→1→2 via Render).
