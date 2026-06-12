@@ -38,3 +38,8 @@ services:
         value: "150"
       - key: NEXTAUTH_SECRET
         generateValue: true
+      # Daily request budget for the shared demo key (BYOK users bypass this).
+      # Resets at midnight UTC; counter may also reset on instance restarts
+      # (ephemeral disk) — the Google-console cap is the true ceiling.
+      - key: POOL_DAILY_REQUEST_BUDGET
+        value: "300"

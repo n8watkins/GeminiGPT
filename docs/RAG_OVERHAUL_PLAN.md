@@ -57,8 +57,8 @@ the vector DB. The README should read as a first-person learning journal
 | Agent | Track | Scope | Status |
 |-------|-------|-------|--------|
 | A | Backend | **RAG core**: auto-retrieval on every message (embed query → search other chats above similarity threshold → inject context → emit `retrieval-info`). Per-user embedding keys (visitor's BYOK key; server key fallback). Keep search tool. Files: `vectorDB.js`, `lib/websocket/services/*`, prompts. | ✅ merged 37fcaff (incl. forced migration to gemini-embedding-001 — text-embedding-004 was retired upstream) |
-| B | Backend | **Usage tracking**: tag each `gemini_logs` row with key class (pool vs BYOK), aggregate counters, `GET /api/usage`, broadcast `usage-info`, env-configurable demo budget. Merges AFTER A (shared files in `lib/websocket/services/`). | in progress |
-| C | Frontend | **Onboarding wizard + citations + usage meter**: merge About/ApiKeySetup modals into one two-step wizard over blurred live UI; pool-key-by-default (no upfront key ask; BYOK offered on `POOL_EXHAUSTED`); "📎 Recalled from <chat title>" citations; live shared-pool meter (in wizard step 2 + persistent in UI). Builds against contracts; parallel with A/B. Files: `src/components/*`, `src/hooks/useWebSocket.ts`. | in progress |
+| B | Backend | **Usage tracking**: tag each `gemini_logs` row with key class (pool vs BYOK), aggregate counters, `GET /api/usage`, broadcast `usage-info`, env-configurable demo budget. Merges AFTER A (shared files in `lib/websocket/services/`). | ✅ merged d7aea86 (also fixed token_count never being logged) |
+| C | Frontend | **Onboarding wizard + citations + usage meter**: merge About/ApiKeySetup modals into one two-step wizard over blurred live UI; pool-key-by-default (no upfront key ask; BYOK offered on `POOL_EXHAUSTED`); "📎 Recalled from <chat title>" citations; live shared-pool meter (in wizard step 2 + persistent in UI). Builds against contracts; parallel with A/B. Files: `src/components/*`, `src/hooks/useWebSocket.ts`. | ✅ merged 111ec8f |
 | D | Docs | **README learning journal**: full rewrite, first-person learner voice. Material: RAG/embeddings/LanceDB, WebSockets, BYOK economics, the 4-failure Render deploy saga. Independent. | ✅ merged eb77081 |
 
 Merge order: **A → B → C** (then end-to-end contract check), **D** anytime.
@@ -73,6 +73,11 @@ merges, pushes (auto-deploys), smoke-tests live site.
 - Hybrid search / chunking / reranking experiments
 - Vercel ghost project still linked to repo (owner to disconnect)
 - UptimeRobot keep-warm monitor on `/healthz` (owner setting up)
+- Legacy REST `/api/chat` route calls Gemini with the server key WITHOUT
+  logging to gemini_logs — invisible to the pool meter/budget. Audit whether
+  anything still uses it; remove or instrument it.
+- Edge: an invalid BYOK key falls back to the server key internally but is
+  tagged `byok` (not counted against the pool).
 
 ## Environment notes (recovery)
 
