@@ -34,6 +34,13 @@ the vector DB. The README should read as a first-person learning journal
 - Skipped (for now): hybrid keyword+vector search, window chunking, reranking.
 - **Keep the first-run About/API-key modals** — owner likes the design; they
   explain the project. Improvements welcome, removal is not.
+- **Onboarding (decided 2026-06-12):** visitors use the server pool key by
+  default — never ask for an API key upfront ("a little sketch"). BYOK is the
+  upgrade path shown when the pool runs out (with instructions for getting a
+  key). The two stacked modals become ONE two-step wizard (step 1: About/what
+  this is incl. the cross-chat-memory pitch; step 2: get started, showing the
+  live demo-pool meter). Wizard renders over the live, blurred chat UI, not a
+  blank page. Keep the existing design language.
 
 ## Interface contracts (agents build against these)
 
@@ -41,6 +48,9 @@ the vector DB. The README should read as a first-person learning journal
   `{ chatId, sources: [{ chatId, chatTitle, snippet, score }] }`
 - Socket event `usage-info` and REST `GET /api/usage`:
   `{ pool: { used, budget, resetAt, available }, user: { requests, tokens } }`
+- Pool exhaustion: when a pool-key request is rejected for budget, the server
+  sends the standard message-error path with `code: 'POOL_EXHAUSTED'` (and
+  `usage-info` shows `available: 0`) — the UI uses this to prompt adding a key.
 
 ## Workstreams
 
@@ -48,7 +58,7 @@ the vector DB. The README should read as a first-person learning journal
 |-------|-------|-------|--------|
 | A | Backend | **RAG core**: auto-retrieval on every message (embed query → search other chats above similarity threshold → inject context → emit `retrieval-info`). Per-user embedding keys (visitor's BYOK key; server key fallback). Keep search tool. Files: `vectorDB.js`, `lib/websocket/services/*`, prompts. | not started |
 | B | Backend | **Usage tracking**: tag each `gemini_logs` row with key class (pool vs BYOK), aggregate counters, `GET /api/usage`, broadcast `usage-info`, env-configurable demo budget. Merges AFTER A (shared files in `lib/websocket/services/`). | not started |
-| C | Frontend | **Citations + usage meter**: "📎 Recalled from <chat title>" on messages using cross-chat memory; live shared-pool meter visible to all users. Builds against contracts; parallel with A/B. Files: `src/components/*`, `src/hooks/useWebSocket.ts`. | not started |
+| C | Frontend | **Onboarding wizard + citations + usage meter**: merge About/ApiKeySetup modals into one two-step wizard over blurred live UI; pool-key-by-default (no upfront key ask; BYOK offered on `POOL_EXHAUSTED`); "📎 Recalled from <chat title>" citations; live shared-pool meter (in wizard step 2 + persistent in UI). Builds against contracts; parallel with A/B. Files: `src/components/*`, `src/hooks/useWebSocket.ts`. | not started |
 | D | Docs | **README learning journal**: full rewrite, first-person learner voice. Material: RAG/embeddings/LanceDB, WebSockets, BYOK economics, the 4-failure Render deploy saga. Independent. | not started |
 
 Merge order: **A → B → C** (then end-to-end contract check), **D** anytime.
