@@ -3,11 +3,15 @@ const lancedb = require('@lancedb/lancedb');
 const path = require('path');
 const fs = require('fs');
 
-// Initialize Gemini AI for embeddings
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY environment variable is required');
+// Initialize Gemini AI for embeddings. The server key is optional (BYOK):
+// without it, embedding-based features (cross-chat semantic search) are
+// disabled gracefully rather than crashing the server.
+const genAI = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null;
+if (!genAI) {
+  console.warn('⚠️ GEMINI_API_KEY not set — vector embeddings disabled, semantic search will return no results');
 }
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Database path. Defaults to the project's data/ dir; override with LANCEDB_PATH
 // to point at a persistent volume in production (mirrors DATABASE_PATH for SQLite).
@@ -74,6 +78,9 @@ const embeddingCache = new LRUCache(1000);
  * @returns {Promise<number[]>} - The embedding vector
  */
 async function generateEmbedding(text) {
+  if (!genAI) {
+    throw new Error('Embeddings unavailable: no server GEMINI_API_KEY configured');
+  }
   try {
     // Check cache first
     const cacheKey = text.toLowerCase().trim();
