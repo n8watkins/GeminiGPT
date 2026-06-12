@@ -28,14 +28,14 @@ export function validateGeminiApiKey(key: string | null | undefined): Validation
     return { valid: false, reason: 'API key cannot be empty' };
   }
 
-  // Gemini API keys start with 'AIza'
-  if (!trimmedKey.startsWith('AIza')) {
-    return { valid: false, reason: 'Gemini API keys start with "AIza"' };
+  // Gemini API keys start with 'AIza' (classic) or 'AQ.' (newer AI Studio keys)
+  if (!trimmedKey.startsWith('AIza') && !trimmedKey.startsWith('AQ.')) {
+    return { valid: false, reason: 'Gemini API keys start with "AIza" or "AQ."' };
   }
 
-  // Check minimum length (Gemini keys are typically 39 characters)
-  if (trimmedKey.length < 39) {
-    return { valid: false, reason: 'API key is too short (should be at least 39 characters)' };
+  // Check minimum length (classic keys are 39 chars; AQ. keys are longer)
+  if (trimmedKey.length < 30) {
+    return { valid: false, reason: 'API key is too short' };
   }
 
   // Check maximum reasonable length (prevent massive strings)
@@ -43,9 +43,9 @@ export function validateGeminiApiKey(key: string | null | undefined): Validation
     return { valid: false, reason: 'API key is too long (maximum 100 characters)' };
   }
 
-  // Check for valid characters (alphanumeric, underscore, hyphen)
-  if (!/^[A-Za-z0-9_-]+$/.test(trimmedKey)) {
-    return { valid: false, reason: 'API key contains invalid characters (only letters, numbers, - and _ allowed)' };
+  // Check for valid characters (alphanumeric, underscore, hyphen, dot)
+  if (!/^[A-Za-z0-9_.-]+$/.test(trimmedKey)) {
+    return { valid: false, reason: 'API key contains invalid characters (only letters, numbers, ., - and _ allowed)' };
   }
 
   return { valid: true };
