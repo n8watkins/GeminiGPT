@@ -2,7 +2,7 @@ const { Server: SocketIOServer } = require('socket.io');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { getStockPrice, getWeather, getTime, getGeneralSearch, searchChatHistory } = require('./searchService');
 // Import real implementations for production
-const { addMessage } = require('./vectorDB');
+const { addMessage, searchChats } = require('./vectorDB');
 const { processDocumentAttachment } = require('./documentProcessor');
 
 // Import logger
@@ -52,6 +52,9 @@ const { GeminiService } = require('./lib/websocket/services/GeminiService');
 const { VectorIndexer } = require('./lib/websocket/services/VectorIndexer');
 const vectorIndexer = new VectorIndexer(addMessage);
 
+const { ChatRetriever } = require('./lib/websocket/services/ChatRetriever');
+const chatRetriever = new ChatRetriever(searchChats);
+
 // REMOVED: Pre-emptive pattern matching
 // Now letting Gemini decide when to search chat history via function calling
 
@@ -70,7 +73,7 @@ const geminiService = new GeminiService(genAI, tools, {
   get_weather: async (args) => await getWeather(args.location),
   get_time: async (args) => await getTime(args.location),
   search_web: async (args) => await getGeneralSearch(args.query),
-  search_chat_history: async (args, context) => await searchChatHistory(context.userId, args.query)
+  search_chat_history: async (args, context) => await searchChatHistory(context.userId, args.query, context.apiKey)
 }, geminiApiLogger);
 
 // 🆕 V3 Architecture: MessagePipeline orchestrates all services
@@ -80,7 +83,8 @@ const messagePipeline = new MessagePipeline(
   historyProcessor,
   attachmentHandler,
   geminiService,
-  vectorIndexer
+  vectorIndexer,
+  chatRetriever
 );
 
 /**
