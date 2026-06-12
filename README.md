@@ -1,597 +1,244 @@
-# 🤖 GeminiGPT
+# GeminiGPT
 
-A modern, full-featured AI chat application powered by Google's Gemini AI with advanced capabilities including multi-chat management, cross-chat semantic search, document processing, and real-time WebSocket communication.
+I wanted to understand how RAG actually works, so I built a chat app where the
+AI can remember things you told it in *other* conversations.
 
-> **Portfolio Project** - This project demonstrates modern full-stack development practices including Next.js, TypeScript, WebSocket communication, vector databases, and AI integration.
+That's the whole pitch: cross-chat memory. Every message you send gets turned
+into a vector embedding and stored in a vector database. Later, in a completely
+different chat, the model can search that history and pull in what you said
+weeks ago. Most chat apps treat every conversation as an island. I wanted to
+see what it takes to make them not be.
 
-## 📖 Quick Links
+**Live demo:** [geminigpt-n8.onrender.com](https://geminigpt-n8.onrender.com)
 
-- **[WebSocket API Documentation](docs/WEBSOCKET_API.md)** - Real-time communication API reference
-- **[HTTP API Documentation](docs/HTTP_API.md)** - REST API endpoints
-- **[Database Schema](docs/DATABASE_SCHEMA.md)** - SQLite & LanceDB schema
-- **[Railway Deployment Guide](docs/deployment/RAILWAY.md)** - Production deployment
-- **[Docker Deployment Guide](docs/deployment/DOCKER.md)** - Containerized deployment
-- **[Contributing Guide](CONTRIBUTING.md)** - Development guidelines
-- **[Production Checklist](docs/PRODUCTION_CHECKLIST.md)** - Pre-deployment checklist
-- **[Implementation Plan](IMPLEMENTATION_PLAN.md)** - Development phases and timeline
+Heads up before you click: it's on Render's free tier, so if nobody has visited
+in 15 minutes the server spins down and the first load takes 30 to 60 seconds
+while it wakes up. The free tier also has an ephemeral disk, which means all
+chat data resets whenever the server restarts. I knew both of those going in
+and decided they were fine for a demo. More on that below, because the
+deployment taught me more than the app did.
 
-## ✨ Features
+## What it does
 
-### 🔑 **Bring Your Own API Key (BYOK)**
-- **No Signup Required**: Use your own Google Gemini API key - stored only in your browser
-- **Privacy First**: Your API key never leaves your browser or touches our servers
-- **Full Control**: Manage your own usage and costs with Google's generous free tier ($300 in credits)
-- **Easy Setup**: Interactive tutorial walks you through getting a free API key in 2 minutes
+- **Chat with Gemini** (`gemini-3.1-flash-lite`) with streaming responses over
+  WebSockets
+- **Cross-chat memory**: every message is embedded and indexed, and the model
+  has a `search_chat_history` function tool it can call to search your *other*
+  chats when it decides your question needs it. (I'm currently working on
+  automatic retrieval with citations, so it recalls things without being asked.
+  The function tool is what's live today.)
+- **Bring your own key (BYOK)**: paste in your own free Gemini API key and use
+  the app with no signup. There's also a shared server key as a fallback so
+  visitors can try it with zero setup.
+- **Documents and images**: upload PDFs, DOCX files, or images and chat about
+  them. Document text gets indexed into the vector DB too.
+- **Function calling**: web search, stock prices, weather, time zones
+- **The usual chat app stuff**: multiple chats, auto-generated titles, export
+  to JSON/Markdown, keyboard shortcuts, dark mode
 
-### 🧠 **Core AI Features**
-- **Gemini 2.5 Flash Integration**: Advanced AI conversations with Google's latest model
-- **Function Calling**: Real-time web search, stock prices, weather, and time queries
-- **Cross-Chat Awareness**: AI remembers context across different chat sessions
-- **Semantic Search**: Find relevant information from previous conversations
+## What I was trying to learn
 
-### 💬 **Chat Management**
-- **Multiple Chat Sessions**: Create and manage unlimited chat conversations
-- **Smart Chat Titles**: Auto-generated titles with timestamps
-- **Chat Export**: Export conversations as JSON or Markdown
-- **Chat Statistics**: Message counts, word counts, and duration tracking
-- **Recent Chats**: Quick access to recently used conversations
+I kept reading about RAG (retrieval-augmented generation) and nodding along
+without really getting it. Tutorials would say "embed your documents and store
+them in a vector database" and I'd think, okay, but what *is* an embedding,
+physically? What does the database actually store? When does retrieval happen?
 
-### 📎 **Document Processing**
-- **PDF Support**: Upload and analyze PDF documents
-- **DOCX Support**: Process Microsoft Word documents
-- **Image Analysis**: Upload images for AI analysis
-- **Text Extraction**: Automatic content extraction from documents
-- **Vector Indexing**: Documents are indexed for semantic search
+So I picked a project where I couldn't fake my way through it. The goals:
 
-### 🔍 **Advanced Search**
-- **Vector Database**: LanceDB-powered semantic search across all chats
-- **Full-Text Search**: Search within individual chats
-- **Cross-Chat Search**: Find information across all conversations
-- **Smart Results**: Contextual search results with chat titles and timestamps
+1. Understand embeddings and vector search by wiring them up myself
+2. Build real-time streaming chat and learn why WebSockets instead of HTTP
+3. Ship something publicly, on a free tier, and deal with whatever broke
 
-### ⚡ **Real-Time Features**
-- **WebSocket Communication**: Real-time bidirectional messaging
-- **Typing Indicators**: See when AI is responding
-- **Streaming Responses**: Real-time response streaming
-- **Connection Status**: Visual connection indicators
+All three happened. Especially the third one.
 
-### 🎨 **User Experience**
-- **Responsive Design**: Works perfectly on desktop and mobile
-- **Keyboard Shortcuts**: Quick actions with keyboard shortcuts
-- **Dark/Light Theme**: Modern UI with Tailwind CSS
-- **Chat Utilities**: Export, statistics, and management tools
-- **Quick Actions**: Pre-defined prompts for common tasks
+## How the cross-chat memory works
 
-## 🚀 Getting Started
+Here's my best learner's explanation of the pipeline, because writing it down
+is how I made sure I actually understood it.
 
-### Two Ways to Use GeminiGPT
+**What an embedding is.** When you send a message, I pass the text to Google's
+`text-embedding-004` model and get back a list of 768 numbers. That list is a
+point in 768-dimensional space, and the magic property is that texts with
+similar *meaning* land near each other. "My dog's name is Biscuit" and "what
+did I say my pet was called?" end up close together even though they share
+almost no words. That's the part that finally made vector search click for me:
+it's not keyword matching, it's measuring distance between meanings.
 
-#### Option 1: **Quick Start with BYOK** (Recommended for Users)
+**What gets stored.** Each user/assistant message pair gets embedded and
+written to LanceDB (an embedded vector database, like SQLite but for vectors)
+along with the raw text, the chat ID, the chat title, and a `user_id`. The
+`user_id` filter matters: searches are always scoped to one user, so you can
+only ever recall your own history. Embeddings also go through an LRU cache so
+I don't pay to re-embed identical text.
 
-No installation needed! Just visit the deployed app and use your own Google Gemini API key:
+**How retrieval happens.** The model is given a function tool called
+`search_chat_history`. When you ask something like "what was that book I
+mentioned?", the model decides to call the tool, the server embeds your query,
+LanceDB finds the nearest stored vectors across all your chats, and the
+matching messages get fed back to the model so it can answer with the actual
+detail from the old chat.
 
-1. **Visit the App**: [Your Deployment URL]
-2. **Get a Free API Key** (Takes 2 minutes):
-   - Visit [Google AI Studio](https://aistudio.google.com/apikey)
-   - Sign in with your Google account
-   - Click "Create API Key"
-   - Copy your key (starts with `AIza...`)
-3. **Enter Your Key**: The app will prompt you on first visit with a helpful tutorial
-4. **Start Chatting**: Your key is stored locally in your browser - never sent to our servers!
+The honest limitation: the model has to *decide* to search. If it doesn't
+realize your question depends on an old conversation, it won't look. That's
+why the next iteration (in progress, plan in
+[`docs/RAG_OVERHAUL_PLAN.md`](docs/RAG_OVERHAUL_PLAN.md)) does retrieval
+automatically on every message and shows you citations for where a memory came
+from.
 
-**Why BYOK?**
-- ✅ **Free**: Google provides $300 in free credits
-- ✅ **Private**: Your key stays in your browser (localStorage)
-- ✅ **No Account**: No signup or authentication required
-- ✅ **Full Control**: You manage your own usage and costs
+**Why two databases.** SQLite holds the chats themselves: ordered messages,
+titles, timestamps, the stuff you render in the sidebar. LanceDB holds the
+vectors for similarity search. I originally thought one database should do
+both, and technically you can bolt vector extensions onto SQLite, but keeping
+them separate made each one simple to reason about.
 
-#### Option 2: **Self-Hosted Development**
+## The deploy saga
 
-For developers who want to run their own instance:
+This is the section I'd want to read if I were me six months ago. The app
+worked locally for weeks. Deploying it to Render produced four different
+failures, in order, each one teaching me something I thought I already knew.
 
-### Prerequisites
+**1. npm peer-dependency hell.** My lockfile had been built with
+`legacy-peer-deps=true` to paper over a conflict: LanceDB wanted one version of
+`apache-arrow` and something else wanted another. It worked on my machine with
+npm 10. Render runs npm 11, which is stricter, and the install exploded. The
+fix took me a while to understand: I pinned `apache-arrow` to exactly `18.1.0`
+(the version LanceDB actually wants), and later migrated next-auth from v4 to
+v5 to remove the other conflict, so the dependency tree is now honest with no
+flags hiding anything. Lesson: `legacy-peer-deps` doesn't fix conflicts, it
+just defers them to a worse moment.
 
-Before you begin, ensure you have the following installed:
-- **Node.js** 18+ ([Download](https://nodejs.org/))
-- **npm** or **yarn** package manager
-- **Google AI Studio API Key** (optional for server-side) - ([Get one here](https://aistudio.google.com/apikey))
-- **Google Search API credentials** (optional, for web search function calling)
+**2. The crash loop.** The server demanded `GEMINI_API_KEY` at boot and exited
+if it was missing. But the whole point of BYOK is that the server key is
+optional! Render kept restarting the process and it kept dying. I had written
+"the server key is a fallback" in my own docs while the code treated it as
+required. Now the server boots without it and just disables the features that
+need it, with a warning.
 
-### Installation
+**3. devDependencies missing at build.** Render sets `NODE_ENV=production`,
+which makes `npm install` skip devDependencies, and then `next build` couldn't
+find `typescript`. This one confused me because the build is a *build*, it
+needs the dev tools. The fix was telling Render to install everything during
+the build step. Lesson: production runtime and production build have different
+needs, and `NODE_ENV` affects installs, not just your app code.
 
-#### 1. Clone the Repository
+**4. The sneakiest one.** Everything deployed. The health check passed. The
+site returned 502. The server was binding to `process.env.HOSTNAME`, which on
+my machine was harmless, but container platforms set `HOSTNAME` to the
+container ID. So my server was listening on a hostname like `srv-abc123` while
+Render's proxy was knocking on a door nobody answered. This took me an
+embarrassing amount of log-reading to find because nothing was *erroring*.
+Lesson burned into my brain: in a container, bind to `0.0.0.0`, always.
+
+There's a fifth lesson hiding in the hosting choice itself: this app can't run
+on Vercel at all. Vercel is serverless, meaning your code runs in short-lived
+functions that spin up per request. A WebSocket server needs one long-lived
+process holding connections open. So the architecture decided the host for me,
+which is something I now think about *before* writing code.
+
+## Other things that clicked along the way
+
+**WebSockets vs HTTP for streaming.** I started out assuming I'd just hit an
+API route. But streaming tokens back, plus typing indicators, plus events like
+"your message got rate limited", all flowing both directions over one
+connection, is exactly what WebSockets are for. The custom `server.js` runs
+Next.js and Socket.IO on the same port, which also means the client just
+connects to the page's own origin with no separate API URL to configure.
+
+**The economics of a free demo.** BYOK means visitors who bring a key cost me
+nothing. The shared fallback key is the risky part: it's one key anyone can
+burn through. The defenses are a token-bucket rate limiter on the server
+(60 messages/minute, 500/hour per user by default; users on their own key skip
+it) and a hard budget cap on the key in Google's console as the real ceiling.
+
+**Being honest about where the key goes.** An early version of this README
+claimed your API key "never touches our servers." Writing the code taught me
+that wasn't quite true: the key is stored in your browser's localStorage, but
+it travels over the WebSocket to the server, which uses it for the Gemini call.
+It's never stored server-side, but "stored only in your browser" and "only
+your browser ever sees it" are different claims, and I'd rather make the
+accurate one.
+
+**Ephemeral disk as a feature.** Render's free tier wipes the disk on every
+restart, so SQLite and LanceDB start fresh. For a demo this turned out to be a
+gift: no stale data piling up, no cleanup jobs, and nobody's test conversations
+hang around forever. For a real product it would be disqualifying. Knowing
+which one you're building is the skill.
+
+## What I'd do differently
+
+- **Deploy a walking skeleton on day one.** All four deploy failures would
+  have been found months earlier, one at a time, instead of in a single
+  miserable evening.
+- **Build retrieval as automatic from the start.** I went with the function
+  tool because it was easier, but "the model only remembers when it feels like
+  it" is a confusing user experience, and retrofitting auto-retrieval is more
+  work than designing it in.
+- **Fewer features, sooner.** Stock prices and weather lookups were fun to
+  wire up but taught me little. The vector search taught me a lot. I'd trade
+  the former for more iterations on the latter.
+- **Never reach for `legacy-peer-deps`.** See above.
+
+## Quick start
 
 ```bash
-git clone https://github.com/yourusername/geminigpt.git
-cd geminigpt
-```
-
-#### 2. Install Dependencies
-
-```bash
+git clone https://github.com/n8watkins/GeminiGPT.git
+cd GeminiGPT
 npm install
-```
-
-#### 3. Get Your API Keys
-
-##### **Required: Google AI Studio API Key**
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Sign in with your Google account
-3. Click "Create API Key"
-4. Copy the generated key
-
-##### **Optional: Google Search API (for web search function calling)**
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable "Custom Search API"
-4. Create credentials (API Key)
-5. Set up a [Programmable Search Engine](https://programmablesearchengine.google.com/)
-6. Copy both the API key and Search Engine ID
-
-#### 4. Configure Environment Variables
-
-Create a `.env.local` file in the root directory:
-
-```bash
-# Copy the example file
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your API keys:
-
-```env
-# Optional - Gemini AI API Key (server-side fallback)
-# Note: With BYOK, users provide their own keys in the browser
-# This is only used if no client-side key is provided
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Optional - Google Search (for web search functionality)
-GOOGLE_SEARCH_API_KEY=your_google_search_api_key_here
-GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id_here
-
-# Development Settings
-NODE_ENV=development
-```
-
-**Note about BYOK**: When users provide their own API key through the web interface, it's stored in their browser's localStorage and sent directly to the Gemini API. The server-side `GEMINI_API_KEY` is only used as a fallback if no client key is provided.
-
-#### 5. Run the Development Server
-
-```bash
 npm run dev
 ```
 
-The application will start on **http://localhost:1337** (or port 1338 if 1337 is in use).
+The dev server picks a random port and prints it, something like:
 
-Open your browser and navigate to the displayed URL to start chatting!
-
-### First-Time Setup
-
-When you first run the app:
-1. An **API Key Setup** modal will appear if you haven't provided a key yet
-   - Follow the tutorial to get a free Google Gemini API key
-   - Your key is stored locally in your browser (never sent to our servers)
-   - You can update or remove your key anytime in Settings
-2. An **About** modal will appear explaining the portfolio project (after you've added a key)
-3. A unique User ID will be generated for your session
-4. The app creates local SQLite and LanceDB databases in the `data/` directory
-5. You're ready to start chatting!
-
-### Managing Your API Key
-
-**Accessing Settings**:
-- Click the "API Key Settings" button in the sidebar
-- Or click the settings icon in the app
-
-**What You Can Do**:
-- ✏️ **Update Your Key**: Replace with a different API key
-- 🗑️ **Remove Your Key**: Delete the stored key from your browser
-- ℹ️ **View Tutorial**: See the setup instructions again
-
-**Security & Privacy**:
-- Your API key is stored in `localStorage` (your browser's local storage)
-- It's never sent to our backend servers
-- It's sent directly from your browser to Google's Gemini API
-- You can inspect the network traffic to verify this
-- Clearing your browser data will remove the stored key
-
-## 🏗️ Architecture
-
-### **Frontend (Next.js)**
-```
-src/
-├── app/                    # Next.js app router
-│   ├── layout.tsx         # Root layout with providers
-│   ├── page.tsx           # Main chat interface
-│   └── globals.css        # Global styles
-├── components/            # React components
-│   ├── ChatInterface.tsx  # Main chat UI
-│   ├── Sidebar.tsx        # Chat sidebar
-│   ├── ChatShortcuts.tsx  # Quick actions panel
-│   ├── ChatUtils.tsx      # Chat utilities
-│   └── ...               # Other components
-├── contexts/              # React contexts
-│   └── ChatContext.tsx    # Chat state management
-├── hooks/                 # Custom hooks
-│   └── useWebSocket.ts    # WebSocket integration
-├── lib/                   # Utility libraries
-│   ├── database.ts        # SQLite database
-│   ├── vectordb.ts        # Vector database
-│   ├── embeddingService.ts # AI embeddings
-│   └── ...               # Other utilities
-└── types/                 # TypeScript definitions
-    └── chat.ts            # Chat-related types
+```text
+✅ Server listening on http://localhost:23517
 ```
 
-### **Backend (Node.js + WebSocket)**
-```
-├── server.js              # Main server entry point
-├── websocket-server.js    # Advanced WebSocket server
-├── searchService.js       # Function calling services
-├── vectorDB.js           # Vector database operations
-├── documentProcessor.js   # Document processing
-└── railway.json          # Railway deployment config
-```
+You can chat right away by pasting a Gemini API key into the app (free from
+[Google AI Studio](https://aistudio.google.com/apikey), takes about two
+minutes). Optionally, set a server-side fallback key so the app works without
+one:
 
-### **Database Layer**
-- **SQLite**: Persistent chat storage with ACID compliance
-- **LanceDB**: Vector database for semantic search
-- **Persistent Volumes**: Data survives server restarts
-
-## 🎯 Function Calling Examples
-
-### **Stock Prices**
-```
-"What's Apple's current stock price?"
-"How is Tesla performing today?"
-"Show me GOOGL stock data"
-```
-
-### **Weather Information**
-```
-"What's the weather in New York?"
-"How's the temperature in Tokyo?"
-"Will it rain in Seattle today?"
-```
-
-### **Web Search**
-```
-"Search for the latest AI news"
-"What are the current tech trends?"
-"Find information about renewable energy"
-```
-
-### **Time Queries**
-```
-"What time is it in London?"
-"Show me the current time in Tokyo"
-"What's the timezone in California?"
-```
-
-## 🧪 Testing
-
-### **Test Structure**
-```
-tests/
-├── database/              # Database functionality tests
-├── integration/           # System integration tests
-├── performance/           # Performance and load tests
-├── utilities/             # Utility and helper tests
-└── run-all-tests.js       # Test runner
-```
-
-### **Running Tests**
 ```bash
-# Run all tests
-npm run test:all
-
-# Run specific test categories
-node tests/database/test-sqlite-db.js
-node tests/integration/test-websocket-integration.js
-node tests/performance/test-attachment-flow.js
+# .env.local (optional)
+GEMINI_API_KEY=your_key_here
 ```
 
-## 🚀 Deployment
+Needs Node 22+. SQLite and LanceDB files get created in `data/` automatically.
 
-This is a **single Node service** (Next.js + WebSocket server in `server.js`) — deploy
-it as **one service, single replica**. It is *not* serverless-compatible, so Vercel /
-Netlify cannot host it.
+## Stack
 
-**Fastest free option:** Render (free web service, ephemeral storage — fine for a demo,
-since the app rebuilds its DB on boot and supports anonymous users).
-**Free + persistent:** Oracle Cloud Always Free VM. **Easiest paid:** Railway / Fly.io.
+| Layer | Choice | Why |
+| ----- | ------ | --- |
+| Framework | Next.js 16 + React 19 + TS | App router frontend |
+| Server | Custom `server.js` (Node) | Next.js + Socket.IO on one port |
+| Real-time | Socket.IO | Streaming responses, bidirectional events |
+| Chat storage | SQLite (better-sqlite3) | Simple, fast, zero-config |
+| Vector DB | LanceDB | Embedded, no separate service to run |
+| LLM | `gemini-3.1-flash-lite` | Generous free tier, function calling |
+| Embeddings | `text-embedding-004` (768-dim) | Same free tier |
+| Styling | Tailwind CSS | |
+| Hosting | Render free tier | Long-lived process, $0 |
 
-Because of **BYOK** (visitors use their own Gemini key), a public demo costs you ~nothing.
-If you add a server fallback key for a frictionless demo, cap it with the built-in per-IP
-rate limiting plus a hard quota/budget cap on the key in Google Cloud.
+## Docs
 
-👉 **Full instructions, host comparison, env vars, and a time roadmap:
-[`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md).** Current readiness:
-[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
+Deeper documentation I wrote while building:
 
+- [WebSocket API](docs/WEBSOCKET_API.md) - events, auth, rate limiting
+- [HTTP API](docs/HTTP_API.md) - REST endpoints and health checks
+- [Database schema](docs/DATABASE_SCHEMA.md) - SQLite tables and LanceDB vectors
+- [Deployment guide](docs/DEPLOYMENT_GUIDE.md) - host comparison and env vars
+- [RAG overhaul plan](docs/RAG_OVERHAUL_PLAN.md) - where the retrieval work is headed
+- [Contributing](CONTRIBUTING.md)
 
-## 🎨 Quality of Life Features
+## Author
 
-### **Keyboard Shortcuts**
-- `Alt+N`: Create new chat
-- `Alt+F`: Focus search in sidebar
-- `Alt+R`: Reset everything
-- `Esc`: Close sidebar (mobile) / Clear search
-- More shortcuts available in the app
+**Nathan Watkins**, learning in public.
 
-### **Quick Actions**
-- 📝 Write Code
-- 🔍 Explain
-- 🐛 Debug
-- 📚 Learn
-- 💡 Ideas
-- 📊 Analyze
-
-### **Chat Utilities**
-- Export as JSON or Markdown
-- Copy chat links
-- View chat statistics
-- Recent chats tracking
-
-## 🔧 Technologies
-
-### **Frontend**
-- **Next.js 15**: React framework with app router
-- **TypeScript**: Type safety and better DX
-- **Tailwind CSS**: Utility-first styling
-- **React Context**: State management
-- **Socket.IO Client**: Real-time communication
-
-### **Backend**
-- **Node.js**: Server runtime
-- **Socket.IO**: WebSocket communication
-- **SQLite**: Relational database
-- **LanceDB**: Vector database
-- **Google Generative AI**: Gemini API integration
-
-### **Infrastructure**
-- **Single Node service** (`server.js`): serves Next.js + the WebSocket server together
-- **Hosting**: any platform that runs a long-lived Node process (Render, Fly.io,
-  Railway, a VM) — see [`docs/DEPLOYMENT_GUIDE.md`](docs/DEPLOYMENT_GUIDE.md)
-- **Google Cloud**: Gemini AI + (optional) Custom Search APIs
-
-## 🎯 Code Quality & Best Practices
-
-This project implements production-ready patterns and best practices:
-
-### **Accessibility (a11y)**
-- **Focus Management**: Modal focus traps ensure keyboard navigation stays within dialogs
-- **ARIA Labels**: Comprehensive aria-label and title attributes for screen readers
-- **Keyboard Navigation**: Full keyboard support with tab/shift-tab cycling
-- **Semantic HTML**: Proper use of semantic elements and roles
-
-### **Shared Utilities**
-- **File Validation**: Centralized validation logic in `src/lib/fileValidation.ts`
-  - Supports images, PDFs, DOCX, RTF, and text files
-  - Configurable size limits (10MB default)
-  - Type checking and MIME type validation
-- **Constants**: Centralized configuration in `src/lib/constants.ts`
-  - Rate limit thresholds
-  - Z-index layers
-  - Animation durations
-  - Debounce delays
-- **Custom Hooks**:
-  - `useDebounce`: Performance optimization for search inputs
-  - `useFocusTrap`: Accessibility enhancement for modals
-
-### **Production Logging**
-- **Environment-Aware**: Different behavior for development vs production
-- **Log Levels**: DEBUG, INFO, WARN, ERROR
-- **Prefixed Loggers**: Module-specific loggers (chat, websocket, file upload)
-- **No Console Statements**: All logging goes through the logger system
-
-### **Code Organization**
-- **TypeScript**: Full type safety across the codebase
-- **Component Separation**: Clear separation of concerns
-- **Reusable Logic**: Shared validation, logging, and utility functions
-- **Consistent Patterns**: Standardized error handling and state management
-
-### **Performance Optimizations**
-- **Debounced Search**: 300ms debounce on search inputs to reduce re-renders
-- **Memoized Components**: useMemo for expensive computations
-- **Lazy Loading**: Dynamic imports for non-critical components
-- **Optimized Queries**: Indexed database operations with prepared statements
-
-## 📊 Performance
-
-- **Real-time Communication**: WebSocket-based messaging
-- **Vector Search**: Sub-second semantic search
-- **Document Processing**: Efficient PDF/DOCX parsing
-- **Caching**: Embedding and response caching
-- **Optimized Queries**: Indexed database operations
-
-## 🔒 Security & Production Features
-
-### **Advanced Security**
-- **API Key Validation**: Server-side validation of Gemini API keys with format checking
-- **CSRF Protection**: Token-based CSRF protection with secure cookie handling
-- **Rate Limiting**: Token bucket algorithm with per-user limits (60/min, 500/hour)
-- **Input Validation**: Comprehensive sanitization of all user inputs
-- **File Upload Security**: MIME type validation, size limits, and malicious file detection
-- **Helmet.js Integration**: Security headers (CSP, HSTS, X-Frame-Options, etc.)
-- **Environment Isolation**: Separate configurations for development and production
-
-### **Production-Ready Features**
-- **Graceful Shutdown**: Clean connection closure and resource cleanup on SIGTERM/SIGINT
-- **Health Checks**: `/healthz` endpoint monitoring database and memory status
-- **Error Recovery**: Automatic reconnection for WebSocket and database failures
-- **Monitoring**: Comprehensive logging with Sentry integration (optional)
-- **Memory Management**: LRU caching with size limits to prevent memory leaks
-- **Vector Database**: Efficient embedding caching and intelligent search
-- **Database Optimization**: Connection pooling, prepared statements, and indexed queries
-
-### **Data Protection**
-- **User Isolation**: Separate data per user session with secure user ID generation
-- **Encryption Ready**: Infrastructure supports API key encryption at rest
-- **No Data Leakage**: API keys never logged or exposed in error messages
-- **Secure WebSocket**: CORS validation and origin checking for all connections
-
-## 📚 Documentation
-
-### API Documentation
-- **[WebSocket API](docs/WEBSOCKET_API.md)** - Real-time WebSocket events, authentication, rate limiting
-- **[HTTP API](docs/HTTP_API.md)** - REST endpoints, health checks, error handling
-
-### Database
-- **[Database Schema](docs/DATABASE_SCHEMA.md)** - SQLite tables, LanceDB vectors, indexes, relationships
-
-### Deployment
-- **[Railway Deployment](docs/deployment/RAILWAY.md)** - Deploy to Railway with persistent volumes
-- **[Docker Deployment](docs/deployment/DOCKER.md)** - Containerized deployment guide
-
-### Development
-- **[Contributing Guide](CONTRIBUTING.md)** - Code guidelines, development process
-- **[Production Checklist](docs/PRODUCTION_CHECKLIST.md)** - Pre-deployment validation
-- **[Implementation Plan](IMPLEMENTATION_PLAN.md)** - Project phases and roadmap
-
-## 🔧 Troubleshooting
-
-### Common Issues and Solutions
-
-#### Port Already in Use
-```bash
-# Error: Port 1337 is already in use
-# Solution: The server will automatically try port 1338
-# Or kill the process using the port:
-lsof -ti:1337 | xargs kill
-```
-
-#### Database Locked
-```bash
-# Error: Database is locked
-# Solution: Close any other instances of the app and clear locks
-rm -rf data/*.db-shm data/*.db-wal
-```
-
-#### WebSocket Connection Failed
-- Check that the server is running
-- Verify no firewall is blocking WebSocket connections
-- Ensure you're using the correct URL (http:// not https:// for local dev)
-
-#### API Key Issues
-```bash
-# Verify your API key is set correctly
-echo $GEMINI_API_KEY
-
-# Make sure .env.local exists and has the key
-cat .env.local | grep GEMINI_API_KEY
-```
-
-#### Module Not Found Errors
-```bash
-# Clear cache and reinstall
-rm -rf node_modules package-lock.json .next
-npm install
-```
-
-#### Chat History Not Persisting
-- Ensure the `data/` directory exists and has write permissions
-- Check that the database files are being created in `data/`
-- For deployment, verify persistent volume is mounted
-
-#### Search Not Working
-- Vector database requires at least one message in a chat
-- Wait a few seconds after sending a message for indexing
-- Check browser console for errors
-
-### Getting Help
-
-If you encounter issues:
-1. Check the browser console (F12) for errors
-2. Check the server console output
-3. Review the [Issues](https://github.com/yourusername/geminigpt/issues) page
-4. Create a new issue with:
-   - Error message
-   - Steps to reproduce
-   - Your environment (OS, Node version, browser)
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can help:
-
-### Development Process
-
-1. **Fork the repository**
-   ```bash
-   # Fork via GitHub UI, then clone your fork
-   git clone https://github.com/yourusername/geminigpt.git
-   cd geminigpt
-   ```
-
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-
-3. **Make your changes**
-   - Follow the existing code style
-   - Add tests if applicable
-   - Update documentation as needed
-
-4. **Commit your changes**
-   ```bash
-   git add .
-   git commit -m 'Add amazing feature'
-   ```
-
-5. **Push to your fork**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-
-6. **Open a Pull Request**
-   - Go to the original repository
-   - Click "New Pull Request"
-   - Select your fork and branch
-   - Describe your changes
-
-### Code Guidelines
-
-- Use TypeScript for new code
-- Follow the existing project structure
-- Add comments for complex logic
-- Test your changes locally before submitting
-
-### What to Contribute
-
-- Bug fixes
-- New features
-- Documentation improvements
-- Performance optimizations
-- UI/UX enhancements
-- Test coverage
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## 👨‍💻 Author
-
-**Nathan Watkins**
 - Portfolio: [n8sportfolio.vercel.app](https://n8sportfolio.vercel.app/)
 - GitHub: [@n8watkins](https://github.com/n8watkins)
 - LinkedIn: [n8watkins](https://www.linkedin.com/in/n8watkins/)
 - Twitter: [@n8watkins](https://x.com/n8watkins)
 
-## 🙏 Acknowledgments
-
-- [Google Gemini AI](https://ai.google.dev/) - Powerful AI model
-- [Next.js](https://nextjs.org/) - React framework
-- [LanceDB](https://lancedb.com/) - Vector database
-- [Socket.IO](https://socket.io/) - Real-time communication
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-
----
-
-<div align="center">
-
-**Built with ❤️ as a portfolio project showcasing modern web development**
-
-[⭐ Star this repo](https://github.com/yourusername/geminigpt) | [🐛 Report Bug](https://github.com/yourusername/geminigpt/issues) | [💡 Request Feature](https://github.com/yourusername/geminigpt/issues)
-
-</div>
+MIT licensed. If you're also learning this stuff and something here is wrong
+or unclear, [open an issue](https://github.com/n8watkins/GeminiGPT/issues),
+I'd genuinely like to know.
