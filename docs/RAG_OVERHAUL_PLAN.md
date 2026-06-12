@@ -56,10 +56,10 @@ the vector DB. The README should read as a first-person learning journal
 
 | Agent | Track | Scope | Status |
 |-------|-------|-------|--------|
-| A | Backend | **RAG core**: auto-retrieval on every message (embed query → search other chats above similarity threshold → inject context → emit `retrieval-info`). Per-user embedding keys (visitor's BYOK key; server key fallback). Keep search tool. Files: `vectorDB.js`, `lib/websocket/services/*`, prompts. | not started |
-| B | Backend | **Usage tracking**: tag each `gemini_logs` row with key class (pool vs BYOK), aggregate counters, `GET /api/usage`, broadcast `usage-info`, env-configurable demo budget. Merges AFTER A (shared files in `lib/websocket/services/`). | not started |
-| C | Frontend | **Onboarding wizard + citations + usage meter**: merge About/ApiKeySetup modals into one two-step wizard over blurred live UI; pool-key-by-default (no upfront key ask; BYOK offered on `POOL_EXHAUSTED`); "📎 Recalled from <chat title>" citations; live shared-pool meter (in wizard step 2 + persistent in UI). Builds against contracts; parallel with A/B. Files: `src/components/*`, `src/hooks/useWebSocket.ts`. | not started |
-| D | Docs | **README learning journal**: full rewrite, first-person learner voice. Material: RAG/embeddings/LanceDB, WebSockets, BYOK economics, the 4-failure Render deploy saga. Independent. | not started |
+| A | Backend | **RAG core**: auto-retrieval on every message (embed query → search other chats above similarity threshold → inject context → emit `retrieval-info`). Per-user embedding keys (visitor's BYOK key; server key fallback). Keep search tool. Files: `vectorDB.js`, `lib/websocket/services/*`, prompts. | ✅ merged 37fcaff (incl. forced migration to gemini-embedding-001 — text-embedding-004 was retired upstream) |
+| B | Backend | **Usage tracking**: tag each `gemini_logs` row with key class (pool vs BYOK), aggregate counters, `GET /api/usage`, broadcast `usage-info`, env-configurable demo budget. Merges AFTER A (shared files in `lib/websocket/services/`). | in progress |
+| C | Frontend | **Onboarding wizard + citations + usage meter**: merge About/ApiKeySetup modals into one two-step wizard over blurred live UI; pool-key-by-default (no upfront key ask; BYOK offered on `POOL_EXHAUSTED`); "📎 Recalled from <chat title>" citations; live shared-pool meter (in wizard step 2 + persistent in UI). Builds against contracts; parallel with A/B. Files: `src/components/*`, `src/hooks/useWebSocket.ts`. | in progress |
+| D | Docs | **README learning journal**: full rewrite, first-person learner voice. Material: RAG/embeddings/LanceDB, WebSockets, BYOK economics, the 4-failure Render deploy saga. Independent. | ✅ merged eb77081 |
 
 Merge order: **A → B → C** (then end-to-end contract check), **D** anytime.
 Each agent: isolated worktree, full verification (`npm ci`-clean build, lint,
