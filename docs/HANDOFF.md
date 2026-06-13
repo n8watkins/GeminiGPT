@@ -47,8 +47,9 @@ plus README `577e03f` and fix `759d6bd` — all pushed to `origin/main`, live):
   **123/123** (96 baseline + 27 new). Live `/healthz`, `/api/usage`, `/share`
   all 200 post-deploy.
 - Full detail + the new row-field contract in `docs/RAG_OVERHAUL_PLAN.md`
-  "Wave 4". A reusable live prod probe is at `/tmp/prod-rag-probe.js`
-  (uncommitted — burns pool budget; `PROBE_URL` env overrides the target).
+  "Wave 4". A reusable live prod probe is at `tests/manual/prod-rag-probe.js`
+  (NOT run by `npm test` — it hits the live site and spends pool budget;
+  `node tests/manual/prod-rag-probe.js`, `PROBE_URL` env overrides the target).
 
 **Image-upload bug fixed** (`e63d0df`, pushed to `origin/main`):
 - The PNG/JPEG upload path was already working end-to-end (FileUpload →
