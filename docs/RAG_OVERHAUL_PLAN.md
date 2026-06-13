@@ -78,6 +78,14 @@ today). Multi-user confirmed live (20/20 concurrent sockets).
 | E (fix) | Single shared WebSocket (4 components each open their own socket today — causes disconnect flicker on chat switch); fix chat export/download error; self-contained share links (no server storage); hide sign-in when providers list is empty; remove/instrument legacy `/api/chat`. | ✅ merged c8446a7 (one socket via WebSocketProvider; export bug was the DebugPanel overlay swallowing clicks — debug widget now hidden by default, Alt+Shift+D; shares are `/share#<base64url(gzip(json))>` with size cap, legacy `/share/<id>` shows friendly expired state; sign-in UI gated on `/api/auth/providers`; `/api/chat` deleted — zero references) |
 | F (polish) | lucide-react icons (settings/theme/etc.); smoother+longer sidebar & shortcuts-modal animations; "student project" badge top-left; cycling typed-out prompt suggestions at the input; subtle ambient background motion (respect prefers-reduced-motion). | ✅ merged 4143902 |
 
+## Wave 3 (2026-06-13): image-upload fix
+
+- ✅ `e63d0df` — GIF and WebP image uploads were silently dropped: the client
+  accepts any `image/*`, but `AttachmentHandler.validateImageDimensions` only
+  parsed PNG/JPEG, so GIF/WebP fail-closed at 0×0. Added GIF + WebP
+  (VP8/VP8L/VP8X) dimension parsers; regression test added (suite now 96/96).
+  PNG/JPEG path was already working end-to-end.
+
 ## Later / parked
 
 - UI gutting (modal consolidation, sidebar diet, Inspector route from
