@@ -13,7 +13,7 @@ or not.
 
 Reader, I did not always like it.
 
-![I have no idea what I'm doing](./images/no-idea-what-im-doing.jpg)
+![I have no idea what I'm doing](./images/no-idea-what-im-doing.png)
 *Me, opening the vector database docs for the first time.*
 
 ## First, the one idea you actually need
@@ -31,7 +31,7 @@ Cool. Ship it. How hard could the rest be?
 
 ## It worked perfectly on my machine
 
-![It works on my machine](./images/works-on-my-machine.gif)
+![Deploy: it works locally (panik), deployed to Render (kalm), HTTP 502 no errors (panik)](./images/deploy-panik.png)
 
 Deploying it produced four failures in a row, each one teaching me something I
 thought I already knew: npm peer-dependency hell (from a `legacy-peer-deps` flag
@@ -54,7 +54,7 @@ Here's the part the tutorials skip. Once retrieval was automatic, I started
 actually **reading what it pulled back** — and a lot of it was junk, in three
 specific flavors. Fixing each one was its own little experiment.
 
-![Expanding brain](./images/expanding-brain.jpg)
+![Galaxy brain: embed each message → embed whole turns → hybrid keyword+vector → relative-gap rerank](./images/expanding-brain.png)
 *The real evolution of this project's retrieval, bottom to top.*
 
 **1. Lone messages have no context.** A stored vector for "yeah, the second one"
@@ -66,8 +66,8 @@ in an unrelated chat, the app cited it anyway, because the dog turn had been
 windowed into its neighbor and dragged along. **More context wasn't free; it was
 cross-talk.** I tore it out.
 
-![Surprised Pikachu](./images/surprised-pikachu.jpg)
-*Me, discovering my "extra context" was contaminating unrelated chats.*
+![Disaster Girl: my "extra context" quietly poisoning unrelated chats](./images/windowing-disaster.png)
+*Me, realizing my "extra context" was quietly contaminating unrelated chats.*
 
 **2. Vectors are weirdly bad at exact words.** Embeddings capture meaning — which
 is the point — but that makes them terrible at the one thing keyword search is
@@ -85,7 +85,7 @@ whole context budget learning it four times. Fix: **MMR reranking**, which picks
 results that are relevant *and* different from each other. The trendy move is to
 ask an LLM to rerank — I didn't, on purpose:
 
-![Drake: LLM reranker no, MMR yes](./images/drake-reranker.jpg)
+![Drake: LLM reranker no, MMR yes](./images/drake-reranker.png)
 
 This runs on a **shared free API key.** An extra model call on *every message*
 just to reorder four snippets is exactly how a free demo goes broke. MMR is pure
@@ -97,7 +97,7 @@ Last boss. My retrieval ignored anything past a distance of `0.85`, and a weak,
 irrelevant result kept sneaking under it. My instinct: lower the number. To 0.80?
 0.75? I had no idea — so I was about to just pick one.
 
-![Two buttons](./images/two-buttons.jpg)
+![Two buttons: max distance 0.75 or 0.80?](./images/two-buttons.png)
 
 Instead I built a tiny harness, embedded a labeled set of questions and facts for
 real, and **measured.** The data ended the debate in ten minutes: the legit

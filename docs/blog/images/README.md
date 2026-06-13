@@ -1,24 +1,28 @@
-# Blog image slots — drop-in guide
+# Blog images — how they were made
 
-The post `../building-cross-chat-memory.md` references the images below. Save
-each one into **this folder** with the exact filename and it renders. All are
-well-known, freely-circulating memes — grab whichever version you like from a
-quick image search (terms provided). GIFs welcome where noted.
+These are **real, committed PNGs**, captioned and generated via
+[**memegen.link**](https://memegen.link) — a free, no-auth, URL-based meme API
+(213 templates). No account, no key: you build a URL like
+`https://api.memegen.link/images/<template>/<top>/<bottom>.png` and it renders.
+Spaces → `_`, literal `_` → `__`, `-` → `--`, `?` → `~q`.
 
-| Filename | Meme / image | Where it lands | Suggested search |
-|----------|--------------|----------------|------------------|
-| `no-idea-what-im-doing.jpg` | "I have no idea what I'm doing" dog at a computer | Opening — first time in the vector DB docs | *"i have no idea what im doing dog"* |
-| `works-on-my-machine.gif` | "It works on my machine" (a shrug/dev GIF works great) | Part 2, the deploy saga | *"it works on my machine gif"* |
-| `this-is-fine.png` | "This is fine" dog in the burning room | Part 3, model silently retired in prod | *"this is fine dog meme"* |
-| `expanding-brain.jpg` | Expanding/galaxy brain (4 panels) | Part 4 intro, the retrieval evolution | *"expanding brain meme blank"* — optionally caption the 4 tiers: isolated messages → turn chunks → hybrid search → relative-gap rerank |
-| `surprised-pikachu.jpg` | Surprised Pikachu | Part 4, the live test catching the windowing bug | *"surprised pikachu"* |
-| `press-f.png` | "Press F to pay respects" | Part 4, deleting the windowing code | *"press f to pay respects meme"* |
-| `drake-reranker.jpg` | Drake "no / yes" two-panel | Part 4, rejecting an LLM reranker for MMR | *"drake meme template"* — top (reject): "LLM reranker on every message", bottom (approve): "free offline MMR math" |
-| `two-buttons.jpg` | "Two buttons" sweating guy | Part 5, the threshold guess | *"two buttons meme template"* — buttons: "MAX_DISTANCE 0.75" / "MAX_DISTANCE 0.80" |
+To regenerate or tweak any image, re-run its `curl` below (from this folder):
 
-Tips:
-- For the captioned ones (expanding brain, drake, two buttons), imgflip's
-  meme generator makes them in ~30 seconds.
-- GIFs from Giphy/Tenor: download the `.gif` (or `.mp4`→`.gif`) and commit it —
-  don't hotlink, so the post survives if the link rots.
-- Keep them reasonably small (< ~2 MB each) so the repo stays light.
+| File | Template | Regenerate |
+|------|----------|------------|
+| `no-idea-what-im-doing.png` | `noidea` | `curl -s "https://api.memegen.link/images/noidea/me_the_first_time_I_opened_the_LanceDB_docs.png" -o no-idea-what-im-doing.png` |
+| `deploy-panik.png` | `panik-kalm-panik` | `curl -s "https://api.memegen.link/images/panik-kalm-panik/it_works_locally/deployed_to_Render/HTTP_502_no_errors_in_the_logs.png" -o deploy-panik.png` |
+| `this-is-fine.png` | `fine` | `curl -s "https://api.memegen.link/images/fine/cross_chat_memory~q_in_prod/(google_retired_my_embedding_model).png" -o this-is-fine.png` |
+| `expanding-brain.png` | `gb` (Galaxy Brain) | `curl -s "https://api.memegen.link/images/gb/embed_each_message_alone/embed_whole_turns/hybrid_keyword_and_vector/relative_gap_rerank.png" -o expanding-brain.png` |
+| `windowing-disaster.png` | `disastergirl` | `curl -s "https://api.memegen.link/images/disastergirl/my_'extra_context'/quietly_poisoning_unrelated_chats.png" -o windowing-disaster.png` |
+| `drake-reranker.png` | `drake` | `curl -s "https://api.memegen.link/images/drake/LLM_reranker_on_every_message/free_offline_MMR_math.png" -o drake-reranker.png` |
+| `two-buttons.png` | `ds` (Daily Struggle) | `curl -s "https://api.memegen.link/images/ds/max_distance_0.75/max_distance_0.80.png" -o two-buttons.png` |
+
+**Want animated GIFs instead?** memegen is static-only. For GIFs use the
+**Giphy** or **Tenor** APIs (both free, but they need an API key) — e.g. a
+"it works on my machine" GIF for the deploy section. Not wired up here to avoid
+a key dependency; the panik-kalm-panik static covers that beat fine.
+
+Other ready-made templates that fit if you want to swap: `success` (Success Kid),
+`stonks`, `disastergirl`, `gandalf` (Confused Gandalf), `exit` (Left Exit 12).
+Browse them all at <https://api.memegen.link/templates>.

@@ -32,7 +32,7 @@ personality is **cross-chat memory.** Tell it your dog's name in one chat, ask
 about your dog in a totally different one, and it remembers. Most chat apps treat
 every conversation as an island. I wanted to build the bridges.
 
-![I have no idea what I'm doing](./images/no-idea-what-im-doing.jpg)
+![I have no idea what I'm doing](./images/no-idea-what-im-doing.png)
 
 **Embeddings finally clicked** when I stopped reading and wrote it down myself:
 an embedding is just a list of 768 numbers — a *point in space* — and text with
@@ -43,7 +43,7 @@ measuring the distance between *meanings.* Ship it. How hard could the rest be?
 me otherwise (peer-dep hell, a crash loop, missing build deps, and a 502 from
 binding to the container's hostname instead of `0.0.0.0`).
 
-![It works on my machine](./images/works-on-my-machine.gif)
+![It works on my machine](./images/deploy-panik.png)
 
 **Then the model got retired out from under me.** Cross-chat memory just…
 stopped. No error, no failed deploy. Google had retired my embedding model and
@@ -58,12 +58,12 @@ three predictable flavors:
 1. **Lone messages have no context** → I chunk by *turn* now (your message + the
    reply together). I over-corrected by also gluing in the *previous* turn; a
    live test showed it contaminated unrelated chats, so I ripped it out.
-   ![Surprised Pikachu](./images/surprised-pikachu.jpg)
+   ![Surprised Pikachu](./images/windowing-disaster.png)
 2. **Vectors are bad at exact words** → added a dumb keyword search alongside the
    smart vector one and fused them with Reciprocal Rank Fusion. Biggest jump.
 3. **Top results are often the same result** → MMR reranking for diversity.
    *Not* an LLM reranker — that'd burn my shared free key on every message.
-   ![Drake: LLM reranker no, MMR yes](./images/drake-reranker.jpg)
+   ![Drake: LLM reranker no, MMR yes](./images/drake-reranker.png)
 
 **The finale: a threshold I almost guessed at.** A weak irrelevant result was
 sneaking past my distance cutoff. Instead of guessing a new number, I measured —
@@ -71,7 +71,7 @@ and the data showed legit paraphrases (~0.76) and false positives (~0.69–0.80)
 *overlap*, so no single cutoff works. The fix was a *relative* rule (keep
 results near the best match), not an absolute one.
 
-![Two buttons](./images/two-buttons.jpg)
+![Two buttons](./images/two-buttons.png)
 
 **What I learned:** tutorials show the demo, production is everything after;
 read your model's *bad* output; measure before you tune; test the deployed thing
@@ -122,7 +122,7 @@ pick results that are relevant *and* mutually diverse. I deliberately avoided an
 LLM-based reranker: this runs on a shared free key, and an extra model call per
 message is how a free demo dies. MMR is pure vector math — effectively free.
 
-![Expanding brain](./images/expanding-brain.jpg)
+![Expanding brain](./images/expanding-brain.png)
 
 **The capstone — and my favorite lesson.** My retrieval gate dropped anything
 past a distance of 0.85, and a weak false positive was still sneaking through.
@@ -161,7 +161,7 @@ My retrieval ignored anything past a similarity cutoff of 0.85. A junk result
 kept sneaking under it, so — obviously — I went to lower the number. To 0.80? To
 0.75? I genuinely didn't know, so I was about to just… pick one.
 
-![Two buttons](./images/two-buttons.jpg)
+![Two buttons](./images/two-buttons.png)
 
 Instead I spent ten minutes measuring actual distances on a labeled set. The data
 ended the argument instantly: the *legit* matches I wanted to keep reached ~0.76,
@@ -252,7 +252,7 @@ or not.
 
 Reader, I did not always like it.
 
-![I have no idea what I'm doing](./images/no-idea-what-im-doing.jpg)
+![I have no idea what I'm doing](./images/no-idea-what-im-doing.png)
 *Me, opening the vector database docs for the first time.*
 
 ### First, the one idea you actually need
@@ -270,7 +270,7 @@ Cool. Ship it. How hard could the rest be?
 
 ### It worked perfectly on my machine
 
-![It works on my machine](./images/works-on-my-machine.gif)
+![It works on my machine](./images/deploy-panik.png)
 
 Deploying it produced four failures in a row, each one teaching me something I
 thought I already knew: npm peer-dependency hell (from a `legacy-peer-deps` flag
@@ -293,7 +293,7 @@ Here's the part the tutorials skip. Once retrieval was automatic, I started
 actually **reading what it pulled back** — and a lot of it was junk, in three
 specific flavors. Fixing each one was its own little experiment.
 
-![Expanding brain](./images/expanding-brain.jpg)
+![Expanding brain](./images/expanding-brain.png)
 *The real evolution of this project's retrieval, bottom to top.*
 
 **1. Lone messages have no context.** A stored vector for "yeah, the second one"
@@ -305,7 +305,7 @@ in an unrelated chat, the app cited it anyway, because the dog turn had been
 windowed into its neighbor and dragged along. **More context wasn't free; it was
 cross-talk.** I tore it out.
 
-![Surprised Pikachu](./images/surprised-pikachu.jpg)
+![Surprised Pikachu](./images/windowing-disaster.png)
 *Me, discovering my "extra context" was contaminating unrelated chats.*
 
 **2. Vectors are weirdly bad at exact words.** Embeddings capture meaning — which
@@ -324,7 +324,7 @@ whole context budget learning it four times. Fix: **MMR reranking**, which picks
 results that are relevant *and* different from each other. The trendy move is to
 ask an LLM to rerank — I didn't, on purpose:
 
-![Drake: LLM reranker no, MMR yes](./images/drake-reranker.jpg)
+![Drake: LLM reranker no, MMR yes](./images/drake-reranker.png)
 
 This runs on a **shared free API key.** An extra model call on *every message*
 just to reorder four snippets is exactly how a free demo goes broke. MMR is pure
@@ -336,7 +336,7 @@ Last boss. My retrieval ignored anything past a distance of `0.85`, and a weak,
 irrelevant result kept sneaking under it. My instinct: lower the number. To 0.80?
 0.75? I had no idea — so I was about to just pick one.
 
-![Two buttons](./images/two-buttons.jpg)
+![Two buttons](./images/two-buttons.png)
 
 Instead I built a tiny harness, embedded a labeled set of questions and facts for
 real, and **measured.** The data ended the debate in ten minutes: the legit
