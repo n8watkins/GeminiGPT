@@ -134,11 +134,15 @@ If a focus was given at handoff time, do that first. Otherwise:
      route fed by the existing `debug-info` socket events.
    - Edge: an invalid BYOK key falls back to the server key internally but is
      tagged `byok`, so it isn't counted against the pool budget.
-   - _(DONE)_ RAG threshold tuning: `MAX_DISTANCE` 0.85→0.80, chosen from
-     measured precision/recall (`tests/manual/threshold-tuning.js`) on a
-     turn-chunk corpus — keeps 100% recall, halves structural false positives.
-     `MMR_LAMBDA` left at 0.7 (no evidence it needs changing). Windowing
-     double-recall resolved earlier (`576b401`).
+   - _(DONE)_ RAG relevance tuning: measured precision/recall on a turn-chunk
+     corpus (`tests/manual/threshold-tuning.js`) showed legit paraphrases
+     (~0.76) and structural false positives (~0.69-0.80) OVERLAP, so no absolute
+     `MAX_DISTANCE` separates them. Final design (`49e8cad`): keep `MAX_DISTANCE`
+     a recall-safe 0.85 and add `RELEVANCE_GAP=0.10` — drop vector candidates
+     trailing the closest match by more than the gap (the correct fact is
+     essentially always closest, so no recall cost). `MMR_LAMBDA` left at 0.7.
+     (Intermediate `MAX_DISTANCE=0.80` in `ed631ae` was superseded — it didn't
+     separate the overlap.) Windowing double-recall resolved earlier (`576b401`).
 
 ## Conventions & gotchas (hard-won this session)
 
