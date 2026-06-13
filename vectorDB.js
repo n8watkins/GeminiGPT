@@ -3,6 +3,7 @@ const lancedb = require('@lancedb/lancedb');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { extractKeywords, reciprocalRankFusion } = require('./lib/websocket/services/HybridSearch');
 
 // Initialize Gemini AI for embeddings. The server key is optional (BYOK):
 // without it, embedding-based features (cross-chat semantic search) only work
@@ -223,6 +224,35 @@ function escapeFilterValue(value) {
   return String(value).replace(/'/g, "''");
 }
 
+// Backslash used as the LIKE ESCAPE character below.
+const LIKE_ESCAPE_CHAR = '\\';
+
+/**
+ * Escape a term for safe use inside a single-quoted SQL `LIKE '%...%'` literal.
+ *
+ * Two layers of escaping are needed:
+ *   1. SQL string-literal escaping (single quotes) via escapeFilterValue.
+ *   2. LIKE-pattern escaping so a user-supplied term cannot inject the wildcard
+ *      metacharacters `%` and `_` (which would broaden the match) or the escape
+ *      character itself. We prefix each of `\`, `%`, `_` with a backslash and
+ *      pair this with an explicit `ESCAPE '\'` clause on the query.
+ *
+ * Order matters: escape the backslash FIRST, then the wildcards, so we don't
+ * double-escape the backslashes we just added.
+ *
+ * @param {string} term - Raw keyword term (already lowercased by the caller)
+ * @returns {string} Escaped inner pattern (without the surrounding %), ready to
+ *                   embed between `%` wildcards inside a single-quoted literal
+ */
+function escapeLikeTerm(term) {
+  const wildcardEscaped = String(term)
+    .replace(/\\/g, '\\\\')
+    .replace(/%/g, '\\%')
+    .replace(/_/g, '\\_');
+  // Then escape single quotes for the SQL string literal.
+  return escapeFilterValue(wildcardEscaped);
+}
+
 /**
  * Add a message to the vector database
  * @param {string} userId - User ID
@@ -273,14 +303,103 @@ async function addMessage(userId, chatId, message, chatTitle = '', metadata = {}
 }
 
 /**
- * Search for similar messages in user's chat history
+ * Build the shared user/excludeChatId WHERE clause used by both the vector and
+ * keyword searches so they query the exact same candidate pool.
+ * @param {string} userId
+ * @param {string|null} excludeChatId
+ * @returns {string} SQL WHERE clause
+ * @private
+ */
+function buildScopeFilter(userId, excludeChatId) {
+  let whereClause = `user_id = '${escapeFilterValue(userId)}'`;
+  if (excludeChatId) {
+    whereClause += ` AND chat_id != '${escapeFilterValue(excludeChatId)}'`;
+  }
+  return whereClause;
+}
+
+/**
+ * Run a lexical keyword search over the same scoped candidate pool.
+ *
+ * Builds a `LOWER(content) LIKE '%term%'` clause for each keyword (LanceDB LIKE
+ * is case-sensitive, so we lower-case both the column and the terms), OR'd
+ * together and AND'd with the scope filter. Each term is escaped for both the
+ * SQL literal and the LIKE wildcards (see escapeLikeTerm) with an explicit
+ * ESCAPE clause so user terms cannot inject `%`/`_` wildcards.
+ *
+ * The fetched rows are then scored in JS by the count of DISTINCT query terms
+ * they contain (case-insensitively), ranked by that count descending, and each
+ * is tagged with `_keywordScore` = that integer count. Rows have NO meaningful
+ * vector distance, so `_distance` is left as whatever the row carried (the
+ * caller nulls it for keyword-only hits during fusion).
+ *
+ * Never throws — a keyword-search failure must never break overall search.
+ *
+ * @param {string[]} keywords - Lowercased significant terms
+ * @param {string} scopeFilter - Shared user/excludeChatId WHERE clause
+ * @param {number} limit - Max rows to fetch
+ * @returns {Promise<Array>} Keyword-ranked rows (best-first), or [] on failure
+ * @private
+ */
+async function keywordSearch(keywords, scopeFilter, limit) {
+  try {
+    const likeClauses = keywords
+      .map((term) => `LOWER(content) LIKE '%${escapeLikeTerm(term)}%' ESCAPE '${LIKE_ESCAPE_CHAR}'`)
+      .join(' OR ');
+
+    const whereClause = `(${scopeFilter}) AND (${likeClauses})`;
+
+    const rows = await table
+      .query()
+      .where(whereClause)
+      .limit(limit)
+      .toArray();
+
+    // Score each row by how many DISTINCT query terms it contains.
+    for (const row of rows) {
+      const lowerContent = String(row.content || '').toLowerCase();
+      let count = 0;
+      for (const term of keywords) {
+        if (lowerContent.includes(term)) count++;
+      }
+      row._keywordScore = count;
+    }
+
+    // Keep only real matches and rank by distinct-term count descending.
+    return rows
+      .filter((row) => row._keywordScore >= 1)
+      .sort((a, b) => b._keywordScore - a._keywordScore);
+  } catch (error) {
+    // A keyword-search failure must never break overall search.
+    console.error('Keyword search failed (falling back to vector-only):', error);
+    return [];
+  }
+}
+
+/**
+ * Search for relevant messages in the user's OTHER chats using HYBRID search:
+ * a vector (semantic) search fused with a lexical keyword search via Reciprocal
+ * Rank Fusion (RRF). Pure vector search misses exact-term / proper-noun / rare
+ * token matches; the keyword layer recovers those.
+ *
+ * Output contract (ChatRetriever + rerank depend on these exact fields):
+ *  - Returns an array of rows ordered by fused rank (best first), length <= topK.
+ *  - Rows present in the vector candidate set KEEP their real numeric `_distance`.
+ *  - Rows that matched ONLY via keyword have `_distance = null` and `_keywordScore >= 1`.
+ *  - EVERY row additionally carries `_rrf` (number) and `_keywordScore` (integer,
+ *    0 if it wasn't a keyword match) and retains all original columns.
+ *
+ * Graceful degradation: if there are no significant keywords (or the keyword
+ * query errors), falls back to pure vector results — still attaching `_rrf`
+ * (from the single list) and `_keywordScore = 0`.
+ *
  * @param {string} userId - User ID to search within
  * @param {string} query - Search query
  * @param {number} topK - Number of results to return (default: 5)
  * @param {Object} options - Optional search options
  * @param {string|null} options.apiKey - Visitor-provided API key for the query embedding (BYOK)
  * @param {string|null} options.excludeChatId - Exclude results from this chat (cross-chat retrieval)
- * @returns {Promise<Array>} - Array of search results (each row includes LanceDB's `_distance`)
+ * @returns {Promise<Array>} - Fused search results (best-first), each row carrying `_rrf` + `_keywordScore`
  */
 async function searchChats(userId, query, topK = 5, options = {}) {
   const { apiKey = null, excludeChatId = null } = options;
@@ -298,19 +417,69 @@ async function searchChats(userId, query, topK = 5, options = {}) {
     // Generate embedding for the search query (visitor key first, server fallback)
     const queryEmbedding = await generateEmbedding(query, apiKey);
 
-    // Search for similar vectors within the user's chats
-    let whereClause = `user_id = '${escapeFilterValue(userId)}'`;
-    if (excludeChatId) {
-      whereClause += ` AND chat_id != '${escapeFilterValue(excludeChatId)}'`;
-    }
+    const scopeFilter = buildScopeFilter(userId, excludeChatId);
 
-    const results = await table
+    // Fetch a larger candidate set than topK so fusion has room to re-rank.
+    const candidateLimit = Math.max(topK * 3, 15);
+
+    // --- Vector-ranked list (rows have real `_distance`) ---
+    const vectorRanked = await table
       .search(queryEmbedding)
-      .where(whereClause)
-      .limit(topK)
+      .where(scopeFilter)
+      .limit(candidateLimit)
       .toArray();
 
-    console.log(`Found ${results.length} similar messages for query: ${query.substring(0, 50)}...`);
+    // --- Keyword-ranked list ---
+    const keywords = extractKeywords(query);
+    let keywordRanked = [];
+    if (keywords.length > 0) {
+      keywordRanked = await keywordSearch(keywords, scopeFilter, candidateLimit);
+    }
+
+    // Graceful degradation: no keywords → pure vector results, but still honor
+    // the output contract (`_rrf` from the single list, `_keywordScore = 0`).
+    if (keywordRanked.length === 0) {
+      const fused = reciprocalRankFusion(vectorRanked, []);
+      for (const row of fused) {
+        if (typeof row._keywordScore !== 'number') row._keywordScore = 0;
+      }
+      const results = fused.slice(0, topK);
+      console.log(`Found ${results.length} messages (vector-only) for query: ${query.substring(0, 50)}...`);
+      return results;
+    }
+
+    // Mark which message_ids came from the vector candidate set so we can null
+    // `_distance` on keyword-only hits (they have no meaningful vector distance).
+    const vectorIds = new Set(
+      vectorRanked.map((row) => row.message_id).filter((id) => id != null)
+    );
+    for (const row of keywordRanked) {
+      if (!vectorIds.has(row.message_id)) {
+        row._distance = null;
+      }
+    }
+
+    // Map message_id -> keyword score so we can stamp it onto the FINAL fused
+    // rows. RRF prefers the vector list's row object as the base when a
+    // message_id appears in both lists, and that object wouldn't otherwise carry
+    // the keyword score computed on the keyword-list copy.
+    const keywordScoreById = new Map();
+    for (const row of keywordRanked) {
+      keywordScoreById.set(row.message_id, row._keywordScore);
+    }
+
+    // --- Fuse the two ranked lists via RRF ---
+    const fused = reciprocalRankFusion(vectorRanked, keywordRanked);
+
+    // Ensure every row honors the output contract.
+    for (const row of fused) {
+      row._keywordScore = keywordScoreById.get(row.message_id) || 0;
+    }
+
+    const results = fused.slice(0, topK);
+    console.log(
+      `Found ${results.length} hybrid messages (vector=${vectorRanked.length}, keyword=${keywordRanked.length}) for query: ${query.substring(0, 50)}...`
+    );
     return results;
   } catch (error) {
     console.error('Error searching chat history:', error);
