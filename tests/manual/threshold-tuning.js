@@ -33,14 +33,24 @@ const DOCS = {
 };
 
 // --- Queries, each labelled with the ONE doc it should retrieve ------------
+// kind: 'direct' = phrased close to the fact; 'paraphrase' = indirect/reworded,
+// the harder recall case we must NOT drop when tightening the threshold.
 const QUERIES = [
-  { q: 'what is my dog\'s name?', match: 'dog' },
-  { q: 'remind me what I named my dog', match: 'dog' },
-  { q: 'what\'s the codename of my production deployment?', match: 'deploy' },
-  { q: 'what is Zephyr-Quokka-7X?', match: 'deploy' },
-  { q: 'what kind of car do I drive?', match: 'car' },
-  { q: 'what sci-fi book did I say I liked?', match: 'book' },
-  { q: 'how do I take my coffee?', match: 'coffee' },
+  { q: 'what is my dog\'s name?', match: 'dog', kind: 'direct' },
+  { q: 'remind me what I named my dog', match: 'dog', kind: 'direct' },
+  { q: 'what\'s the codename of my production deployment?', match: 'deploy', kind: 'direct' },
+  { q: 'what is Zephyr-Quokka-7X?', match: 'deploy', kind: 'direct' },
+  { q: 'what kind of car do I drive?', match: 'car', kind: 'direct' },
+  { q: 'what sci-fi book did I say I liked?', match: 'book', kind: 'direct' },
+  { q: 'how do I take my coffee?', match: 'coffee', kind: 'direct' },
+  // Harder, indirect / paraphrased recalls (these are the ones at risk):
+  { q: 'do I have any pets?', match: 'dog', kind: 'paraphrase' },
+  { q: 'tell me about my corgi', match: 'dog', kind: 'paraphrase' },
+  { q: 'what\'s my Subaru called?', match: 'car', kind: 'paraphrase' },
+  { q: 'what vehicle do I own?', match: 'car', kind: 'paraphrase' },
+  { q: 'what did I say about my mornings?', match: 'coffee', kind: 'paraphrase' },
+  { q: 'which novel did I recommend?', match: 'book', kind: 'paraphrase' },
+  { q: 'what name did I give my production environment?', match: 'deploy', kind: 'paraphrase' },
 ];
 
 const CANDIDATE_THRESHOLDS = [0.70, 0.75, 0.78, 0.80, 0.82, 0.85, 0.90];
@@ -61,17 +71,17 @@ async function main() {
   const docVecs = {};
   for (const [k, text] of Object.entries(DOCS)) docVecs[k] = await generateEmbedding(text);
 
-  // pair list: { query, docKey, dist, shouldRetrieve }
+  // pair list: { query, docKey, dist, shouldRetrieve, kind }
   const pairs = [];
-  for (const { q, match } of QUERIES) {
+  for (const { q, match, kind } of QUERIES) {
     const qv = await generateEmbedding(q);
     const row = Object.keys(DOCS).map((k) => ({ docKey: k, dist: sqL2(qv, docVecs[k]) }));
     row.sort((a, b) => a.dist - b.dist);
-    console.log(`Q: "${q}"  (expect: ${match})`);
+    console.log(`Q[${kind}]: "${q}"  (expect: ${match})`);
     for (const r of row) {
       const tag = r.docKey === match ? '  <-- SHOULD RETRIEVE' : '';
       console.log(`   ${r.dist.toFixed(3)}  ${r.docKey}${tag}`);
-      pairs.push({ q, docKey: r.docKey, dist: r.dist, shouldRetrieve: r.docKey === match });
+      pairs.push({ q, docKey: r.docKey, dist: r.dist, shouldRetrieve: r.docKey === match, kind });
     }
     console.log('');
   }
@@ -94,12 +104,39 @@ async function main() {
     console.log(`   ${T.toFixed(2)}   ${String(tp).padStart(2)}  ${String(fp).padStart(2)}  ${String(fn).padStart(2)}    ${precision.toFixed(3)}     ${recall.toFixed(3)}   ${f1.toFixed(3)}`);
   }
 
-  // --- Diagnostics: the recall floor and the closest false positive -------
-  const posDists = pairs.filter((p) => p.shouldRetrieve).map((p) => p.dist);
+  // --- Diagnostics: recall floor by query kind, and the closest FP --------
+  const directPos = pairs.filter((p) => p.shouldRetrieve && p.kind === 'direct').map((p) => p.dist);
+  const paraPos = pairs.filter((p) => p.shouldRetrieve && p.kind === 'paraphrase').map((p) => p.dist);
   const negDists = pairs.filter((p) => !p.shouldRetrieve).map((p) => p.dist);
-  console.log('\nRecall floor  (max distance among SHOULD-RETRIEVE pairs): ', Math.max(...posDists).toFixed(3));
-  console.log('Hardest FP    (min distance among SHOULD-NOT pairs):      ', Math.min(...negDists).toFixed(3));
-  console.log('=> a clean separating threshold exists only if recall-floor < hardest-FP.');
+  console.log('\nRecall floor (direct):     ', Math.max(...directPos).toFixed(3));
+  console.log('Recall floor (paraphrase): ', Math.max(...paraPos).toFixed(3), ' <- the at-risk number when tightening');
+  console.log('Hardest FP (min SHOULD-NOT):', Math.min(...negDists).toFixed(3));
+  console.log('=> safe absolute threshold lives between the paraphrase recall floor and the hardest FP.');
+
+  // --- Relative score-gap rule: keep a candidate only if its distance is
+  //     within GAP of the best (closest) candidate for that query. Targets the
+  //     "one strong hit + trailing weak structural neighbours" pattern. -----
+  console.log('\nRelative score-gap rule (keep if dist <= bestDist + GAP), paired with MAX_DISTANCE=0.85:');
+  console.log('   GAP    TP  FP  FN   precision  recall   F1');
+  const byQuery = {};
+  for (const p of pairs) (byQuery[p.q] ||= []).push(p);
+  const totalPos2 = pairs.filter((p) => p.shouldRetrieve).length;
+  for (const GAP of [0.08, 0.10, 0.12, 0.15, 0.20]) {
+    let tp = 0, fp = 0;
+    for (const list of Object.values(byQuery)) {
+      const best = Math.min(...list.map((p) => p.dist));
+      for (const p of list) {
+        const kept = p.dist <= 0.85 && p.dist <= best + GAP;
+        if (kept && p.shouldRetrieve) tp++;
+        else if (kept && !p.shouldRetrieve) fp++;
+      }
+    }
+    const fn = totalPos2 - tp;
+    const precision = tp + fp ? tp / (tp + fp) : 1;
+    const recall = totalPos2 ? tp / totalPos2 : 1;
+    const f1 = precision + recall ? (2 * precision * recall) / (precision + recall) : 0;
+    console.log(`   ${GAP.toFixed(2)}   ${String(tp).padStart(2)}  ${String(fp).padStart(2)}  ${String(fn).padStart(2)}    ${precision.toFixed(3)}     ${recall.toFixed(3)}   ${f1.toFixed(3)}`);
+  }
 
   process.exit(0);
 }
