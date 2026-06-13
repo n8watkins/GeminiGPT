@@ -29,23 +29,32 @@ plus README `577e03f` and fix `759d6bd` — all pushed to `origin/main`, live):
 - Built by **three parallel worktree agents** against a shared `searchChats`
   row contract (zero file overlap), merged in order **chunk → hybrid → rerank**:
   - **Turn-chunking** (`ConversationChunker.js`): one context-carrying `turn`
-    row per turn (current turn + windowed prior turn) instead of two isolated
-    user/assistant rows.
+    row per turn (user + assistant combined) instead of two isolated rows.
+    (Originally also windowed the prior turn; removed in `576b401` after a live
+    probe showed it polluted neighbour embeddings — see below.)
   - **Hybrid search** (`HybridSearch.js` + `searchChats`): lexical `LIKE`
     search fused with vector search via Reciprocal Rank Fusion (k=60). Rows
     gain `_rrf` + `_keywordScore`; keyword-only hits carry `_distance=null`.
   - **MMR reranking** (`Reranker.js` + `ChatRetriever`): gate on distance OR
     keyword strength, then MMR (λ=0.7) for relevance + diversity. Offline by
     design — NO extra LLM call (it'd burn the shared pool per query).
-- **Live prod probe found & fixed a real bug** (`759d6bd`): chunks led with the
-  windowed prior turn, but the read path snippets the first ~200 chars for both
-  citation and injected context — so a follow-up turn's snippet showed the OLD
-  window and truncated away the turn's actual content. Now leads with the
-  current turn. (Lesson: unit tests on mock rows passed; only the end-to-end
-  prod probe with real chunked data caught it.)
+- **Live prod probe drove two fixes to the windowing idea** (unit tests on mock
+  rows passed throughout; only the end-to-end prod probe with real chunked data
+  caught these):
+  - `759d6bd` — chunks led with the windowed prior turn, but the read path
+    snippets the first ~200 chars for both citation and injected context, so a
+    follow-up turn's snippet showed the OLD window and truncated away the turn's
+    actual content. Reordered to lead with the current turn.
+  - `576b401` — the re-probe then showed the deeper flaw: windowing the prior
+    turn into every chunk polluted neighbour embeddings, so a "dog's name" query
+    matched an unrelated "production deployment" turn (the dog turn had been
+    windowed into it) and recalled the same fact twice with a misleading
+    citation. **Removed cross-turn windowing entirely**; kept turn-pairing
+    (user+assistant), which already solves the lone-message problem.
 - Verified: build ✓, lint ✓ (0 errors, 14 warnings), type-check ✓, tests
-  **123/123** (96 baseline + 27 new). Live `/healthz`, `/api/usage`, `/share`
-  all 200 post-deploy.
+  **121/121** (96 baseline + 25 new). Live `/healthz`, `/api/usage`, `/share`
+  all 200 post-deploy; cross-chat recall (semantic + exact-token) confirmed via
+  the live probe.
 - Full detail + the new row-field contract in `docs/RAG_OVERHAUL_PLAN.md`
   "Wave 4". A reusable live prod probe is at `tests/manual/prod-rag-probe.js`
   (NOT run by `npm test` — it hits the live site and spends pool budget;
@@ -125,11 +134,10 @@ If a focus was given at handoff time, do that first. Otherwise:
      route fed by the existing `debug-info` socket events.
    - Edge: an invalid BYOK key falls back to the server key internally but is
      tagged `byok`, so it isn't counted against the pool budget.
-   - RAG follow-ups now visible after Wave 4: windowing makes a fact appear in
-     two chunks (the turn itself + the next turn's trailing window), so a recall
-     can cite the same fact twice — could dedupe by source turn or by fuzzy
-     snippet overlap. Also consider tuning `MAX_DISTANCE`/`MMR_LAMBDA` now that
-     chunks are turn-sized (longer) rather than single messages.
+   - RAG tuning follow-up: now that chunks are turn-sized (longer than single
+     messages), consider revisiting `MAX_DISTANCE`/`MMR_LAMBDA` in
+     `ChatRetriever.js`. (The windowing double-recall issue is resolved —
+     `576b401` removed cross-turn windowing.)
 
 ## Conventions & gotchas (hard-won this session)
 
@@ -179,7 +187,7 @@ If a focus was given at handoff time, do that first. Otherwise:
 - `lib/websocket/services/HybridSearch.js` — Wave 4: keyword extraction +
   Reciprocal Rank Fusion (pure helpers; the LanceDB queries live in vectorDB.js).
 - `lib/websocket/services/ConversationChunker.js` — Wave 4: builds one
-  context-carrying `turn` chunk per turn (current turn leads, prior turn trails).
+  `turn` chunk per turn (user+assistant combined; no cross-turn windowing).
 - `lib/websocket/services/VectorIndexer.js` — indexes via ConversationChunker
   (one `turn` row per turn; `indexMessagePair` signature unchanged).
 - `lib/websocket/services/UsageTracker.js` — pool budget + `usage-info`.
