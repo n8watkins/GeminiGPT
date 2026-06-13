@@ -1,6 +1,6 @@
 # Handoff
 
-_Last updated: 2026-06-13. Zero-context handoff — read this + `docs/RAG_OVERHAUL_PLAN.md` before doing anything._
+_Last updated: 2026-06-13 (Wave 4). Zero-context handoff — read this + `docs/RAG_OVERHAUL_PLAN.md` before doing anything._
 
 ## Project summary
 
@@ -22,7 +22,33 @@ learning journal, not expert docs.
   5 min to keep it warm.
 - **GitHub:** `n8watkins/GeminiGPT` (homepage + description + topics set).
 
-## State (what's done — latest session 2026-06-13)
+## State (what's done — latest session 2026-06-13, Wave 4)
+
+**RAG retrieval-quality experiments shipped** (`b9a5723`, `662eabf`, `9bc8107`,
+plus README `577e03f` and fix `759d6bd` — all pushed to `origin/main`, live):
+- Built by **three parallel worktree agents** against a shared `searchChats`
+  row contract (zero file overlap), merged in order **chunk → hybrid → rerank**:
+  - **Turn-chunking** (`ConversationChunker.js`): one context-carrying `turn`
+    row per turn (current turn + windowed prior turn) instead of two isolated
+    user/assistant rows.
+  - **Hybrid search** (`HybridSearch.js` + `searchChats`): lexical `LIKE`
+    search fused with vector search via Reciprocal Rank Fusion (k=60). Rows
+    gain `_rrf` + `_keywordScore`; keyword-only hits carry `_distance=null`.
+  - **MMR reranking** (`Reranker.js` + `ChatRetriever`): gate on distance OR
+    keyword strength, then MMR (λ=0.7) for relevance + diversity. Offline by
+    design — NO extra LLM call (it'd burn the shared pool per query).
+- **Live prod probe found & fixed a real bug** (`759d6bd`): chunks led with the
+  windowed prior turn, but the read path snippets the first ~200 chars for both
+  citation and injected context — so a follow-up turn's snippet showed the OLD
+  window and truncated away the turn's actual content. Now leads with the
+  current turn. (Lesson: unit tests on mock rows passed; only the end-to-end
+  prod probe with real chunked data caught it.)
+- Verified: build ✓, lint ✓ (0 errors, 14 warnings), type-check ✓, tests
+  **123/123** (96 baseline + 27 new). Live `/healthz`, `/api/usage`, `/share`
+  all 200 post-deploy.
+- Full detail + the new row-field contract in `docs/RAG_OVERHAUL_PLAN.md`
+  "Wave 4". A reusable live prod probe is at `/tmp/prod-rag-probe.js`
+  (uncommitted — burns pool budget; `PROBE_URL` env overrides the target).
 
 **Image-upload bug fixed** (`e63d0df`, pushed to `origin/main`):
 - The PNG/JPEG upload path was already working end-to-end (FileUpload →
@@ -89,14 +115,20 @@ If a focus was given at handoff time, do that first. Otherwise:
    linked to the GitHub repo (fails on every push, harmless); verify the
    budget cap on the Render `GEMINI_API_KEY` in Google AI Studio / Cloud
    Console (the only true spend ceiling on the shared pool).
-3. **Parked feature work** (from `docs/RAG_OVERHAUL_PLAN.md` "Later / parked"):
+3. _(DONE 2026-06-13 — Wave 4)_ RAG experiments — hybrid keyword+vector search,
+   conversation-window chunking, reranking — all shipped and live. See the
+   Wave 4 state above and `docs/RAG_OVERHAUL_PLAN.md`.
+4. **Parked feature work** (from `docs/RAG_OVERHAUL_PLAN.md` "Later / parked"):
    - UI gutting: consolidate the many modals into one tabbed Settings surface;
      sidebar diet (it's ~800 lines) with per-chat `⋯` menus; an `/inspector`
      route fed by the existing `debug-info` socket events.
-   - RAG experiments (great learning-journal material): hybrid keyword+vector
-     search, conversation-window chunking, reranking.
    - Edge: an invalid BYOK key falls back to the server key internally but is
      tagged `byok`, so it isn't counted against the pool budget.
+   - RAG follow-ups now visible after Wave 4: windowing makes a fact appear in
+     two chunks (the turn itself + the next turn's trailing window), so a recall
+     can cite the same fact twice — could dedupe by source turn or by fuzzy
+     snippet overlap. Also consider tuning `MAX_DISTANCE`/`MMR_LAMBDA` now that
+     chunks are turn-sized (longer) rather than single messages.
 
 ## Conventions & gotchas (hard-won this session)
 
@@ -139,7 +171,16 @@ If a focus was given at handoff time, do that first. Otherwise:
 - `vectorDB.js` — embeddings (per-key clients, BYOK) + LanceDB search.
 - `lib/websocket/services/MessagePipeline.js` — message flow: rate limit →
   pool budget → retrieval → generate → index → usage emit.
-- `lib/websocket/services/ChatRetriever.js` — auto-retrieval + `retrieval-info`.
+- `lib/websocket/services/ChatRetriever.js` — auto-retrieval + `retrieval-info`;
+  Wave 4: keyword-OR-distance gate + MMR rerank before injection.
+- `lib/websocket/services/Reranker.js` — Wave 4: offline MMR (relevance +
+  diversity), pure function, no API calls.
+- `lib/websocket/services/HybridSearch.js` — Wave 4: keyword extraction +
+  Reciprocal Rank Fusion (pure helpers; the LanceDB queries live in vectorDB.js).
+- `lib/websocket/services/ConversationChunker.js` — Wave 4: builds one
+  context-carrying `turn` chunk per turn (current turn leads, prior turn trails).
+- `lib/websocket/services/VectorIndexer.js` — indexes via ConversationChunker
+  (one `turn` row per turn; `indexMessagePair` signature unchanged).
 - `lib/websocket/services/UsageTracker.js` — pool budget + `usage-info`.
 - `src/contexts/WebSocketContext.tsx` — the single shared socket (provider).
 - `src/hooks/useWebSocket.ts` — thin consumer of that context.
