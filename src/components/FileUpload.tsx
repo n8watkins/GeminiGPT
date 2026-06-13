@@ -5,6 +5,7 @@ import { Attachment } from '@/types/chat';
 import { validateFile } from '@/lib/fileValidation';
 import { fileLogger } from '@/lib/logger';
 import { useNotification } from '@/contexts/NotificationContext';
+import { Paperclip } from 'lucide-react';
 
 interface FileUploadProps {
   onFilesSelected: (attachments: Attachment[]) => void;
@@ -123,19 +124,7 @@ export default function FileUpload({ onFilesSelected, disabled = false }: FileUp
         `}
         title="Upload images or files (drag & drop supported)"
       >
-        <svg
-          className="w-5 h-5 text-gray-500 dark:text-gray-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-          />
-        </svg>
+        <Paperclip className="w-5 h-5 text-gray-500 dark:text-gray-400" />
       </button>
     </div>
   );

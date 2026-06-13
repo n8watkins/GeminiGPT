@@ -12,6 +12,8 @@ import TermsOfService from '@/components/TermsOfService';
 import UsageStats from '@/components/UsageStats';
 import SettingsModal from '@/components/SettingsModal';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import StudentProjectBadge from '@/components/StudentProjectBadge';
+import { Menu } from 'lucide-react';
 
 export default function ChatPage() {
   const params = useParams();
@@ -72,7 +74,7 @@ export default function ChatPage() {
         onOpenSettings={() => setSettingsModalOpen(true)}
       />
 
-      <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out delay-75 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-96'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-96'}`}>
         {/* Mobile header */}
         <div className="lg:hidden bg-blue-600 border-b border-blue-700 p-4">
           <div className="flex items-center justify-between">
@@ -80,12 +82,16 @@ export default function ChatPage() {
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 hover:bg-blue-700 rounded-md"
+              aria-label="Open sidebar"
             >
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="w-6 h-6 text-white" />
             </button>
           </div>
+        </div>
+
+        {/* Top-left project badge (kept above the chat header so it never overlaps it) */}
+        <div className="px-4 pt-3 pb-2 lg:px-6 lg:pt-4">
+          <StudentProjectBadge />
         </div>
 
         <ChatInterface />
