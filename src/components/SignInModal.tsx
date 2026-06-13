@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { getCurrentUserId } from '@/lib/userId'
+import { useAuthConfigured } from '@/hooks/useAuthProviders'
 
 interface SignInModalProps {
   isOpen: boolean
@@ -19,8 +20,11 @@ interface SignInModalProps {
  */
 export function SignInModal({ isOpen, onClose }: SignInModalProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const authConfigured = useAuthConfigured()
 
-  if (!isOpen) return null
+  // Never offer sign-in when no OAuth provider is configured (the sign-in
+  // request would silently fail and leave the user as a guest)
+  if (!isOpen || !authConfigured) return null
 
   const handleSignIn = async () => {
     setIsLoading(true)

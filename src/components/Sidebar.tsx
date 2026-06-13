@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useChat } from '@/contexts/ChatContext';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useAuthConfigured } from '@/hooks/useAuthProviders';
 import { Chat } from '@/types/chat';
 import ConfirmationModal from './ConfirmationModal';
 import SidebarUsageMeter from './UsageMeter';
@@ -55,6 +56,11 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
 
   // Compute authentication status from session
   const isAuthenticated = status === 'authenticated' && !!session?.user;
+
+  // Hide sign-in entry points entirely when no OAuth provider is configured
+  // (production currently runs without Google OAuth; the button would
+  // silently fail and leave users as guests)
+  const authConfigured = useAuthConfigured();
 
   // Check if user has their own API key
   useEffect(() => {
@@ -579,8 +585,9 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                       {/* Divider before authentication actions - Only show when expanded */}
                       {!isCollapsed && <div className="my-1 border-t border-blue-800 dark:border-gray-700"></div>}
 
-                      {/* Login/Sign Up - Only show in guest mode */}
-                      {!isAuthenticated && onOpenSignIn && (
+                      {/* Login/Sign Up - Only in guest mode, and only when an
+                          OAuth provider is actually configured */}
+                      {!isAuthenticated && authConfigured && onOpenSignIn && (
                         <Tooltip title="Login / Sign Up" placement="right" arrow disableInteractive={!isCollapsed} enterDelay={300}>
                           <button
                             onClick={() => {

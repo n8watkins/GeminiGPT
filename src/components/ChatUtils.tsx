@@ -6,6 +6,7 @@ import { useChat } from '@/contexts/ChatContext';
 import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { chatLogger } from '@/lib/logger';
 import { useNotification } from '@/contexts/NotificationContext';
+import { buildSharePayload, buildShareUrl, encodeShareData, ShareTooLargeError } from '@/lib/shareLink';
 
 interface ChatUtilsProps {
   chatId: string;
@@ -16,6 +17,7 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -32,36 +34,55 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
   const chat = state.chats.find(c => c.id === chatId);
   if (!chat) return null;
 
-  const exportChat = () => {
-    const chatData = {
-      title: chat.title,
-      createdAt: chat.createdAt,
-      updatedAt: chat.updatedAt,
-      messages: chat.messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.timestamp,
-        attachments: msg.attachments?.map(att => ({
-          name: att.name,
-          type: att.type,
-          size: att.size
-        })) || []
-      }))
-    };
-
-    const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
+  /**
+   * Trigger a browser download for generated content.
+   * The object URL is revoked on a delay: revoking synchronously after
+   * click() can race the (asynchronous) download request in some browsers
+   * and fail it with a generic "download error".
+   */
+  const downloadBlob = (content: string, mimeType: string, filename: string) => {
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${chat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.json`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setShowDownloadModal(false);
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  };
+
+  const exportFilename = (extension: string) =>
+    `${(chat.title || 'chat').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.${extension}`;
+
+  const exportChat = () => {
+    try {
+      const chatData = {
+        title: chat.title,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+        messages: chat.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          attachments: msg.attachments?.map(att => ({
+            name: att.name,
+            type: att.type,
+            size: att.size
+          })) || []
+        }))
+      };
+
+      downloadBlob(JSON.stringify(chatData, null, 2), 'application/json', exportFilename('json'));
+      setShowDownloadModal(false);
+    } catch (error) {
+      chatLogger.error('Error exporting chat as JSON', error);
+      showError('Failed to export chat. Please try again.');
+    }
   };
 
   const exportAsMarkdown = () => {
+    try {
     let markdown = `# ${chat.title}\n\n`;
     markdown += `**Created:** ${new Date(chat.createdAt).toLocaleString()}\n`;
     markdown += `**Updated:** ${new Date(chat.updatedAt).toLocaleString()}\n\n`;
@@ -83,50 +104,37 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
       }
     });
 
-    const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${chat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setShowDownloadModal(false);
+      downloadBlob(markdown, 'text/markdown', exportFilename('md'));
+      setShowDownloadModal(false);
+    } catch (error) {
+      chatLogger.error('Error exporting chat as Markdown', error);
+      showError('Failed to export chat. Please try again.');
+    }
   };
 
+  /**
+   * Build a self-contained share link entirely client-side: the chat is
+   * gzipped (native CompressionStream) and embedded in the URL fragment, so
+   * nothing is stored on the (ephemeral) server and links survive restarts.
+   */
   const shareChat = async () => {
     setIsGeneratingLink(true);
+    setShareUrl(null);
+    setShareError(null);
     setShowShareModal(true);
 
     try {
-      // Fetch CSRF token first
-      const csrfResponse = await fetch('/api/csrf');
-      if (!csrfResponse.ok) {
-        throw new Error('Failed to get CSRF token');
-      }
-      const { token } = await csrfResponse.json();
-
-      // Create share link with CSRF token
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': token,
-        },
-        body: JSON.stringify({ chat }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create share link');
-      }
-
-      const data = await response.json();
-      setShareUrl(data.shareUrl);
+      const fragment = await encodeShareData(buildSharePayload(chat));
+      setShareUrl(buildShareUrl(window.location.origin, fragment));
     } catch (error) {
-      chatLogger.error('Error creating share link', error);
-      showError('Failed to create share link. Please try again.');
-      setShowShareModal(false);
+      if (error instanceof ShareTooLargeError) {
+        // Keep the modal open and explain - this is a user-fixable condition
+        setShareError(error.message);
+      } else {
+        chatLogger.error('Error creating share link', error);
+        showError('Failed to create share link. Please try again.');
+        setShowShareModal(false);
+      }
     } finally {
       setIsGeneratingLink(false);
     }
@@ -256,6 +264,21 @@ export default function ChatUtils({ chatId }: ChatUtilsProps) {
                     Done
                   </button>
                 </div>
+              </div>
+            ) : shareError ? (
+              <div>
+                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg flex items-start gap-2">
+                  <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-sm text-amber-800 dark:text-amber-200">{shareError}</p>
+                </div>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="w-full px-4 py-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Close
+                </button>
               </div>
             ) : null}
           </div>

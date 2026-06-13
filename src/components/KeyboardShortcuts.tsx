@@ -58,6 +58,11 @@ export default function KeyboardShortcuts() {
               <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+R</kbd>
             </div>
 
+            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Toggle Debug Panel</span>
+              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+Shift+D</kbd>
+            </div>
+
             <div className="flex justify-between items-center py-2">
               <span className="text-sm text-gray-700 dark:text-gray-300">Close/Escape</span>
               <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Esc</kbd>
