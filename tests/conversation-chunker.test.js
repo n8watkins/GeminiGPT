@@ -44,13 +44,15 @@ describe('ConversationChunker.buildTurnChunk', () => {
       history
     );
 
-    // Preceding turn (2 entries) prefixed, oldest first, then current turn.
+    // Current turn LEADS; the preceding turn (2 entries) trails as context.
     expect(text).toBe(
       [
-        'User: List three European capitals.',
-        'Assistant: Paris, Berlin, and Madrid.',
         'User: What about the second one?',
         'Assistant: Berlin is the capital of Germany.',
+        '',
+        '--- Earlier in this chat (for context) ---',
+        'User: List three European capitals.',
+        'Assistant: Paris, Berlin, and Madrid.',
       ].join('\n')
     );
     expect(windowedTurns).toBe(2);
@@ -115,7 +117,13 @@ describe('ConversationChunker.buildTurnChunk', () => {
 
     expect(windowedTurns).toBe(1);
     expect(text).toBe(
-      ['Assistant: prior answer', 'User: next q', 'Assistant: next a'].join('\n')
+      [
+        'User: next q',
+        'Assistant: next a',
+        '',
+        '--- Earlier in this chat (for context) ---',
+        'Assistant: prior answer',
+      ].join('\n')
     );
   });
 });
