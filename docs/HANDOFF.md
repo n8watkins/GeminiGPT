@@ -51,10 +51,25 @@ plus README `577e03f` and fix `759d6bd` — all pushed to `origin/main`, live):
     windowed into it) and recalled the same fact twice with a misleading
     citation. **Removed cross-turn windowing entirely**; kept turn-pairing
     (user+assistant), which already solves the lone-message problem.
+- **Relevance tuned from measured data** (`ed631ae` → superseded by `49e8cad`;
+  docs `e32788f`): the probe also exposed a weak structural false positive (a
+  "production deployment codename" turn matching "what is my dog's name?").
+  Built `tests/manual/threshold-tuning.js` (labelled turn-chunk corpus,
+  precision/recall sweep) which showed legit paraphrases (~0.76) and these false
+  positives (~0.69-0.80) OVERLAP — so no absolute `MAX_DISTANCE` separates them.
+  Final design: keep `MAX_DISTANCE=0.85` (recall-safe ceiling) + new
+  `RELEVANCE_GAP=0.10` (drop vector candidates trailing the closest match by
+  >gap; the correct fact is ~always closest, so no recall cost). Keyword-only
+  hits bypass the gap. Regression test in `tests/chat-retriever-gap.test.js`.
 - Verified: build ✓, lint ✓ (0 errors, 14 warnings), type-check ✓, tests
-  **121/121** (96 baseline + 25 new). Live `/healthz`, `/api/usage`, `/share`
+  **124/124** (96 baseline + 28 new). Live `/healthz`, `/api/usage`, `/share`
   all 200 post-deploy; cross-chat recall (semantic + exact-token) confirmed via
-  the live probe.
+  the live probe across iterations.
+- _In flight (only loose end):_ a final `tests/manual/prod-rag-probe.js` run
+  against prod to confirm the `RELEVANCE_GAP` rule drops the structural neighbour
+  on the live site (it does in unit + offline tests). If the neighbour still
+  appears on prod, nudge `RELEVANCE_GAP` down toward 0.08 (the tuning corpus has
+  margin to do so with no recall cost) and re-probe.
 - Full detail + the new row-field contract in `docs/RAG_OVERHAUL_PLAN.md`
   "Wave 4". A reusable live prod probe is at `tests/manual/prod-rag-probe.js`
   (NOT run by `npm test` — it hits the live site and spends pool budget;
@@ -186,7 +201,11 @@ If a focus was given at handoff time, do that first. Otherwise:
 - `lib/websocket/services/MessagePipeline.js` — message flow: rate limit →
   pool budget → retrieval → generate → index → usage emit.
 - `lib/websocket/services/ChatRetriever.js` — auto-retrieval + `retrieval-info`;
-  Wave 4: keyword-OR-distance gate + MMR rerank before injection.
+  Wave 4: keyword-OR-distance gate, `RELEVANCE_GAP` trim, then MMR rerank before
+  injection. Tuning knobs live in `RETRIEVAL_CONFIG` at the top.
+- `tests/manual/threshold-tuning.js` — offline relevance-tuning harness (labelled
+  corpus, distance + precision/recall sweep + gap-rule sweep). Needs a key in
+  `.env.local`; `node tests/manual/threshold-tuning.js`.
 - `lib/websocket/services/Reranker.js` — Wave 4: offline MMR (relevance +
   diversity), pure function, no API calls.
 - `lib/websocket/services/HybridSearch.js` — Wave 4: keyword extraction +
