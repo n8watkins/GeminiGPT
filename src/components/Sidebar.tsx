@@ -13,6 +13,25 @@ import { API_KEY_CHANGED_EVENT } from '@/hooks/useApiKey';
 import { RATE_LIMIT_THRESHOLDS, DEBOUNCE_DELAY } from '@/lib/constants';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import Tooltip from '@mui/material/Tooltip';
+import {
+  Zap,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronUp,
+  X,
+  Plus,
+  Search,
+  SearchX,
+  KeyRound,
+  Info,
+  FileText,
+  BarChart3,
+  Settings,
+  LogIn,
+  LogOut,
+  User,
+  Trash2,
+} from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -134,9 +153,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
       <div className="px-3 py-2 bg-blue-800/30 rounded-lg mb-3 border border-blue-700/50">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-blue-200">Rate Limits</span>
-          <svg className="w-3.5 h-3.5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+          <Zap className="w-3.5 h-3.5 text-blue-300" />
         </div>
 
         {/* Per Minute */}
@@ -265,7 +282,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
       )}
 
       <div
-        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 dark:from-gray-800 dark:to-gray-900 text-white transform transition-all duration-500 ease-in-out z-50 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-blue-900 to-blue-950 dark:from-gray-800 dark:to-gray-900 text-white transform transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] z-50 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isCollapsed ? 'w-20' : 'w-96'}`}
       >
@@ -297,9 +314,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                       aria-label="Collapse sidebar (Alt+B)"
                       title="Collapse sidebar (Alt+B)"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                      </svg>
+                      <ChevronsLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={onToggle}
@@ -307,9 +322,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                       aria-label="Close sidebar"
                       title="Close sidebar"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
@@ -322,9 +335,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                   aria-label="Expand sidebar (Alt+B)"
                   title="Expand sidebar (Alt+B)"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                  </svg>
+                  <ChevronsRight className="w-5 h-5" />
                 </button>
                 {connectionIndicator.dot}
                 <button
@@ -333,9 +344,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                   aria-label="New Chat (Alt+N)"
                   title="New Chat (Alt+N)"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
+                  <Plus className="w-5 h-5" />
                 </button>
               </div>
             )}
@@ -355,9 +364,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                   title="Start new chat (Alt+N)"
                 >
                   <div className="flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
+                    <Plus className="w-4 h-4 mr-2" />
                     <span className="font-medium">New Chat</span>
                   </div>
                   <kbd className="text-xs bg-blue-400 px-2 py-0.5 rounded opacity-70 group-hover:opacity-100 font-mono">Alt+N</kbd>
@@ -366,9 +373,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                 {/* Search Input */}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <svg className="w-4 h-4 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                    <Search className="w-4 h-4 text-blue-300" />
                   </div>
                   <input
                     ref={searchInputRef}
@@ -388,9 +393,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                       aria-label="Clear search (Esc)"
                       title="Clear search (Esc)"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                      <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -407,9 +410,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
               </div>
             ) : filteredChats.length === 0 ? (
               <div className="p-4 text-center text-gray-400">
-                <svg className="w-12 h-12 mx-auto mb-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <SearchX className="w-12 h-12 mx-auto mb-2 text-gray-600" />
                 <p className="text-sm">No chats found</p>
                 <p className="text-xs mt-1">Try a different search term</p>
               </div>
@@ -469,9 +470,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                                 : 'w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3'
                             }`}
                           >
-                            <svg className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                            </svg>
+                            <KeyRound className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} />
                             {!isCollapsed && (
                               <div className="flex-1 flex items-center justify-between">
                                 <span>Bring Your Own Key</span>
@@ -504,9 +503,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                                 : 'w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3'
                             }`}
                           >
-                            <svg className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
+                            <Info className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} />
                             {!isCollapsed && <span>About</span>}
                           </button>
                         </Tooltip>
@@ -526,9 +523,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                                 : 'w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3'
                             }`}
                           >
-                            <svg className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
+                            <FileText className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} />
                             {!isCollapsed && <span>Terms & Privacy</span>}
                           </button>
                         </Tooltip>
@@ -548,9 +543,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                                 : 'w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3'
                             }`}
                           >
-                            <svg className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
+                            <BarChart3 className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} />
                             {!isCollapsed && <span>Usage Stats</span>}
                           </button>
                         </Tooltip>
@@ -573,10 +566,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                                 : 'w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3'
                             }`}
                           >
-                            <svg className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                            <Settings className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} />
                             {!isCollapsed && <span>Settings</span>}
                           </button>
                         </Tooltip>
@@ -600,9 +590,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                                 : 'w-full px-4 py-2.5 text-left text-sm text-blue-100 dark:text-gray-200 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3'
                             }`}
                           >
-                            <svg className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                            </svg>
+                            <LogIn className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'} text-blue-300 dark:text-gray-400`} />
                             {!isCollapsed && <span>Login / Sign Up</span>}
                           </button>
                         </Tooltip>
@@ -622,9 +610,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                                 : 'w-full px-4 py-2.5 text-left text-sm text-red-400 dark:text-red-400 hover:bg-blue-800/50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-3'
                             }`}
                           >
-                            <svg className={`${isCollapsed ? 'w-5 h-5 text-red-400' : 'w-4 h-4'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                            </svg>
+                            <LogOut className={`${isCollapsed ? 'w-5 h-5 text-red-400' : 'w-4 h-4'}`} />
                             {!isCollapsed && <span>Sign Out</span>}
                           </button>
                         </Tooltip>
@@ -643,9 +629,7 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                 <div className="flex items-center gap-2">
                   {/* Avatar Icon */}
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
+                    <User className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="font-medium text-sm">{isAuthenticated ? 'Account' : 'Guest'}</span>
@@ -663,14 +647,9 @@ export default function Sidebar({ isOpen, onToggle, isCollapsed: externalIsColla
                     )}
                   </div>
                 </div>
-                <svg
+                <ChevronUp
                   className={`w-4 h-4 text-blue-300 dark:text-gray-400 transition-transform flex-shrink-0 ${showSettingsMenu ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
+                />
               </button>
             ) : (
               <button
@@ -758,9 +737,7 @@ const ChatItem = React.memo(function ChatItemComponent({ chat, isActive, onSelec
           aria-label="Delete chat"
           title="Delete chat"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+          <Trash2 className="w-4 h-4" />
         </button>
       )}
     </div>

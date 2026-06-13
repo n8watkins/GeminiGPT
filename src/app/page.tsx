@@ -11,6 +11,8 @@ import UsageStats from '@/components/UsageStats';
 import RateLimitModal from '@/components/RateLimitModal';
 import SettingsModal from '@/components/SettingsModal';
 import { MigrationBanner } from '@/components/MigrationBanner';
+import StudentProjectBadge from '@/components/StudentProjectBadge';
+import { Menu } from 'lucide-react';
 import { SignInModal } from '@/components/SignInModal';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import { useApiKey } from '@/hooks/useApiKey';
@@ -76,23 +78,23 @@ export default function Home() {
         onOpenSignIn={() => setSignInModalOpen(true)}
       />
 
-      <div className={`flex-1 flex flex-col transition-all duration-500 ease-in-out delay-75 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-96'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-96'}`}>
         {/* Mobile header */}
         <div className="lg:hidden bg-blue-600 dark:bg-gray-800 border-b border-blue-700 dark:border-gray-700 p-4">
           <div className="flex items-center justify-end">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 hover:bg-blue-700 dark:hover:bg-gray-700 rounded-md text-white"
+              aria-label="Open sidebar"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
 
-        {/* Migration Banner - Shows for anonymous users with chats */}
-        <div className="p-4 lg:p-6">
+        {/* Top-left strip: project badge + migration banner (anonymous users with chats) */}
+        <div className="px-4 pt-3 pb-2 lg:px-6 lg:pt-4 space-y-3">
+          <StudentProjectBadge />
           <MigrationBanner />
         </div>
 

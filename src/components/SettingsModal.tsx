@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Modal from './Modal';
 import { useTheme } from '@/contexts/ThemeContext';
 import ConfirmationModal from './ConfirmationModal';
+import { Settings, Palette, Bell, Lock, Sun, Moon, Monitor, RefreshCw, type LucideIcon } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -18,11 +19,17 @@ export default function SettingsModal({ isOpen, onClose, onResetEverything }: Se
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
   const [showResetModal, setShowResetModal] = useState(false);
 
-  const sections = [
-    { id: 'general' as const, label: 'General', icon: '⚙️' },
-    { id: 'appearance' as const, label: 'Appearance', icon: '🎨' },
-    { id: 'notifications' as const, label: 'Notifications', icon: '🔔' },
-    { id: 'privacy' as const, label: 'Privacy & Data', icon: '🔒' },
+  const sections: Array<{ id: SettingsSection; label: string; icon: LucideIcon }> = [
+    { id: 'general', label: 'General', icon: Settings },
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'privacy', label: 'Privacy & Data', icon: Lock },
+  ];
+
+  const themeOptions: Array<{ value: 'light' | 'dark' | 'system'; label: string; icon: LucideIcon }> = [
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark', label: 'Dark', icon: Moon },
+    { value: 'system', label: 'System', icon: Monitor },
   ];
 
   return (
@@ -42,7 +49,7 @@ export default function SettingsModal({ isOpen, onClose, onResetEverything }: Se
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
-                <span className="text-lg">{section.icon}</span>
+                <section.icon className="w-4 h-4 flex-shrink-0" />
                 <span className="text-sm">{section.label}</span>
               </button>
             ))}
@@ -99,18 +106,25 @@ export default function SettingsModal({ isOpen, onClose, onResetEverything }: Se
 
               <div className="space-y-6">
                 <div className="pb-6 border-b border-gray-200 dark:border-gray-700">
-                  <label className="block">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">Theme</p>
-                    <select
-                      value={theme}
-                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
-                      className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer"
-                    >
-                      <option value="light">☀️ Light</option>
-                      <option value="dark">🌙 Dark</option>
-                      <option value="system">💻 System</option>
-                    </select>
-                  </label>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">Theme</p>
+                  <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Theme">
+                    {themeOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        role="radio"
+                        aria-checked={theme === option.value}
+                        onClick={() => setTheme(option.value)}
+                        className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border transition-colors cursor-pointer ${
+                          theme === option.value
+                            ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-400 dark:border-blue-500 text-blue-700 dark:text-blue-300'
+                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <option.icon className="w-5 h-5" />
+                        <span className="text-sm font-medium">{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -201,9 +215,7 @@ export default function SettingsModal({ isOpen, onClose, onResetEverything }: Se
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
+                          <RefreshCw className="w-5 h-5 text-red-600 dark:text-red-400" />
                           <p className="text-sm font-medium text-red-900 dark:text-red-300">Reset Everything</p>
                         </div>
                         <p className="text-xs text-red-700 dark:text-red-400 mb-2">This will permanently delete:</p>
