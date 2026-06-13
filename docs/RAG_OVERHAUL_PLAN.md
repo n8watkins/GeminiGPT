@@ -31,7 +31,8 @@ the vector DB. The README should read as a first-person learning journal
   shared key is the true spend ceiling).
 - BYOK users must get **full cross-chat memory** (embeddings via their key).
 - Keep the explicit search tool alongside auto-retrieval.
-- Skipped (for now): hybrid keyword+vector search, window chunking, reranking.
+- ~~Skipped (for now): hybrid keyword+vector search, window chunking,
+  reranking.~~ **All three shipped in Wave 4 (2026-06-13)** — see below.
 - **Keep the first-run About/API-key modals** — owner likes the design; they
   explain the project. Improvements welcome, removal is not.
 - **Onboarding (decided 2026-06-12):** visitors use the server pool key by
@@ -86,11 +87,29 @@ today). Multi-user confirmed live (20/20 concurrent sockets).
   (VP8/VP8L/VP8X) dimension parsers; regression test added (suite now 96/96).
   PNG/JPEG path was already working end-to-end.
 
+## Wave 4 (2026-06-13): RAG retrieval-quality experiments
+
+Built by three parallel worktree agents against a shared `searchChats` row
+contract (zero file overlap; merged in order chunk → hybrid → rerank). All on
+`main`, live, verified (build/lint/type-check + 123 tests).
+
+| Commit | Scope |
+|--------|-------|
+| `b9a5723` | **Conversation-window chunking** (write path): index one context-carrying `turn` row per turn (current turn + a window of the prior turn) instead of two isolated user/assistant rows. New `ConversationChunker.js`. |
+| `662eabf` | **Hybrid keyword+vector search** (`searchChats`): lexical `LIKE` search fused with vector search via Reciprocal Rank Fusion (k=60). Rows gain `_rrf` + `_keywordScore`; keyword-only hits carry `_distance=null`. New `HybridSearch.js`. |
+| `9bc8107` | **MMR reranking** (`ChatRetriever`): gate on vector distance OR keyword strength, then Maximal Marginal Relevance (λ=0.7) for relevance + diversity. Offline — NO extra LLM call (would burn the shared pool per query). New `Reranker.js`. |
+| `577e03f` | README learning-journal entry on all three + fixed stale facts (auto-retrieval live; embeddings `gemini-embedding-001`). |
+| `759d6bd` | **Fix found via live prod probe:** chunks led with the windowed prior turn, but the read path snippets the FIRST ~200 chars for both citation and injected context — so a follow-up turn's snippet/context showed the OLD window and truncated away the turn's actual content (retrieval found the right turn, model couldn't answer it). Now leads with the current turn; window trails as labeled context. |
+
+Interface contract added this wave — `searchChats` rows now also carry:
+`_rrf` (number), `_keywordScore` (int; keyword-only hits have `_distance=null`),
+alongside the existing `_distance` and `vector`. `ChatRetriever` consumes these.
+
 ## Later / parked
 
 - UI gutting (modal consolidation, sidebar diet, Inspector route from
   `debug-info` events) — outlined in chat 2026-06-12, do after RAG stages
-- Hybrid search / chunking / reranking experiments
+- ~~Hybrid search / chunking / reranking experiments~~ — **done, Wave 4 above**
 - Vercel ghost project still linked to repo (owner to disconnect)
 - UptimeRobot keep-warm monitor on `/healthz` (owner setting up)
 - ~~Legacy REST `/api/chat` route calls Gemini with the server key WITHOUT
