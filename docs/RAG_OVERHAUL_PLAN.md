@@ -75,8 +75,8 @@ today). Multi-user confirmed live (20/20 concurrent sockets).
 
 | Agent | Scope | Status |
 |-------|-------|--------|
-| E (fix) | Single shared WebSocket (4 components each open their own socket today — causes disconnect flicker on chat switch); fix chat export/download error; self-contained share links (no server storage); hide sign-in when providers list is empty; remove/instrument legacy `/api/chat`. | ✅ done in worktree (one socket via WebSocketProvider; export bug was the DebugPanel overlay swallowing clicks — debug widget now hidden by default, Alt+Shift+D; shares are `/share#<base64url(gzip(json))>` with size cap, legacy `/share/<id>` shows friendly expired state; sign-in UI gated on `/api/auth/providers`; `/api/chat` deleted — zero references) |
-| F (polish) | lucide-react icons (settings/theme/etc.); smoother+longer sidebar & shortcuts-modal animations; "student project" badge top-left; cycling typed-out prompt suggestions at the input; subtle ambient background motion (respect prefers-reduced-motion). | in progress |
+| E (fix) | Single shared WebSocket (4 components each open their own socket today — causes disconnect flicker on chat switch); fix chat export/download error; self-contained share links (no server storage); hide sign-in when providers list is empty; remove/instrument legacy `/api/chat`. | ✅ merged c8446a7 (one socket via WebSocketProvider; export bug was the DebugPanel overlay swallowing clicks — debug widget now hidden by default, Alt+Shift+D; shares are `/share#<base64url(gzip(json))>` with size cap, legacy `/share/<id>` shows friendly expired state; sign-in UI gated on `/api/auth/providers`; `/api/chat` deleted — zero references) |
+| F (polish) | lucide-react icons (settings/theme/etc.); smoother+longer sidebar & shortcuts-modal animations; "student project" badge top-left; cycling typed-out prompt suggestions at the input; subtle ambient background motion (respect prefers-reduced-motion). | ✅ merged 4143902 |
 
 ## Later / parked
 
