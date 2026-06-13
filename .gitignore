@@ -82,3 +82,4 @@ out/
 # Cache
 .cache/
 .parcel-cache/
+.claude/

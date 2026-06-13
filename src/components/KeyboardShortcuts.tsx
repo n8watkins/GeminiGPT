@@ -1,9 +1,48 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Keyboard, X } from 'lucide-react';
+
+const SHORTCUTS: Array<{ label: string; keys: string }> = [
+  { label: 'New Chat', keys: 'Alt+N' },
+  { label: 'Search All Chats', keys: 'Alt+F' },
+  { label: 'Search in Chat', keys: 'Alt+Shift+F' },
+  { label: 'Toggle Shortcuts', keys: 'Alt+/' },
+  { label: 'Reset Everything', keys: 'Alt+R' },
+  { label: 'Toggle Debug Panel', keys: 'Alt+Shift+D' },
+  { label: 'Close/Escape', keys: 'Esc' },
+];
+
+// How long the leave transition runs before the panel unmounts (ms).
+// Keep in sync with the duration-200 class on the panel.
+const LEAVE_DURATION = 200;
 
 export default function KeyboardShortcuts() {
   const [isOpen, setIsOpen] = useState(false);
+  // Two-phase mount so the panel can animate in (mount hidden, then show)
+  // and animate out (hide, then unmount after the transition finishes).
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      // Double rAF: let the panel paint in its hidden state first so the
+      // transition to visible actually animates instead of snapping.
+      let inner: number;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setIsVisible(true));
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        if (inner) cancelAnimationFrame(inner);
+      };
+    } else {
+      setIsVisible(false);
+      const timeout = setTimeout(() => setShouldRender(false), LEAVE_DURATION);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -25,48 +64,31 @@ export default function KeyboardShortcuts() {
 
   return (
     <div className="fixed bottom-6 right-6 z-40">
-      {/* Menu - positioned above the button */}
-      {isOpen && (
-        <div className="absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 p-5 w-80 mb-2">
+      {/* Menu - positioned above the button, animates with fade + scale */}
+      {shouldRender && (
+        <div
+          className={`absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 p-5 w-80 mb-2 origin-bottom-right transform transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${
+            isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'
+          }`}
+        >
           <div className="mb-4">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Keyboard Shortcuts</h3>
           </div>
 
           <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-sm text-gray-700 dark:text-gray-300">New Chat</span>
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+N</kbd>
-            </div>
-
-            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Search All Chats</span>
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+F</kbd>
-            </div>
-
-            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Search in Chat</span>
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+Shift+F</kbd>
-            </div>
-
-            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Toggle Shortcuts</span>
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+/</kbd>
-            </div>
-
-            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Reset Everything</span>
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+R</kbd>
-            </div>
-
-            <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Toggle Debug Panel</span>
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Alt+Shift+D</kbd>
-            </div>
-
-            <div className="flex justify-between items-center py-2">
-              <span className="text-sm text-gray-700 dark:text-gray-300">Close/Escape</span>
-              <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">Esc</kbd>
-            </div>
+            {SHORTCUTS.map((shortcut, index) => (
+              <div
+                key={shortcut.keys}
+                className={`flex justify-between items-center py-2 ${
+                  index < SHORTCUTS.length - 1 ? 'border-b border-gray-100 dark:border-gray-700' : ''
+                }`}
+              >
+                <span className="text-sm text-gray-700 dark:text-gray-300">{shortcut.label}</span>
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs font-mono text-gray-700 dark:text-gray-300">
+                  {shortcut.keys}
+                </kbd>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -75,19 +97,9 @@ export default function KeyboardShortcuts() {
       <button
         onClick={() => setIsOpen(prev => !prev)}
         className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all hover:shadow-xl"
-        title={isOpen ? "Close Shortcuts (Esc)" : "Keyboard Shortcuts (Alt+/)"}
+        title={isOpen ? 'Close Shortcuts (Esc)' : 'Keyboard Shortcuts (Alt+/)'}
       >
-        {isOpen ? (
-          // X icon when open
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        ) : (
-          // Keyboard icon when closed
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-          </svg>
-        )}
+        {isOpen ? <X className="w-5 h-5" /> : <Keyboard className="w-5 h-5" />}
       </button>
     </div>
   );

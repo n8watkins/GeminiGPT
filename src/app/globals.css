@@ -192,6 +192,92 @@ body {
   color: #2563eb;
 }
 
+/* Ambient background motion (chat area) ------------------------------- */
+/* Very slow drifting orbs, CSS-only, low opacity so text contrast is
+   unaffected. Animations are disabled under prefers-reduced-motion,
+   leaving a static soft-gradient fallback. */
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.25;
+  will-change: transform;
+}
+
+.dark .ambient-orb {
+  opacity: 0.12;
+}
+
+.ambient-orb-1 {
+  width: 34rem;
+  height: 34rem;
+  top: -10rem;
+  left: -8rem;
+  background: radial-gradient(circle, #60a5fa 0%, transparent 70%);
+  animation: ambient-drift-1 64s ease-in-out infinite alternate;
+}
+
+.ambient-orb-2 {
+  width: 28rem;
+  height: 28rem;
+  bottom: -8rem;
+  right: -6rem;
+  background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+  animation: ambient-drift-2 80s ease-in-out infinite alternate;
+}
+
+.ambient-orb-3 {
+  width: 22rem;
+  height: 22rem;
+  top: 40%;
+  left: 55%;
+  background: radial-gradient(circle, #93c5fd 0%, transparent 70%);
+  animation: ambient-drift-3 96s ease-in-out infinite alternate;
+}
+
+@keyframes ambient-drift-1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8rem, 5rem) scale(1.15);
+  }
+  100% {
+    transform: translate(2rem, 10rem) scale(0.95);
+  }
+}
+
+@keyframes ambient-drift-2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-7rem, -4rem) scale(1.1);
+  }
+  100% {
+    transform: translate(-2rem, -9rem) scale(0.9);
+  }
+}
+
+@keyframes ambient-drift-3 {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-6rem, 6rem) scale(1.2);
+  }
+  100% {
+    transform: translate(5rem, -4rem) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-orb {
+    animation: none !important;
+  }
+}
+
 /* Smooth transitions */
 * {
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
