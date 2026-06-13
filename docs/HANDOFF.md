@@ -65,11 +65,12 @@ plus README `577e03f` and fix `759d6bd` — all pushed to `origin/main`, live):
   **124/124** (96 baseline + 28 new). Live `/healthz`, `/api/usage`, `/share`
   all 200 post-deploy; cross-chat recall (semantic + exact-token) confirmed via
   the live probe across iterations.
-- _In flight (only loose end):_ a final `tests/manual/prod-rag-probe.js` run
-  against prod to confirm the `RELEVANCE_GAP` rule drops the structural neighbour
-  on the live site (it does in unit + offline tests). If the neighbour still
-  appears on prod, nudge `RELEVANCE_GAP` down toward 0.08 (the tuning corpus has
-  margin to do so with no recall cost) and re-probe.
+- _Confirmed on prod:_ the final `tests/manual/prod-rag-probe.js` run shows the
+  `RELEVANCE_GAP` rule works on the live site — "what is my dog's name?" now
+  returns a SINGLE source (the Waffles turn); the structural deployment
+  neighbour no longer leaks in, and the exact-token query still answers. No open
+  items. (If it ever regresses, nudge `RELEVANCE_GAP` toward 0.08 — the tuning
+  corpus has margin to do so with no recall cost — and re-probe.)
 - Full detail + the new row-field contract in `docs/RAG_OVERHAUL_PLAN.md`
   "Wave 4". A reusable live prod probe is at `tests/manual/prod-rag-probe.js`
   (NOT run by `npm test` — it hits the live site and spends pool budget;
