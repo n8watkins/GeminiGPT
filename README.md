@@ -292,6 +292,8 @@ Needs Node 22+. SQLite and LanceDB files get created in `data/` automatically.
 
 ## Docs
 
+**📝 Build log: [I taught a chatbot to remember things I said in *other* chats — here's everything that broke](docs/blog/building-cross-chat-memory.md)** — the human version of this project: embeddings clicking, the deploy saga, a retired model, and the retrieval-quality rabbit hole (chunking, hybrid search, MMR, threshold tuning). Start here if you want the story.
+
 Deeper documentation I wrote while building:
 
 - [WebSocket API](docs/WEBSOCKET_API.md) - events, auth, rate limiting
