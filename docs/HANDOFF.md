@@ -134,10 +134,11 @@ If a focus was given at handoff time, do that first. Otherwise:
      route fed by the existing `debug-info` socket events.
    - Edge: an invalid BYOK key falls back to the server key internally but is
      tagged `byok`, so it isn't counted against the pool budget.
-   - RAG tuning follow-up: now that chunks are turn-sized (longer than single
-     messages), consider revisiting `MAX_DISTANCE`/`MMR_LAMBDA` in
-     `ChatRetriever.js`. (The windowing double-recall issue is resolved —
-     `576b401` removed cross-turn windowing.)
+   - _(DONE)_ RAG threshold tuning: `MAX_DISTANCE` 0.85→0.80, chosen from
+     measured precision/recall (`tests/manual/threshold-tuning.js`) on a
+     turn-chunk corpus — keeps 100% recall, halves structural false positives.
+     `MMR_LAMBDA` left at 0.7 (no evidence it needs changing). Windowing
+     double-recall resolved earlier (`576b401`).
 
 ## Conventions & gotchas (hard-won this session)
 
