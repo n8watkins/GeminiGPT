@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { signIn, useSession } from 'next-auth/react'
 import { getCurrentUserId } from '@/lib/userId'
 import { useChat } from '@/contexts/ChatContext'
+import { useAuthConfigured } from '@/hooks/useAuthProviders'
 
 /**
  * MigrationBanner Component
@@ -19,6 +20,9 @@ export function MigrationBanner() {
   const { state } = useChat()
   const [showBanner, setShowBanner] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  // The banner's only action is "Sign in with Google" - it must not render
+  // when no OAuth provider is configured
+  const authConfigured = useAuthConfigured()
 
   useEffect(() => {
     // Don't show if authenticated
@@ -69,7 +73,7 @@ export function MigrationBanner() {
     setShowBanner(false)
   }
 
-  if (!showBanner || status === 'loading') return null
+  if (!showBanner || status === 'loading' || !authConfigured) return null
 
   const chatCount = state.chats.length
 

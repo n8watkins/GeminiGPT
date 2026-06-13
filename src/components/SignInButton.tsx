@@ -2,6 +2,7 @@
 
 import { signIn, signOut, useSession } from 'next-auth/react'
 import Image from 'next/image'
+import { useAuthConfigured } from '@/hooks/useAuthProviders'
 
 /**
  * SignInButton Component
@@ -12,6 +13,13 @@ import Image from 'next/image'
  */
 export function SignInButton() {
   const { data: session, status } = useSession()
+  const authConfigured = useAuthConfigured()
+
+  // No OAuth provider configured: there is nothing to sign in with, so
+  // render no sign-in UI at all (signed-in users can still sign out below)
+  if (!authConfigured && !session?.user) {
+    return null
+  }
 
   if (status === 'loading') {
     return (

@@ -32,19 +32,35 @@ export default function DebugPanel() {
   const [position, setPosition] = useState<Position>({ x: 0, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isVisible, setIsVisible] = useState(true);
+  // BUGFIX: The panel used to be visible by default at (innerWidth - 200, 16)
+  // with z-index 9999 - on common viewport widths (<=1600px) that floats
+  // directly over the chat header's Share/Download buttons and silently
+  // swallows their clicks ("download error"). It is now hidden by default
+  // and toggled with Alt+Shift+D (visibility persisted across reloads).
+  const [isVisible, setIsVisible] = useState(false);
   const dragHandleRef = useRef<HTMLDivElement>(null);
   const isFirstMount = useRef(true);
 
   const { sendMessage } = useChat();
   const { socket } = useWebSocket();
 
+  // Restore persisted visibility (default: hidden)
+  useEffect(() => {
+    if (localStorage.getItem('debugConsoleVisible') === 'true') {
+      setIsVisible(true);
+    }
+  }, []);
+
   // Keyboard shortcut handler for Alt+Shift+D
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.shiftKey && e.key.toLowerCase() === 'd') {
         e.preventDefault();
-        setIsVisible((prev) => !prev);
+        setIsVisible((prev) => {
+          const next = !prev;
+          localStorage.setItem('debugConsoleVisible', String(next));
+          return next;
+        });
       }
     };
 
@@ -52,13 +68,24 @@ export default function DebugPanel() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Load position from localStorage
+  // Load position from localStorage, clamped into the current viewport so a
+  // position saved on a larger screen can't end up off-screen or over the UI.
   useEffect(() => {
+    const clamp = (pos: Position): Position => ({
+      x: Math.min(Math.max(0, pos.x), Math.max(0, window.innerWidth - 200)),
+      y: Math.min(Math.max(0, pos.y), Math.max(0, window.innerHeight - 60)),
+    });
+
     const savedPosition = localStorage.getItem('debugConsolePosition');
     if (savedPosition) {
-      setPosition(JSON.parse(savedPosition));
+      try {
+        setPosition(clamp(JSON.parse(savedPosition)));
+      } catch {
+        setPosition(clamp({ x: window.innerWidth - 200, y: window.innerHeight - 130 }));
+      }
     } else {
-      setPosition({ x: window.innerWidth - 200, y: 16 });
+      // Default to the bottom-right corner, clear of the chat header actions
+      setPosition(clamp({ x: window.innerWidth - 200, y: window.innerHeight - 130 }));
     }
   }, []);
 
