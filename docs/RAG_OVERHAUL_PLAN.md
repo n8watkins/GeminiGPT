@@ -66,6 +66,18 @@ Each agent: isolated worktree, full verification (`npm ci`-clean build, lint,
 test, boot + curl), commit in worktree, no push. Main session reviews each diff,
 merges, pushes (auto-deploys), smoke-tests live site.
 
+## Wave 2 (launched 2026-06-12): fixes + polish
+
+Decisions: KEEP the share button but make it work via self-contained URLs
+(server disk is ephemeral — old disk-based shares die on every restart).
+Hide sign-in UI when no OAuth provider is configured (it silently fails
+today). Multi-user confirmed live (20/20 concurrent sockets).
+
+| Agent | Scope | Status |
+|-------|-------|--------|
+| E (fix) | Single shared WebSocket (4 components each open their own socket today — causes disconnect flicker on chat switch); fix chat export/download error; self-contained share links (no server storage); hide sign-in when providers list is empty; remove/instrument legacy `/api/chat`. | in progress |
+| F (polish) | lucide-react icons (settings/theme/etc.); smoother+longer sidebar & shortcuts-modal animations; "student project" badge top-left; cycling typed-out prompt suggestions at the input; subtle ambient background motion (respect prefers-reduced-motion). | in progress |
+
 ## Later / parked
 
 - UI gutting (modal consolidation, sidebar diet, Inspector route from
