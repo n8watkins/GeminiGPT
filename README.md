@@ -104,10 +104,20 @@ was a separate little experiment.
 so a stored vector for "yeah, the second one" is meaningless — pulled up later,
 it tells the model nothing. The fix is *chunking*: instead of one row per
 message, I store one row per turn, combining the user's message with the
-assistant's reply (plus a line of the previous turn for context). The embedded
-text reads like `User: … / Assistant: …`, so a recalled snippet carries its own
-meaning. Bonus: it roughly halved the near-duplicate rows I used to dedupe — a
-question and its echoed answer used to be two nearly identical vectors.
+assistant's reply. The embedded text reads like `User: … / Assistant: …`, so a
+recalled snippet carries its own meaning. Bonus: it roughly halved the
+near-duplicate rows I used to dedupe — a question and its echoed answer used to
+be two nearly identical vectors.
+
+I almost over-engineered this. My first version also glued the *previous* turn
+into each chunk, figuring more context is better. Then I ran a live test on the
+deployed app: I told it my dog's name in one chat and, in a different chat,
+asked something totally unrelated — and it cited the dog chat anyway, because
+the dog turn had been windowed into the next chunk and dragged along. The "more
+context" was actually cross-contamination. I tore the windowing back out. The
+assistant's own reply already carries enough context, and one clean turn per
+chunk keeps both retrieval and the citations honest. Reading what the thing
+actually retrieves beats reasoning about what it should.
 
 **2. Vectors are bad at exact words.** Embeddings capture *meaning*, which is
 the whole point — but that makes them weirdly bad at the one thing keyword

@@ -95,11 +95,12 @@ contract (zero file overlap; merged in order chunk → hybrid → rerank). All o
 
 | Commit | Scope |
 |--------|-------|
-| `b9a5723` | **Conversation-window chunking** (write path): index one context-carrying `turn` row per turn (current turn + a window of the prior turn) instead of two isolated user/assistant rows. New `ConversationChunker.js`. |
+| `b9a5723` | **Turn-chunking** (write path): index one context-carrying `turn` row per turn (user + assistant combined) instead of two isolated rows. New `ConversationChunker.js`. (Originally windowed the prior turn too; see `576b401`.) |
 | `662eabf` | **Hybrid keyword+vector search** (`searchChats`): lexical `LIKE` search fused with vector search via Reciprocal Rank Fusion (k=60). Rows gain `_rrf` + `_keywordScore`; keyword-only hits carry `_distance=null`. New `HybridSearch.js`. |
 | `9bc8107` | **MMR reranking** (`ChatRetriever`): gate on vector distance OR keyword strength, then Maximal Marginal Relevance (λ=0.7) for relevance + diversity. Offline — NO extra LLM call (would burn the shared pool per query). New `Reranker.js`. |
 | `577e03f` | README learning-journal entry on all three + fixed stale facts (auto-retrieval live; embeddings `gemini-embedding-001`). |
-| `759d6bd` | **Fix found via live prod probe:** chunks led with the windowed prior turn, but the read path snippets the FIRST ~200 chars for both citation and injected context — so a follow-up turn's snippet/context showed the OLD window and truncated away the turn's actual content (retrieval found the right turn, model couldn't answer it). Now leads with the current turn; window trails as labeled context. |
+| `759d6bd` | **Fix found via live prod probe:** chunks led with the windowed prior turn, but the read path snippets the FIRST ~200 chars for both citation and injected context — so a follow-up turn's snippet/context showed the OLD window and truncated away the turn's actual content. Reordered to lead with the current turn. (Superseded by `576b401`.) |
+| `576b401` | **Windowing removed** (re-probe finding): windowing the prior turn into every chunk polluted neighbour embeddings, so an unrelated chunk matched a query on its windowed neighbour and recalled the same fact twice with a misleading citation. Dropped cross-turn windowing; kept turn-pairing. `buildTurnChunk` no longer takes `chatHistory`. |
 
 Interface contract added this wave — `searchChats` rows now also carry:
 `_rrf` (number), `_keywordScore` (int; keyword-only hits have `_distance=null`),
