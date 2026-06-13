@@ -1,6 +1,6 @@
 # Handoff
 
-_Last updated: 2026-06-12. Zero-context handoff — read this + `docs/RAG_OVERHAUL_PLAN.md` before doing anything._
+_Last updated: 2026-06-13. Zero-context handoff — read this + `docs/RAG_OVERHAUL_PLAN.md` before doing anything._
 
 ## Project summary
 
@@ -22,7 +22,29 @@ learning journal, not expert docs.
   5 min to keep it warm.
 - **GitHub:** `n8watkins/GeminiGPT` (homepage + description + topics set).
 
-## State (what's done this session)
+## State (what's done — latest session 2026-06-13)
+
+**Image-upload bug fixed** (`e63d0df`, pushed to `origin/main`):
+- The PNG/JPEG upload path was already working end-to-end (FileUpload →
+  data URL → `MessagePipeline.processAttachments` → `processImage` →
+  Gemini `inlineData` → `sendMessageStream`). So the owner's earlier "broken
+  upload" was indeed the now-fixed DebugPanel overlay.
+- **Real latent bug found & fixed:** the client accepts any `image/*`, but
+  `AttachmentHandler.validateImageDimensions()` only parsed PNG/JPEG. **GIF and
+  WebP** fell through with width/height = 0 and were fail-closed as
+  `[Image dimensions too large: 0x0]` — silently dropped before reaching Gemini.
+  Added `parseGIFDimensions` + `parseWebPDimensions` (VP8/VP8L/VP8X variants),
+  wired into `validateImageDimensions`. All four common formats now accepted.
+- Reproduced with real 1×1 fixtures pre-fix; verified accepted post-fix.
+- Added `tests/attachment-image-dimensions.test.js` (4 tests: PNG/GIF/WebP
+  acceptance + oversized-dimension rejection). Suite now **96/96**.
+- Verified: build ✓, lint ✓ (0 errors, 14 warnings), type-check ✓, tests ✓.
+  Live `/healthz`, `/api/usage`, `/share` all 200 post-push.
+- _Not done:_ true browser/WebSocket end-to-end upload of a `.webp` on the live
+  site (can't drive a headless browser here) — server-side processing is
+  verified against real image bytes, but a manual drag-drop confirm is welcome.
+
+## State (earlier work)
 
 All work is committed and **pushed to `origin/main`**. Two waves shipped, all
 live and verified on production:
@@ -59,10 +81,10 @@ actually logged (now is).
 
 If a focus was given at handoff time, do that first. Otherwise:
 
-1. **Re-test image upload** on the live site. Image upload+interpretation is
-   wired (Gemini inline data), but the owner hit issues earlier — likely the
-   same DebugPanel overlay bug now fixed. Confirm working or file the real bug.
-   Files: `src/components/FileUpload.tsx`, `AttachmentHandler.js`.
+1. _(DONE 2026-06-13 — `e63d0df`)_ Image upload re-tested; PNG/JPEG worked,
+   GIF/WebP were silently dropped and are now fixed. Optional follow-up: a
+   manual drag-drop of a `.webp` on the live site to confirm interpretation
+   end-to-end through the WebSocket.
 2. **Owner housekeeping (not code):** disconnect the stale Vercel project still
    linked to the GitHub repo (fails on every push, harmless); verify the
    budget cap on the Render `GEMINI_API_KEY` in Google AI Studio / Cloud
@@ -123,6 +145,8 @@ If a focus was given at handoff time, do that first. Otherwise:
 - `src/hooks/useWebSocket.ts` — thin consumer of that context.
 - `src/components/OnboardingWizard.tsx`, `UsageMeter.tsx`, `PoolExhaustedNotice.tsx`.
 - `src/lib/shareLink.ts` — gzip+base64url share encode/decode.
-- `src/components/FileUpload.tsx` — image/doc upload (next step #1).
+- `src/components/FileUpload.tsx` — image/doc upload UI (client validation).
+- `lib/websocket/services/AttachmentHandler.js` — server-side attachment
+  processing; `validateImageDimensions` now parses PNG/JPEG/GIF/WebP.
 - `render.yaml` — Render blueprint (env vars; `GEMINI_API_KEY` is
   dashboard-only `sync:false`; `POOL_DAILY_REQUEST_BUDGET=300`).
