@@ -57,6 +57,26 @@ All three happened. Especially the third one.
 Here's my best learner's explanation of the pipeline, because writing it down
 is how I made sure I actually understood it.
 
+```mermaid
+flowchart TD
+    Q["Your message<br/>“what is my dog's name?”"] --> E["Embed query<br/>gemini-embedding-001 · 768-dim"]
+    E --> V["Vector search<br/>nearest points in your<br/>OTHER chats (LanceDB)"]
+    E --> K["Keyword search<br/>SQL LIKE on exact terms"]
+    V --> F["Reciprocal Rank Fusion<br/>1 / (k + rank), summed"]
+    K --> F
+    F --> G["Gate<br/>distance ≤ 0.85 OR keyword hit<br/>+ relative-gap trim"]
+    G --> M["MMR rerank<br/>relevant AND diverse → top 4"]
+    M --> I["Inject as context<br/>+ 📎 citation in the UI"]
+    I --> A["Gemini answers<br/>“Your dog's name is Waffles”"]
+
+    classDef hot fill:#fde68a,stroke:#b45309,color:#000;
+    class V,K,F,M hot;
+```
+
+*(GitHub renders the diagram above; the amber boxes are the retrieval-quality
+work — hybrid search + fusion + reranking. Plain-text version lives in the
+[build log](docs/blog/building-cross-chat-memory.md).)*
+
 **What an embedding is.** When you send a message, I pass the text to Google's
 `gemini-embedding-001` model and get back a list of 768 numbers. That list is a
 point in 768-dimensional space, and the magic property is that texts with

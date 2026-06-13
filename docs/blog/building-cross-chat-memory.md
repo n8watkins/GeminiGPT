@@ -110,6 +110,45 @@ essentially always the closest one, so it costs zero recall). I shipped it,
 re-ran the live test, and the dog question finally came back with exactly one
 correct citation. 🎉
 
+## The whole machine, on one screen
+
+After all that, here's the read path a single message actually flows through:
+
+```text
+            "what is my dog's name?"
+                       │
+                       ▼   embed → 768-dim vector
+               ┌───────┴────────┐
+               ▼                ▼
+         ┌───────────┐    ┌────────────┐
+         │  VECTOR   │    │  KEYWORD   │
+         │  search   │    │  search    │   meaning   vs.   exact tokens
+         │ (LanceDB) │    │ (SQL LIKE) │
+         └─────┬─────┘    └─────┬──────┘
+               │ ranked         │ ranked
+               └───────┬────────┘
+                       ▼
+             ┌────────────────────┐
+             │ Reciprocal Rank     │   merge the two rankings
+             │ Fusion · 1/(k+rank) │
+             └─────────┬──────────┘
+                       ▼
+             ┌────────────────────┐
+             │ gate + relative-gap │   drop the far / irrelevant hits
+             │ trim                │
+             └─────────┬──────────┘
+                       ▼
+             ┌────────────────────┐
+             │ MMR rerank → top 4  │   relevant AND not duplicates
+             └─────────┬──────────┘
+                       ▼
+            inject as context  +  📎 citation
+                       ▼
+          "Your dog's name is Waffles 🐶"
+```
+
+Every box past "embed" is a thing I added *after* the tutorial ended.
+
 ## What I actually learned
 
 - **Tutorials show the demo; production is everything after.** "Embed, store,
