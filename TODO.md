@@ -1,5 +1,9 @@
 # TODO - Manual Tasks Required
 
+> **Stale (written for an old Railway deploy plan).**
+> The app now runs on Render; the current status and owner steps are in `docs/HANDOFF.md`.
+> Item 1 still matters: make sure both leaked keys named below are revoked.
+
 This file contains tasks that require manual action before production deployment.
 
 ---
@@ -18,13 +22,13 @@ API keys were accidentally committed to git history and pushed to GitHub. Even t
 
 1. **Revoke Gemini API Key**
    - Go to: https://aistudio.google.com/apikey
-   - Find and delete key: `AIzaSyDScNnwqyPkWgXkKj5iOIzApg4sO136C4w`
+   - Find and delete key: `AIza...6C4w (redacted)`
    - Generate a new key
    - Save it securely
 
 2. **Revoke Google Search API Key**
    - Go to: https://console.cloud.google.com/apis/credentials
-   - Find and delete key: `AIzaSyDpfsyqvczepccVFgxmMapy62pJtBd0cpQ`
+   - Find and delete key: `AIza...0cpQ (redacted)`
    - Generate a new key
    - Save it securely
 

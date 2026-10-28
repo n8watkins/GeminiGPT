@@ -36,9 +36,9 @@ The application demonstrates good architectural patterns with service separation
 
 **Issue:**
 Real production API keys are hardcoded in `.env.local` file:
-- `NEXT_PUBLIC_GEMINI_API_KEY=AIzaSyDScNnwqyPkWgXkKj5iOIzApg4sO136C4w`
-- `GEMINI_API_KEY=AIzaSyDScNnwqyPkWgXkKj5iOIzApg4sO136C4w`
-- `GOOGLE_SEARCH_API_KEY=AIzaSyDpfsyqvczepccVFgxmMapy62pJtBd0cpQ`
+- `NEXT_PUBLIC_GEMINI_API_KEY=AIza...6C4w (redacted)`
+- `GEMINI_API_KEY=AIza...6C4w (redacted)`
+- `GOOGLE_SEARCH_API_KEY=AIza...0cpQ (redacted)`
 - `GOOGLE_SEARCH_ENGINE_ID=3021ad388854842b4`
 
 **Impact:**
