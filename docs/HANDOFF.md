@@ -45,10 +45,12 @@ Order: owner sets the new `GEMINI_API_KEY` on the Render service `geminigpt-n8`,
    The service has auto-deploy on (trigger: commit), but the last deploy is from 2026-06-14 although `main` has moved twice since.
    Echo's service in the same workspace did auto-deploy today, so the likely cause is the Render GitHub app's access to this repo or a broken webhook.
    Reproduce: compare `git log origin/main` with the Deploys tab of `geminigpt-n8` in the Render dashboard.
-3. **Old API keys sit in git history.**
-   `TODO.md` and `docs/archive/CODE_REVIEW_REPORT.md` contained a full Gemini key and a full Google Search key in this public repo.
-   They were redacted from the current files on 2026-10-27 (only the last four characters remain, to identify them), but they stay in git history.
-   Nobody has recorded that they were revoked.
+3. **Old API keys (resolved 2026-10-27).**
+   `TODO.md` and `docs/archive/CODE_REVIEW_REPORT.md` once contained a full Gemini key (`...6C4w`) and a full Google Search key (`...0cpQ`) in this public repo.
+   Both are dead: on 2026-10-27 Google rejected each as "not valid" (the Search API also said "expired").
+   The same day, the branch history was rewritten with git-filter-repo to replace both keys with `REDACTED-revoked-key-<last4>`, and `main` and `feat/gemini-3.5-flash-lite` were force-pushed.
+   Old clones made before 2026-10-27 still hold the old history; re-clone or `git fetch && git reset --hard origin/main`.
+   GitHub keeps read-only copies in the refs of PRs #1, #2 and #4; only GitHub Support can purge those, which matters little now that the keys are dead.
 4. **A stale Vercel project (`gemini-gpt`) is still linked to the repo** and fails on every push and PR.
    It is harmless for the live app (which runs on Render) but shows a red check on every PR.
 5. **Lint warnings (14, no errors).**
@@ -74,7 +76,7 @@ Order: owner sets the new `GEMINI_API_KEY` on the Render service `geminigpt-n8`,
 1. Owner: set the new key on Render and fix auto-deploy (above).
 2. Upgrade `next` to the latest 16.x (open problem 1) in its own PR, verify lint, build and tests, deploy and check live.
 3. Merge PR #3, confirm the deploy reaches the new commit, then run the live check described in "Model plan".
-4. Confirm the old keys are revoked and record it here.
+4. (Done 2026-10-27) The old keys are dead and purged from branch history; see open problem 3.
 5. Clear the 14 lint warnings with a browser check of each affected screen.
 6. Parked feature work from June (settings consolidation, sidebar diet, `/inspector` route) is listed under "Next steps" below and in `docs/RAG_OVERHAUL_PLAN.md`.
 
