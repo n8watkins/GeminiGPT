@@ -109,7 +109,7 @@ To run tests in CI/CD pipeline:
 **False Positives**: If you encounter false-positive safety blocks, check:
 
 1. **Safety Settings**: Review `safetySettings` in `GeminiService.js`
-2. **Model Version**: Ensure using latest model (`gemini-2.5-flash`)
+2. **Model Version**: Ensure using latest model (`gemini-3.5-flash-lite`)
 3. **Context**: Check if chat history contains problematic content
 4. **API Status**: Check Google Cloud Status Dashboard
 

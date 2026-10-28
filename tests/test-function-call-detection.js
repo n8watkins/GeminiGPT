@@ -32,7 +32,7 @@ async function testFunctionCallDetection() {
   ];
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-3.1-flash-lite',
+    model: 'gemini-3.5-flash-lite',
     tools: tools,
     safetySettings: safetySettings
   });
