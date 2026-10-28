@@ -128,7 +128,7 @@ export default function OnboardingWizard({ isOpen, onComplete }: OnboardingWizar
                   <span>
                     {hasApiKey
                       ? 'Your own Gemini key is active'
-                      : 'Prefer your own free Gemini key? (optional — unlimited usage)'}
+                      : 'Prefer your own free Gemini key? (optional - unlimited usage)'}
                   </span>
                   <svg
                     className={`w-4 h-4 transition-transform ${showKeyEntry ? 'rotate-180' : ''}`}
