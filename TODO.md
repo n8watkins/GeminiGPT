@@ -2,7 +2,7 @@
 
 > **Stale (written for an old Railway deploy plan).**
 > The app now runs on Render; the current status and owner steps are in `docs/HANDOFF.md`.
-> Item 1 still matters: make sure both leaked keys named below are revoked.
+> Item 1 is resolved: both leaked keys were confirmed dead and purged from branch history on 2026-10-27 (see docs/HANDOFF.md).
 
 This file contains tasks that require manual action before production deployment.
 
