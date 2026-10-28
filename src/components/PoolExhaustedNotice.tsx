@@ -27,7 +27,7 @@ export default function PoolExhaustedNotice({ usage, onDismiss }: PoolExhaustedN
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
-            The free demo capacity is used up for now{reset ? ` — it resets ${reset}` : ''}.
+            The free demo capacity is used up for now{reset ? ` - it resets ${reset}` : ''}.
           </p>
           <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">
             Add your own free Gemini key to keep chatting without limits &mdash; it takes about two minutes and
