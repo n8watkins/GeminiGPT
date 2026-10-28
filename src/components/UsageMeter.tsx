@@ -61,7 +61,7 @@ export function PoolMeterBar({ usage, variant = 'light' }: PoolMeterBarProps) {
       </div>
       <p className={`text-xs mt-1 ${subClass}`}>
         {exhausted
-          ? `Demo capacity used up${reset ? ` — resets ${reset}` : ''}. Add your own free key to keep chatting.`
+          ? `Demo capacity used up${reset ? ` - resets ${reset}` : ''}. Add your own free key to keep chatting.`
           : reset
             ? `Resets ${reset}`
             : 'Everyone shares this free demo budget'}

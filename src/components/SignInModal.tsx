@@ -149,7 +149,7 @@ export function SignInModal({ isOpen, onClose }: SignInModalProps) {
                     API Key Security
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    API keys <span className="font-semibold text-gray-900 dark:text-white">never stored in cloud</span> — they stay local to each device for your security.
+                    API keys <span className="font-semibold text-gray-900 dark:text-white">never stored in cloud</span> - they stay local to each device for your security.
                   </p>
                 </div>
               </div>
