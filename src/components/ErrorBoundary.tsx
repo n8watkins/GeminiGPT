@@ -88,6 +88,8 @@ class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={() => {
+                  // A full page load on purpose: it resets all client state after a crash.
+                  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                   window.location.href = '/';
                 }}
                 className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
