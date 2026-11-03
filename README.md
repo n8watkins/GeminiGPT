@@ -20,7 +20,7 @@ deployment taught me more than the app did.
 
 ## What it does
 
-- **Chat with Gemini** (`gemini-3.1-flash-lite`) with streaming responses over
+- **Chat with Gemini** (`gemini-3.5-flash-lite`) with streaming responses over
   WebSockets
 - **Cross-chat memory**: every message is embedded and indexed, and before each
   reply the app automatically searches your *other* chats for relevant context
@@ -305,7 +305,7 @@ Needs Node 22+. SQLite and LanceDB files get created in `data/` automatically.
 | Real-time | Socket.IO | Streaming responses, bidirectional events |
 | Chat storage | SQLite (better-sqlite3) | Simple, fast, zero-config |
 | Vector DB | LanceDB | Embedded, no separate service to run |
-| LLM | `gemini-3.1-flash-lite` | Generous free tier, function calling |
+| LLM | `gemini-3.5-flash-lite` | Generous free tier, function calling |
 | Embeddings | `gemini-embedding-001` (768-dim) | Same free tier |
 | Styling | Tailwind CSS | |
 | Hosting | Render free tier | Long-lived process, $0 |
