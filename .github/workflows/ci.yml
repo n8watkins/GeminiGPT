@@ -40,3 +40,44 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  docker:
+    # The self-hosting image builds, carries no env file, and serves pages.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Plant env files that must not reach the image
+        run: |
+          echo 'PLANTED=1' > .env.local
+          echo 'PLANTED=1' > .env
+
+      - name: Build
+        run: docker build --build-arg NEXT_PUBLIC_APP_URL=http://localhost:3000 -t geminigpt:ci .
+
+      - name: No env file in the image
+        run: |
+          found=$(docker run --rm geminigpt:ci find / -xdev -name '.env*' ! -name '.env.example' -not -path '/proc/*' -not -path '*/node_modules/*' 2>/dev/null || true)
+          if [ -n "$found" ]; then echo "::error::env files in the image: $found"; exit 1; fi
+          if docker run --rm geminigpt:ci grep -rqs PLANTED /app --exclude-dir=node_modules; then
+            echo "::error::a planted env value reached the image"; exit 1
+          fi
+
+      - name: Container starts and serves the app
+        run: |
+          docker run -d --name app -p 3000:3000 -e PRODUCTION_URL=http://localhost:3000 geminigpt:ci
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:3000/healthz | grep -q '"nextjs":"ready"'; then break; fi
+            sleep 2
+          done
+          curl -fs http://localhost:3000/healthz
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/)
+          echo "GET / -> $code"
+          test "$code" = 200
+
+      - name: Container logs
+        if: always()
+        run: docker logs app 2>&1 | tail -50 || true
