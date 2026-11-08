@@ -43,7 +43,7 @@
     "apache-arrow": "18.1.0",
     "axios": "^1.13.0",
     "better-sqlite3": "^12.4.1",
-    "dompurify": "^3.3.0",
+    "dompurify": "^3.4.17",
     "dotenv": "^17.2.3",
     "googleapis": "^164.1.0",
     "helmet": "^8.1.0",
