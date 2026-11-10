@@ -606,8 +606,8 @@ rm -rf data/*.db data/lancedb
 **Yes!** Edit `lib/websocket/services/GeminiService.js`:
 ```javascript
 // Change model name
-createModel(modelName = 'gemini-2.5-flash') {
-  // Options: gemini-2.5-flash, gemini-1.5-pro, etc.
+createModel(modelName = 'gemini-3.5-flash-lite') {
+  // Options: any current text model ID from ai.google.dev/gemini-api/docs/models
 }
 ```
 
